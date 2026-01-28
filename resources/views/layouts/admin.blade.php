@@ -15,17 +15,17 @@
     
     <style>
         :root {
-            --primary: #4f46e5;
+            --primary: #2d2020;
             --primary-light: #e0e7ff;
             --secondary: #6b7280;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --dark: #111827;
+            --dark: #161311;
             --light: #f9fafb;
             --border: #e5e7eb;
             --card-bg: #ffffff;
-            --sidebar-bg: #1f2937;
+            --sidebar-bg: #35241f;
         }
         
         * {
@@ -50,7 +50,7 @@
         /* Sidebar */
         .sidebar {
             width: 260px;
-            background: linear-gradient(180deg, var(--sidebar-bg) 0%, #111827 100%);
+            background: linear-gradient(180deg, var(--sidebar-bg) 0%, #160f0d 100%);
             color: white;
             padding: 2rem 1.5rem;
             position: fixed;
@@ -70,7 +70,7 @@
         .logo {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #412d21 0%, #201312 100%);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -148,7 +148,7 @@
         .user-avatar {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, #6b3f32 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;

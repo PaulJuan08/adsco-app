@@ -125,7 +125,7 @@
         @else
         <!-- Users List -->
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse;" id="users-table">
                 <thead>
                     <tr style="background: #f9fafb; border-bottom: 2px solid var(--border);">
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">
@@ -288,24 +288,24 @@
                         <div style="font-size: 0.75rem; color: var(--secondary);">Create a new user account</div>
                     </div>
                 </a>
-                <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                <button id="print-report" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; width: 100%; border: none; background: none; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #fce7f3; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #db2777;">
                         <i class="fas fa-file-export"></i>
                     </div>
-                    <div>
-                        <div style="font-weight: 500;">Export Users</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">Download as CSV</div>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 500;">Print/Export Users</div>
+                        <div style="font-size: 0.75rem; color: var(--secondary);">Print user list or export as CSV</div>
                     </div>
-                </a>
-                <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                </button>
+                <button id="export-csv" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; width: 100%; border: none; background: none; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #dcfce7; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--success);">
-                        <i class="fas fa-cogs"></i>
+                        <i class="fas fa-file-csv"></i>
                     </div>
-                    <div>
-                        <div style="font-weight: 500;">Bulk Actions</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">Manage multiple users</div>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 500;">Download CSV</div>
+                        <div style="font-size: 0.75rem; color: var(--secondary);">Export user data as CSV file</div>
                     </div>
-                </a>
+                </button>
             </div>
         </div>
         
@@ -354,6 +354,86 @@
     © {{ date('Y') }} ADSCO. All rights reserved. Version 1.0.0
 </div>
 
+<!-- Hidden Print Div -->
+<div id="print-content" style="display: none;">
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #4f46e5; margin-bottom: 5px;">ADSCO User Management Report</h1>
+            <p style="color: #666; margin-bottom: 10px;">Generated on {{ now()->format('F d, Y h:i A') }}</p>
+            <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin-bottom: 10px;">Summary Statistics</h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px;">{{ $adminCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Admins</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 5px;">{{ $registrarCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Registrars</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 5px;">{{ $teacherCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Teachers</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #0369a1; margin-bottom: 5px;">{{ $studentCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Students</div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 style="color: #333; margin-bottom: 15px;">User List</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Email</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Role</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Status</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Joined Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($users as $user)
+                @php
+                    $roleName = match($user->role) {
+                        1 => 'Admin',
+                        2 => 'Registrar',
+                        3 => 'Teacher',
+                        4 => 'Student',
+                        default => 'Unknown'
+                    };
+                @endphp
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->f_name }} {{ $user->l_name }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->email }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $roleName }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                        @if($user->is_approved)
+                            <span style="color: #059669; font-weight: 500;">Approved</span>
+                        @else
+                            <span style="color: #d97706; font-weight: 500;">Pending</span>
+                        @endif
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->created_at->format('M d, Y') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px;">
+                Total Users: {{ $users->total() }} | 
+                Generated by: {{ Auth::user()->name }} | 
+                Page 1 of 1
+            </p>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     // Simple search functionality
@@ -371,6 +451,130 @@
                 row.style.display = 'none';
             }
         });
+    });
+
+    // Print functionality
+    document.getElementById('print-report')?.addEventListener('click', function() {
+        // Get the print content
+        const printContent = document.getElementById('print-content').innerHTML;
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>User Management Report</title>
+                <style>
+                    @media print {
+                        @page {
+                            size: landscape;
+                            margin: 0.5in;
+                        }
+                        body {
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        table {
+                            page-break-inside: auto;
+                        }
+                        tr {
+                            page-break-inside: avoid;
+                            page-break-after: auto;
+                        }
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1, h2, h3 {
+                        margin-top: 0;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th {
+                        background-color: #f3f4f6 !important;
+                        -webkit-print-color-adjust: exact;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 100);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    });
+
+    // Export to CSV functionality
+    document.getElementById('export-csv')?.addEventListener('click', function() {
+        // Get table data
+        const table = document.getElementById('users-table');
+        const rows = table.querySelectorAll('tr');
+        const csv = [];
+        
+        // Add headers
+        const headers = [];
+        table.querySelectorAll('thead th').forEach(th => {
+            headers.push(th.textContent.trim());
+        });
+        csv.push(headers.join(','));
+        
+        // Add data rows
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const cells = [];
+            const columns = row.querySelectorAll('td');
+            
+            // Name
+            const nameDiv = columns[0].querySelector('div:nth-child(2) div:nth-child(1)');
+            cells.push(`"${nameDiv ? nameDiv.textContent.trim() : ''}"`);
+            
+            // Email
+            const emailSpan = columns[1].querySelector('span');
+            cells.push(`"${emailSpan ? emailSpan.textContent.trim() : ''}"`);
+            
+            // Role
+            const roleSpan = columns[2].querySelector('span');
+            cells.push(`"${roleSpan ? roleSpan.textContent.trim() : ''}"`);
+            
+            // Status
+            const statusSpan = columns[3].querySelector('span');
+            cells.push(`"${statusSpan ? statusSpan.textContent.trim() : ''}"`);
+            
+            // Join Date
+            const joinDateDiv = columns[4].querySelector('div:nth-child(1)');
+            cells.push(`"${joinDateDiv ? joinDateDiv.textContent.trim() : ''}"`);
+            
+            csv.push(cells.join(','));
+        });
+        
+        // Create and download CSV file
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `users_export_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        alert('CSV file has been downloaded successfully!');
     });
 </script>
 @endpush

@@ -71,57 +71,90 @@ class UserController extends Controller
     
     public function show($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $user = User::findOrFail($id);
-        return view('admin.users.show', compact('user'));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            return view('admin.users.show', compact('user'));
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            abort(404, 'Invalid user ID');
+        }
     }
     
     public function edit($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $user = User::findOrFail($id);
-        return view('admin.users.edit', compact('user'));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            
+            // Pass the encrypted ID to the view
+            return view('admin.users.edit', compact('user', 'encryptedId'));
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            abort(404, 'Invalid user ID');
+        }
     }
     
     public function update(Request $request, $encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $user = User::findOrFail($id);
-        
-        $request->validate([
-            'f_name' => 'required|string|max:50',
-            'l_name' => 'required|string|max:50',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|in:1,2,3,4'
-        ]);
-        
-        $user->update($request->all());
-        
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User updated successfully.');
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            
+            $request->validate([
+                'f_name' => 'required|string|max:50',
+                'l_name' => 'required|string|max:50',
+                'email' => 'required|email|unique:users,email,' . $id,
+                'role' => 'required|in:1,2,3,4',
+                'password' => 'nullable|string|min:8|confirmed'
+            ]);
+            
+            // Prepare update data
+            $updateData = [
+                'f_name' => $request->f_name,
+                'l_name' => $request->l_name,
+                'email' => $request->email,
+                'role' => $request->role,
+                'employee_id' => $request->employee_id,
+                'student_id' => $request->student_id,
+                'age' => $request->age,
+                'sex' => $request->sex,
+                'contact' => $request->contact
+            ];
+            
+            // Only update password if provided
+            if ($request->filled('password')) {
+                $updateData['password'] = bcrypt($request->password);
+            }
+            
+            $user->update($updateData);
+            
+            return redirect()->route('admin.users.index')
+                ->with('success', 'User updated successfully.');
+                
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            abort(404, 'Invalid user ID');
+        }
     }
     
     public function destroy($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $user = User::findOrFail($id);
-        $user->delete();
-        
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User deleted successfully.');
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            $user->delete();
+            
+            return redirect()->route('admin.users.index')
+                ->with('success', 'User deleted successfully.');
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            abort(404, 'Invalid user ID');
+        }
     }
     
-    public function approve($id)
+    public function approve($encryptedId)
     {
         try {
-            // First try to decrypt (in case it's encrypted from the user index page)
-            try {
-                $decryptedId = Crypt::decrypt($id);
-                $user = User::findOrFail($decryptedId);
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                // If decryption fails, treat it as a regular ID
-                $user = User::findOrFail($id);
-            }
+            // Decrypt the ID
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
             
             // Check if user is already approved
             if ($user->is_approved) {
@@ -154,6 +187,9 @@ class UserController extends Controller
             return redirect()->route('admin.users.index')
                 ->with('success', 'User approved successfully!');
                 
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Invalid user ID provided.');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'User not found.');

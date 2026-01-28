@@ -17,10 +17,10 @@
             background-color: #270e00;
         }
         .text-adsco-gold {
-            color: #D4AF37;
+            color: #ffc400;
         }
         .bg-adsco-gold {
-            background-color: #D4AF37;
+            background-color: #ffc400;
         }
     </style>
     
@@ -95,7 +95,7 @@
                     
                     <!-- CTA Buttons -->
                     <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                        <a href="{{ route('login') }}" class="px-8 py-3 bg-[#993102] text-white font-medium rounded-lg hover:bg-[#d3541b] transition duration-300">
+                        <a href="{{ route('login') }}" class="px-8 py-3 bg-[#d3541b] text-white font-medium rounded-lg hover:bg-[#d3541b] transition duration-300">
                             Get started
                             <i class="fas fa-arrow-right ml-2"></i>
                         </a>

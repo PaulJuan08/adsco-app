@@ -25,12 +25,20 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Admin routes
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
-        Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
-        // Route::post('/users/{encryptedId}/approve', [UserController::class, 'approve'])->name('admin.users.approve');
+        // Update resource routes to use encryptedId
+        Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->parameters([
+            'users' => 'encryptedId'
+        ]);
+        
         Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('attendance');
         Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-logs');
-        Route::post('/users/{user}/approve', [\App\Http\Controllers\Admin\UserController::class, 'approve'])->name('users.approve');
+        Route::post('/users/{encryptedId}/approve', [\App\Http\Controllers\Admin\UserController::class, 'approve'])->name('users.approve');
+        
+        // Remove this duplicate line (line 34) as it conflicts with the resource route:
+        // Route::put('/admin/users/{encryptedId}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
+        
+        Route::get('/courses/{course}/edit', [\App\Http\Controllers\Admin\CourseController::class, 'edit'])->name('courses.edit');
     });
     
     // Registrar routes

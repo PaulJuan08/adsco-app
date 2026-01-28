@@ -171,7 +171,7 @@
         @else
         <!-- Attendance List -->
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse;" id="attendance-table">
                 <thead>
                     <tr style="background: #f9fafb; border-bottom: 2px solid var(--border);">
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">#</th>
@@ -315,7 +315,7 @@
                 <div class="card-title">Quick Actions</div>
             </div>
             <div style="padding: 0.5rem;">
-                <button onclick="printAttendance()" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
+                <button id="print-report" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #e0e7ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
                         <i class="fas fa-print"></i>
                     </div>
@@ -324,7 +324,7 @@
                         <div style="font-size: 0.75rem; color: var(--secondary);">Generate PDF/Print</div>
                     </div>
                 </button>
-                <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                <button id="export-csv" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #fce7f3; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #db2777;">
                         <i class="fas fa-file-export"></i>
                     </div>
@@ -332,16 +332,16 @@
                         <div style="font-weight: 500;">Export Data</div>
                         <div style="font-size: 0.75rem; color: var(--secondary);">Download as CSV</div>
                     </div>
-                </a>
-                <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                </button>
+                <button id="export-pdf" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #dcfce7; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--success);">
-                        <i class="fas fa-bell"></i>
+                        <i class="fas fa-file-pdf"></i>
                     </div>
                     <div>
-                        <div style="font-weight: 500;">Send Reminders</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">Notify absent users</div>
+                        <div style="font-weight: 500;">Export PDF</div>
+                        <div style="font-size: 0.75rem; color: var(--secondary);">Download as PDF</div>
                     </div>
-                </a>
+                </button>
             </div>
         </div>
         
@@ -395,6 +395,116 @@
     </div>
 </div>
 
+<!-- Hidden Print Content -->
+<div id="print-content" style="display: none;">
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #4f46e5; margin-bottom: 5px;">ADSCO Attendance Report</h1>
+            <p style="color: #666; margin-bottom: 5px;">Generated on {{ now()->format('F d, Y h:i A') }}</p>
+            <p style="color: #666; margin-bottom: 10px;">Report Date: {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}</p>
+            <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin-bottom: 10px;">Attendance Summary</h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 5px;">{{ $presentCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Present</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 5px;">{{ $absentCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Absent</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #d97706; margin-bottom: 5px;">{{ $lateCount }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Late</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px;">{{ $totalUsers }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Total Users</div>
+                </div>
+            </div>
+            
+            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; margin-top: 15px;">
+                <h3 style="margin-top: 0; color: #374151; font-size: 16px;">Attendance Rate</h3>
+                <div style="font-size: 24px; font-weight: bold; color: #4f46e5;">
+                    @if($totalUsers > 0)
+                        {{ round(($presentCount / $totalUsers) * 100, 1) }}%
+                    @else
+                        0%
+                    @endif
+                </div>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">
+                    {{ $presentCount }} out of {{ $totalUsers }} users were present
+                </p>
+            </div>
+        </div>
+        
+        <h2 style="color: #333; margin-bottom: 15px;">Attendance Details</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">#</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">User</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Role</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Status</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Check-in Time</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Check-out Time</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($attendances as $attendance)
+                @php
+                    $roleName = match($attendance->user->role ?? 0) {
+                        1 => 'Admin',
+                        2 => 'Registrar',
+                        3 => 'Teacher',
+                        4 => 'Student',
+                        default => 'Unknown'
+                    };
+                @endphp
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $loop->iteration }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                        {{ $attendance->user->f_name ?? 'Unknown' }} {{ $attendance->user->l_name ?? '' }}
+                        @if($attendance->user->email ?? false)
+                            <br><small style="color: #6b7280;">{{ $attendance->user->email }}</small>
+                        @endif
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $roleName }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                        @php
+                            $statusColor = match($attendance->status) {
+                                'present' => '#059669',
+                                'absent' => '#dc2626',
+                                'late' => '#d97706',
+                                default => '#6b7280'
+                            };
+                        @endphp
+                        <span style="color: {{ $statusColor }}; font-weight: 500;">
+                            {{ ucfirst($attendance->status) }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $attendance->check_in ?? '-' }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $attendance->check_out ?? '-' }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $attendance->remarks ?? 'No remarks' }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px;">
+                Total Records: {{ $attendances->total() }} | 
+                Generated by: {{ Auth::user()->name }} | 
+                Report Date: {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}
+            </p>
+        </div>
+    </div>
+</div>
+
 <!-- Footer -->
 <div class="footer">
     © {{ date('Y') }} ADSCO. All rights reserved. Version 1.0.0
@@ -403,6 +513,8 @@
 @push('scripts')
 <!-- Flatpickr Datepicker -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
     // Initialize datepicker
     flatpickr("input[type=date]", {
@@ -427,100 +539,243 @@
         document.querySelector('form').submit();
     }
     
-    // Print attendance report
-    function printAttendance() {
-        const printContent = `
+    // Print functionality
+    document.getElementById('print-report')?.addEventListener('click', function() {
+        // Get the print content
+        const printContent = document.getElementById('print-content').innerHTML;
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
             <html>
             <head>
                 <title>Attendance Report - {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}</title>
                 <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    h1 { color: #111827; margin-bottom: 10px; }
-                    h3 { color: #374151; margin-top: 20px; }
-                    .header { margin-bottom: 30px; }
-                    .summary { background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-                    th { background-color: #f3f4f6; font-weight: 600; }
-                    .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-                    .present { background: #dcfce7; color: #166534; }
-                    .absent { background: #fee2e2; color: #991b1b; }
-                    .late { background: #fef3c7; color: #92400e; }
+                    @media print {
+                        @page {
+                            size: landscape;
+                            margin: 0.5in;
+                        }
+                        body {
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                            font-family: Arial, sans-serif;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            page-break-inside: auto;
+                        }
+                        tr {
+                            page-break-inside: avoid;
+                            page-break-after: auto;
+                        }
+                        th {
+                            background-color: #f3f4f6 !important;
+                            -webkit-print-color-adjust: exact;
+                        }
+                        .summary-grid {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 10px;
+                            margin-bottom: 20px;
+                        }
+                    }
+                    body {
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1, h2, h3 {
+                        margin-top: 0;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    td, th {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        font-size: 12px;
+                    }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>Attendance Report</h1>
-                    <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}</p>
-                    <p><strong>Generated:</strong> {{ now()->format('F d, Y h:i A') }}</p>
-                </div>
-                
-                <div class="summary">
-                    <h3>Summary</h3>
-                    <p><strong>Present:</strong> {{ $presentCount }}</p>
-                    <p><strong>Absent:</strong> {{ $absentCount }}</p>
-                    <p><strong>Late:</strong> {{ $lateCount }}</p>
-                    <p><strong>Total Users:</strong> {{ $totalUsers }}</p>
-                    <p><strong>Attendance Rate:</strong> 
-                        @if($totalUsers > 0)
-                            {{ round(($presentCount / $totalUsers) * 100, 1) }}%
-                        @else
-                            0%
-                        @endif
-                    </p>
-                </div>
-                
-                <h3>Attendance Details</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Check-in</th>
-                            <th>Check-out</th>
-                            <th>Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($attendances as $attendance)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $attendance->user->f_name ?? 'Unknown' }} {{ $attendance->user->l_name ?? '' }}</td>
-                            <td>
-                                @php
-                                    $roleName = match($attendance->user->role ?? 0) {
-                                        1 => 'Admin',
-                                        2 => 'Registrar',
-                                        3 => 'Teacher',
-                                        4 => 'Student',
-                                        default => 'Unknown'
-                                    };
-                                @endphp
-                                {{ $roleName }}
-                            </td>
-                            <td>
-                                <span class="badge {{ $attendance->status }}">
-                                    {{ ucfirst($attendance->status) }}
-                                </span>
-                            </td>
-                            <td>{{ $attendance->check_in ?? '-' }}</td>
-                            <td>{{ $attendance->check_out ?? '-' }}</td>
-                            <td>{{ $attendance->remarks ?? 'No remarks' }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                ${printContent}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 100);
+                    };
+                <\/script>
             </body>
             </html>
-        `;
-        
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
+        `);
         printWindow.document.close();
-        printWindow.print();
-    }
+    });
+    
+    // Export to CSV functionality
+    document.getElementById('export-csv')?.addEventListener('click', function() {
+        // Get table data
+        const table = document.getElementById('attendance-table');
+        const rows = table.querySelectorAll('tr');
+        const csv = [];
+        
+        // Add headers (excluding the Actions column if it exists)
+        const headers = [];
+        table.querySelectorAll('thead th').forEach(th => {
+            headers.push(th.textContent.trim());
+        });
+        csv.push(headers.join(','));
+        
+        // Add data rows
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const cells = [];
+            const columns = row.querySelectorAll('td');
+            
+            // Serial number
+            cells.push(columns[0].textContent.trim());
+            
+            // User name
+            const userDiv = columns[1].querySelector('div:nth-child(2)');
+            let userName = 'Unknown';
+            let userEmail = '';
+            
+            if (userDiv) {
+                const nameDiv = userDiv.querySelector('div:nth-child(1)');
+                const emailDiv = userDiv.querySelector('div:nth-child(2)');
+                
+                if (nameDiv) userName = nameDiv.textContent.trim();
+                if (emailDiv) userEmail = emailDiv.textContent.trim();
+            }
+            cells.push(`"${userName} (${userEmail})"`);
+            
+            // Role
+            const roleSpan = columns[2].querySelector('span');
+            cells.push(`"${roleSpan ? roleSpan.textContent.trim() : 'Unknown'}"`);
+            
+            // Status
+            const statusSpan = columns[3].querySelector('span');
+            cells.push(`"${statusSpan ? statusSpan.textContent.trim() : 'Unknown'}"`);
+            
+            // Check-in time
+            const checkinDiv = columns[4].querySelector('div:nth-child(1)');
+            cells.push(`"${checkinDiv ? checkinDiv.textContent.trim() : '-'}"`);
+            
+            // Check-out time
+            const checkoutDiv = columns[5].querySelector('div:nth-child(1)');
+            cells.push(`"${checkoutDiv ? checkoutDiv.textContent.trim() : '-'}"`);
+            
+            // Remarks
+            const remarksDiv = columns[6].querySelector('div');
+            cells.push(`"${remarksDiv ? remarksDiv.textContent.trim() : 'No remarks'}"`);
+            
+            csv.push(cells.join(','));
+        });
+        
+        // Create and download CSV file
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `attendance_report_{{ \Carbon\Carbon::parse($date)->format('Y_m_d') }}_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        alert('Attendance CSV file has been downloaded successfully!');
+    });
+    
+    // Export to PDF functionality
+    document.getElementById('export-pdf')?.addEventListener('click', function() {
+        // Get print content
+        const printContent = document.getElementById('print-content');
+        
+        // Use html2canvas to capture the content as an image
+        html2canvas(printContent).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('landscape', 'mm', 'a4');
+            
+            const imgWidth = 280;
+            const pageHeight = 210;
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 10;
+            
+            // Add header
+            pdf.setFontSize(16);
+            pdf.setTextColor(79, 70, 229);
+            pdf.text('ADSCO Attendance Report', 20, 15);
+            
+            pdf.setFontSize(10);
+            pdf.setTextColor(102, 102, 102);
+            pdf.text(`Report Date: {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}`, 20, 22);
+            pdf.text(`Generated on: {{ now()->format('F d, Y h:i A') }}`, 20, 27);
+            
+            pdf.setFontSize(12);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(`Generated by: {{ Auth::user()->name }}`, 20, 35);
+            
+            // Add summary stats
+            const summaryY = 45;
+            pdf.setFontSize(11);
+            pdf.text('Attendance Summary:', 20, summaryY);
+            
+            pdf.setFontSize(14);
+            pdf.setTextColor(5, 150, 105);
+            pdf.text('Present:', 30, summaryY + 10);
+            pdf.text('{{ $presentCount }}', 80, summaryY + 10);
+            
+            pdf.setTextColor(220, 38, 38);
+            pdf.text('Absent:', 30, summaryY + 18);
+            pdf.text('{{ $absentCount }}', 80, summaryY + 18);
+            
+            pdf.setTextColor(217, 119, 6);
+            pdf.text('Late:', 30, summaryY + 26);
+            pdf.text('{{ $lateCount }}', 80, summaryY + 26);
+            
+            pdf.setTextColor(79, 70, 229);
+            pdf.text('Total Users:', 30, summaryY + 34);
+            pdf.text('{{ $totalUsers }}', 80, summaryY + 34);
+            
+            // Add attendance rate
+            pdf.setFontSize(11);
+            pdf.setTextColor(79, 70, 229);
+            pdf.text('Attendance Rate:', 120, summaryY + 10);
+            
+            pdf.setFontSize(16);
+            pdf.text('@if($totalUsers > 0){{ round(($presentCount / $totalUsers) * 100, 1) }}%@else0%@endif', 170, summaryY + 10);
+            
+            pdf.setFontSize(10);
+            pdf.setTextColor(102, 102, 102);
+            pdf.text('{{ $presentCount }} out of {{ $totalUsers }} users were present', 120, summaryY + 17);
+            
+            // Add the image
+            pdf.addImage(imgData, 'PNG', 10, summaryY + 45, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+            
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+            
+            // Download the PDF
+            pdf.save(`attendance_report_{{ \Carbon\Carbon::parse($date)->format('Y_m_d') }}.pdf`);
+            
+            // Show success message
+            alert('PDF file has been generated and downloaded successfully!');
+        });
+    });
 </script>
 @endpush
 @endsection

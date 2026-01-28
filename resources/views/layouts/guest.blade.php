@@ -17,7 +17,7 @@
     
     <style>
         :root {
-            --school-navy: #002147;
+            --school-navy: #271818;
             --heritage-gold: #D4AF37;
             --slate-grey: #708090;
             --crimson: #990000;
