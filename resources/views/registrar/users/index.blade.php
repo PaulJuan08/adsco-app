@@ -81,6 +81,11 @@
         <div class="card-header">
             <div class="card-title">All Users</div>
             <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--secondary);"></i>
+                    <input type="text" class="search-input" placeholder="Search users..." 
+                           style="padding: 8px 12px 8px 36px; border: 1px solid var(--border); border-radius: 6px; width: 200px;">
+                </div>
                 <a href="{{ route('registrar.users.create') }}" class="view-all" style="display: flex; align-items: center; gap: 6px;">
                     <i class="fas fa-plus-circle"></i>
                     Add User
@@ -119,7 +124,7 @@
         @else
         <!-- Users List -->
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse;" id="users-table">
                 <thead>
                     <tr style="background: #f9fafb; border-bottom: 2px solid var(--border);">
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Name</th>
@@ -177,14 +182,15 @@
                         </td>
                         <td style="padding: 16px;">
                             <div style="display: flex; gap: 8px;">
-                                <a href="{{ route('registrar.users.show', $user->id) }}" title="View" style="padding: 8px; background: #e0e7ff; color: var(--primary); border-radius: 6px; text-decoration: none;">
+                                <a href="{{ route('registrar.users.show', Crypt::encrypt($user->id)) }}" 
+                                title="View" style="padding: 8px; background: #e0e7ff; color: var(--primary); border-radius: 6px; text-decoration: none;">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ route('registrar.users.edit', $user->id) }}" title="Edit" style="padding: 8px; background: #f3f4f6; color: var(--secondary); border-radius: 6px; text-decoration: none;">
+                                <a href="{{ route('registrar.users.edit', Crypt::encrypt($user->id)) }}" title="Edit" style="padding: 8px; background: #f3f4f6; color: var(--secondary); border-radius: 6px; text-decoration: none;">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 @if(!$user->is_approved)
-                                <form action="{{ route('registrar.users.approve', $user->id) }}" method="POST" style="display: inline;">
+                                <form action="{{ route('registrar.users.approve', Crypt::encrypt($user->id)) }}" method="POST" style="display: inline;">
                                     @csrf
                                     <button type="submit" title="Approve" 
                                             onclick="return confirm('Are you sure you want to approve this user?')"
@@ -270,15 +276,24 @@
                         <div style="font-size: 0.75rem; color: var(--secondary);">Create teacher or student</div>
                     </div>
                 </a>
-                <a href="#" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                <button id="print-report" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
                     <div style="width: 36px; height: 36px; background: #fce7f3; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #db2777;">
                         <i class="fas fa-file-export"></i>
                     </div>
                     <div>
-                        <div style="font-weight: 500;">Export Users</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">Download as CSV</div>
+                        <div style="font-weight: 500;">Print/Export Users</div>
+                        <div style="font-size: 0.75rem; color: var(--secondary);">Print user list or export as CSV</div>
                     </div>
-                </a>
+                </button>
+                <button id="export-csv" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s; border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <div style="width: 36px; height: 36px; background: #dcfce7; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--success);">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 500;">Download CSV</div>
+                        <div style="font-size: 0.75rem; color: var(--secondary);">Export user data as CSV file</div>
+                    </div>
+                </button>
             </div>
         </div>
         
@@ -326,8 +341,261 @@
     </div>
 </div>
 
+<!-- Hidden Print Content -->
+<div id="print-content" style="display: none;">
+    <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #4f46e5; margin-bottom: 5px;">ADSCO Users Report - Registrar</h1>
+            <p style="color: #666; margin-bottom: 5px;">Generated on {{ now()->format('F d, Y h:i A') }}</p>
+            <p style="color: #666; margin-bottom: 10px;">Generated by: {{ Auth::user()->f_name }} {{ Auth::user()->l_name }} (Registrar)</p>
+            <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin-bottom: 10px;">User Statistics Summary</h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 5px;">{{ $totalTeachers }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Total Teachers</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #0369a1; margin-bottom: 5px;">{{ $totalStudents }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Total Students</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #d97706; margin-bottom: 5px;">{{ $pendingApprovals }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Pending Approvals</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px;">{{ $approvedUsers }}</div>
+                    <div style="font-size: 14px; color: #6b7280;">Approved Users</div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 style="color: #333; margin-bottom: 15px;">Users List</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Name</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Role</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Email</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">ID</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Status</th>
+                    <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Created Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($users as $user)
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->f_name }} {{ $user->l_name }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                        @if($user->role == 3)
+                            Teacher
+                        @else
+                            Student
+                        @endif
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->email }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->role == 3 ? $user->employee_id : $user->student_id }}</td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                        @if($user->is_approved)
+                            <span style="color: #059669; font-weight: 500;">Approved</span>
+                        @else
+                            <span style="color: #d97706; font-weight: 500;">Pending</span>
+                        @endif
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $user->created_at->format('M d, Y') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px;">
+                Total Users: {{ $users->total() }} | 
+                Generated by: {{ Auth::user()->f_name }} {{ Auth::user()->l_name }} | 
+                Page 1 of 1
+            </p>
+        </div>
+    </div>
+</div>
+
 <!-- Footer -->
 <div class="footer">
     © {{ date('Y') }} ADSCO. All rights reserved. Version 1.0.0
 </div>
+
+@push('scripts')
+<script>
+    // Search functionality
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:nth-child(1) div:nth-child(2) div:nth-child(1)').textContent.toLowerCase();
+                const email = row.querySelector('td:nth-child(3) span').textContent.toLowerCase();
+                const id = row.querySelector('td:nth-child(4) span').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || email.includes(searchTerm) || id.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Print functionality
+    document.getElementById('print-report')?.addEventListener('click', function() {
+        // Get the print content
+        const printContent = document.getElementById('print-content').innerHTML;
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Users Report - Registrar</title>
+                <style>
+                    @media print {
+                        @page {
+                            size: landscape;
+                            margin: 0.5in;
+                        }
+                        body {
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        table {
+                            page-break-inside: auto;
+                        }
+                        tr {
+                            page-break-inside: avoid;
+                            page-break-after: auto;
+                        }
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1, h2, h3 {
+                        margin-top: 0;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 12px;
+                    }
+                    th {
+                        background-color: #f3f4f6 !important;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    td, th {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                    }
+                    .summary-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 15px;
+                        margin-bottom: 20px;
+                    }
+                    .summary-item {
+                        background: #f9fafb;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border: 1px solid #e5e7eb;
+                        text-align: center;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 100);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    });
+
+    // Export to CSV functionality
+    document.getElementById('export-csv')?.addEventListener('click', function() {
+        // Get table data
+        const table = document.getElementById('users-table');
+        const rows = table.querySelectorAll('tr');
+        const csv = [];
+        
+        // Add headers (excluding the Actions column)
+        const headers = [];
+        table.querySelectorAll('thead th').forEach(th => {
+            if (!th.textContent.includes('Actions')) {
+                headers.push(th.textContent.trim());
+            }
+        });
+        csv.push(headers.join(','));
+        
+        // Add data rows
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const cells = [];
+            const columns = row.querySelectorAll('td');
+            
+            // Name
+            const nameDiv = columns[0].querySelector('div:nth-child(2) div:nth-child(1)');
+            cells.push(`"${nameDiv ? nameDiv.textContent.trim() : ''}"`);
+            
+            // Role
+            const roleSpan = columns[1].querySelector('span');
+            cells.push(`"${roleSpan ? roleSpan.textContent.trim() : ''}"`);
+            
+            // Email
+            const emailSpan = columns[2].querySelector('span');
+            cells.push(`"${emailSpan ? emailSpan.textContent.trim() : ''}"`);
+            
+            // ID
+            const idSpan = columns[3].querySelector('span');
+            cells.push(`"${idSpan ? idSpan.textContent.trim() : ''}"`);
+            
+            // Status
+            const statusSpan = columns[4].querySelector('span');
+            cells.push(`"${statusSpan ? statusSpan.textContent.trim() : ''}"`);
+            
+            // Created Date (add if available in your data)
+            // For now, adding placeholder or we can add it if the data is available
+            cells.push(`"{{ \Carbon\Carbon::now()->format('Y-m-d') }}"`);
+            
+            csv.push(cells.join(','));
+        });
+        
+        // Create and download CSV file
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `registrar_users_export_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        alert('CSV file has been downloaded successfully!');
+    });
+</script>
+@endpush
 @endsection

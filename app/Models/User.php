@@ -82,7 +82,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
             ->withPivot(['status', 'enrolled_at'])
-            ->withTimestamps(['created_at']); // Only include created_at if it exists
+            ->withTimestamps(); // Only include created_at if it exists
     }
     
     // Helper Methods
