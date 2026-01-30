@@ -1,39 +1,40 @@
 <?php
 
+// app/Models/Quiz.php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Quiz extends Model
 {
     use HasFactory;
 
-    protected $table = 'quizzes';
-    
     protected $fillable = [
-        'course_id',
         'title',
         'description',
-        'duration',
-        'passing_score',
-        'max_attempts',
         'is_published',
+        'duration',
+        'total_questions',
+        'passing_score',
+        'points_per_question', 
         'available_from',
         'available_until',
     ];
 
     protected $casts = [
-        'duration' => 'integer',
-        'passing_score' => 'integer',
-        'max_attempts' => 'integer',
         'is_published' => 'boolean',
         'available_from' => 'datetime',
         'available_until' => 'datetime',
     ];
 
-    public function course()
+    public function questions()
     {
-        return $this->belongsTo(Course::class);
+        return $this->hasMany(QuizQuestion::class)->orderBy('order');
+    }
+
+    public function attempts()
+    {
+        return $this->hasMany(QuizAttempt::class);
     }
 }

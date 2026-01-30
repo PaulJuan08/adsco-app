@@ -59,9 +59,14 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             'assignments' => 'encryptedId'
         ]);
         
+        // Quiz routes - ONLY submit route
+        Route::post('quizzes/{encryptedId}/submit', [AdminQuizController::class, 'submit'])->name('admin.quizzes.submit');
+        
+        // Resource route (exclude submit since we defined it above)
         Route::resource('quizzes', AdminQuizController::class)->parameters([
             'quizzes' => 'encryptedId'
-        ]);
+        ])->except(['submit']);
+        
         
         Route::post('/users/{encryptedId}/approve', [AdminUserController::class, 'approve'])->name('users.approve');
         
@@ -106,9 +111,12 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             'assignments' => 'encryptedId'
         ]);
         
+        // Quiz routes for teacher - ONLY submit route
+        Route::post('quizzes/{encryptedId}/submit', [TeacherQuizController::class, 'submit'])->name('teacher.quizzes.submit');
+        
         Route::resource('quizzes', TeacherQuizController::class)->parameters([
             'quizzes' => 'encryptedId'
-        ]);
+        ])->except(['submit']);
         
         // Progress routes
         Route::get('/progress', [TeacherProgressController::class, 'index'])->name('progress.index');
@@ -131,9 +139,11 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/assignments', [StudentAssignmentController::class, 'index'])->name('assignments.index');
         Route::get('/assignments/{encryptedId}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
         
+        // Student quiz routes - ONLY submit route
+        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('student.quizzes.submit');
+        
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
         Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
-        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
         
         Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
         Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
