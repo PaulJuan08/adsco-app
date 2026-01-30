@@ -6,17 +6,21 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
-use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
-use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\TopicController as AdminTopicController;
+use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController;
+use App\Http\Controllers\Admin\QuizController as AdminQuizController;
 use App\Http\Controllers\Registrar\UserController as RegistrarUserController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\Teacher\TopicController as TeacherTopicController;
+use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
 use App\Http\Controllers\Teacher\QuizController as TeacherQuizController;
 use App\Http\Controllers\Teacher\ProgressController as TeacherProgressController;
-use App\Http\Controllers\Teacher\AttendanceController as TeacherAttendanceController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
+use App\Http\Controllers\Student\TopicController as StudentTopicController;
+use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
+use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Student\ProgressController as StudentProgressController;
-use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 
 // Public routes
 Route::get('/', function () {
@@ -39,18 +43,43 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Admin routes
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
-        // Update resource routes to use encryptedId
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'encryptedId'
         ]);
         
-        Route::resource('courses', AdminCourseController::class);
-        Route::get('/attendance', [AdminAttendanceController::class, 'index'])->name('attendance');
-        Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs');
+        Route::resource('courses', AdminCourseController::class)->parameters([
+            'courses' => 'encryptedId'
+        ]);
+        
+        Route::resource('topics', AdminTopicController::class)->parameters([
+            'topics' => 'encryptedId'
+        ]);
+        
+        Route::resource('assignments', AdminAssignmentController::class)->parameters([
+            'assignments' => 'encryptedId'
+        ]);
+        
+        Route::resource('quizzes', AdminQuizController::class)->parameters([
+            'quizzes' => 'encryptedId'
+        ]);
+        
         Route::post('/users/{encryptedId}/approve', [AdminUserController::class, 'approve'])->name('users.approve');
+        
+        // Add these topic management routes for courses
+        Route::get('/courses/{encryptedId}/available-topics', [AdminCourseController::class, 'availableTopics'])
+            ->name('courses.availableTopics');
+        
+        Route::post('/courses/{encryptedId}/add-topic', [AdminCourseController::class, 'addTopic'])
+            ->name('courses.addTopic');
+        
+        Route::post('/courses/{encryptedId}/add-topics', [AdminCourseController::class, 'addTopics'])
+            ->name('courses.addTopics');
+        
+        Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])
+            ->name('courses.removeTopic');
     });
     
-    // Registrar routes - UPDATED to use {encryptedId}
+    // Registrar routes
     Route::prefix('registrar')->name('registrar.')->middleware(['role:registrar'])->group(function () {
         Route::get('/users', [RegistrarUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [RegistrarUserController::class, 'create'])->name('users.create');
@@ -64,22 +93,64 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Teacher routes
     Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
-        Route::resource('courses', TeacherCourseController::class);
-        Route::resource('quizzes', TeacherQuizController::class);
+        // Main resource routes
+        Route::resource('courses', TeacherCourseController::class)->parameters([
+            'courses' => 'encryptedId'
+        ]);
+        
+        Route::resource('topics', TeacherTopicController::class)->parameters([
+            'topics' => 'encryptedId'
+        ]);
+        
+        Route::resource('assignments', TeacherAssignmentController::class)->parameters([
+            'assignments' => 'encryptedId'
+        ]);
+        
+        Route::resource('quizzes', TeacherQuizController::class)->parameters([
+            'quizzes' => 'encryptedId'
+        ]);
+        
+        // Progress routes
         Route::get('/progress', [TeacherProgressController::class, 'index'])->name('progress.index');
-        Route::get('/attendance', [TeacherAttendanceController::class, 'index'])->name('attendance');
+        
+        // Enrollments route
+        Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
     });
     
     // Student routes
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
-        Route::post('/courses/{course}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
+        
+        Route::resource('courses', StudentCourseController::class)->parameters([
+            'courses' => 'encryptedId'
+        ]);
+        
+        Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');
+        Route::get('/topics/{encryptedId}', [StudentTopicController::class, 'show'])->name('topics.show');
+        
+        Route::get('/assignments', [StudentAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{encryptedId}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
+        
+        Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
+        Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
+        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
+        
+        Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
         Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
-        Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance');
+        
+        // Additional student routes
+        Route::get('/timetable', function() {
+            return view('student.timetable');
+        })->name('timetable');
+        Route::get('/grades', function() {
+            return view('student.grades');
+        })->name('grades');
+        
+        // Course specific routes
+        Route::get('/course/{encryptedId}', [StudentCourseController::class, 'show'])->name('course.show');
     });
 
-    // Profile routes - REMOVED DUPLICATES
+    // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

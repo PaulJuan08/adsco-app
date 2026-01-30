@@ -5,32 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Quiz extends Model
+class Assignment extends Model
 {
     use HasFactory;
 
-    protected $table = 'quizzes';
-    
     protected $fillable = [
         'course_id',
+        'topic_id',
         'title',
         'description',
-        'duration',
-        'passing_score',
-        'max_attempts',
+        'instructions',
+        'due_date',
+        'points',
+        'attachment',
         'is_published',
         'available_from',
         'available_until',
     ];
 
     protected $casts = [
-        'duration' => 'integer',
-        'passing_score' => 'integer',
-        'max_attempts' => 'integer',
+        'due_date' => 'datetime',
+        'points' => 'integer',
         'is_published' => 'boolean',
         'available_from' => 'datetime',
         'available_until' => 'datetime',
     ];
+
+    public function topic()
+    {
+        return $this->belongsTo(Topic::class);
+    }
 
     public function course()
     {

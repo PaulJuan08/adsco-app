@@ -3,29 +3,29 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
-use App\Models\Quiz;
+use App\Models\Topic;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 
-class QuizController extends Controller
+class TopicController extends Controller
 {
     public function index()
     {
         $teacherId = Auth::id();
-        $quizzes = Quiz::whereHas('course', function($query) use ($teacherId) {
+        $topics = Topic::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })->with('course')->latest()->paginate(10);
         
-        return view('teacher.quizzes.index', compact('quizzes'));
+        return view('teacher.topics.index', compact('topics'));
     }
 
     public function create()
     {
         $teacherId = Auth::id();
         $courses = Course::where('teacher_id', $teacherId)->get();
-        return view('teacher.quizzes.create', compact('courses'));
+        return view('teacher.topics.create', compact('courses'));
     }
 
     public function store(Request $request)
@@ -35,13 +35,10 @@ class QuizController extends Controller
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'duration' => 'required|integer|min:1',
-            'passing_score' => 'required|integer|min:1|max:100',
-            'max_attempts' => 'required|integer|min:1',
+            'content' => 'required|string',
+            'order' => 'required|integer',
+            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
         // Verify teacher owns the course
@@ -49,10 +46,10 @@ class QuizController extends Controller
                        ->where('teacher_id', $teacherId)
                        ->firstOrFail();
 
-        Quiz::create($validated);
+        Topic::create($validated);
         
-        return redirect()->route('teacher.quizzes.index')
-            ->with('success', 'Quiz created successfully.');
+        return redirect()->route('teacher.topics.index')
+            ->with('success', 'Topic created successfully.');
     }
 
     public function show($encryptedId)
@@ -60,11 +57,11 @@ class QuizController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $quiz = Quiz::whereHas('course', function($query) use ($teacherId) {
+        $topic = Topic::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })->with('course')->findOrFail($id);
         
-        return view('teacher.quizzes.show', compact('quiz'));
+        return view('teacher.topics.show', compact('topic'));
     }
 
     public function edit($encryptedId)
@@ -72,12 +69,12 @@ class QuizController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $quiz = Quiz::whereHas('course', function($query) use ($teacherId) {
+        $topic = Topic::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })->findOrFail($id);
         
         $courses = Course::where('teacher_id', $teacherId)->get();
-        return view('teacher.quizzes.edit', compact('quiz', 'courses'));
+        return view('teacher.topics.edit', compact('topic', 'courses'));
     }
 
     public function update(Request $request, $encryptedId)
@@ -85,26 +82,23 @@ class QuizController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $quiz = Quiz::whereHas('course', function($query) use ($teacherId) {
+        $topic = Topic::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })->findOrFail($id);
 
         $validated = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'duration' => 'required|integer|min:1',
-            'passing_score' => 'required|integer|min:1|max:100',
-            'max_attempts' => 'required|integer|min:1',
+            'content' => 'required|string',
+            'order' => 'required|integer',
+            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
-        $quiz->update($validated);
+        $topic->update($validated);
         
-        return redirect()->route('teacher.quizzes.index')
-            ->with('success', 'Quiz updated successfully.');
+        return redirect()->route('teacher.topics.index')
+            ->with('success', 'Topic updated successfully.');
     }
 
     public function destroy($encryptedId)
@@ -112,13 +106,13 @@ class QuizController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $quiz = Quiz::whereHas('course', function($query) use ($teacherId) {
+        $topic = Topic::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })->findOrFail($id);
         
-        $quiz->delete();
+        $topic->delete();
         
-        return redirect()->route('teacher.quizzes.index')
-            ->with('success', 'Quiz deleted successfully.');
+        return redirect()->route('teacher.topics.index')
+            ->with('success', 'Topic deleted successfully.');
     }
 }

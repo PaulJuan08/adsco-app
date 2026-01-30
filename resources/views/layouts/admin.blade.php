@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Dashboard')</title>
     
     <!-- Google Fonts -->
@@ -420,6 +421,63 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .user-avatar-small {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        /* Make sidebar-nav container flexible */
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        /* Adjust the sidebar container */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+        }
     </style>
     
     @stack('styles')
@@ -446,24 +504,56 @@
                     <i class="fas fa-book"></i>
                     <span>Courses</span>
                 </a>
-                <a href="{{ route('admin.attendance') }}" class="nav-item {{ request()->routeIs('admin.attendance') ? 'active' : '' }}">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Attendance</span>
+                <a href="{{ route('admin.topics.index') }}" class="nav-item {{ request()->routeIs('admin.topics.*') ? 'active' : '' }}">
+                    <i class="fas fa-list"></i>
+                    <span>Topics</span>
                 </a>
-                <a href="{{ route('admin.audit-logs') }}" class="nav-item {{ request()->routeIs('admin.audit-logs') ? 'active' : '' }}">
-                    <i class="fas fa-history"></i>
-                    <span>Audit Logs</span>
+                <!-- <a href="{{ route('admin.assignments.index') }}" class="nav-item {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
+                    <i class="fas fa-tasks"></i>
+                    <span>Assignments</span>
+                </a> -->
+                <a href="{{ route('admin.quizzes.index') }}" class="nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Quizzes</span>
                 </a>
-                <a href="{{ route('profile.edit') }}" class="nav-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                <!-- <a href="{{ route('profile.edit') }}" class="nav-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
                     <i class="fas fa-user-cog"></i>
                     <span>Profile</span>
-                </a>
+                </a> -->
             </nav>  
             
-            <button class="nav-item logout-btn" onclick="document.getElementById('logout-form').submit()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </button>
+            <!-- Add the sidebar-footer here -->
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar-small">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                   <div class="user-details">
+                        @php
+                            // Role mapping
+                            $roleMapping = [
+                                1 => 'Admin',
+                                2 => 'Registrar',
+                                3 => 'Teacher',
+                                4 => 'Student'
+                            ];
+                            
+                            // Get user and determine role text
+                            $user = Auth::user();
+                            $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
+                        @endphp
+                        
+                        <div class="user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
+                        <div class="user-role">{{ $roleText }}</div>
+                    </div>
+                </div>
+                
+                <button class="nav-item logout-btn" onclick="document.getElementById('logout-form').submit()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+            
             <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                 @csrf
             </form>
