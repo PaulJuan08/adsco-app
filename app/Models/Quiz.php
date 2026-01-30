@@ -17,7 +17,6 @@ class Quiz extends Model
         'duration',
         'total_questions',
         'passing_score',
-        'points_per_question', 
         'available_from',
         'available_until',
     ];
