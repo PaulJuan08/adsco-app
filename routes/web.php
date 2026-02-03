@@ -160,37 +160,47 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Student routes
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
+        // Dashboard
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [StudentDashboardController::class, 'profile'])->name('profile');
+        Route::post('/profile', [StudentDashboardController::class, 'updateProfile'])->name('profile.update');
         
-        Route::resource('courses', StudentCourseController::class)->parameters([
-            'courses' => 'encryptedId'
-        ]);
+        // Courses
+        Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
+        Route::post('/courses/{course}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
+        Route::get('/courses/{encryptedId}', [StudentCourseController::class, 'show'])->name('courses.show');
+        Route::get('/courses/{encryptedId}/topics', [StudentCourseController::class, 'topics'])->name('courses.topics');
+        Route::get('/courses/{encryptedId}/topics/{encryptedTopicId}', [StudentCourseController::class, 'showTopic'])->name('courses.topic.show');
+        Route::get('/courses/{encryptedId}/materials', [StudentCourseController::class, 'materials'])->name('courses.materials');
+        Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
         
-        Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');
-        Route::get('/topics/{encryptedId}', [StudentTopicController::class, 'show'])->name('topics.show');
-        
-        Route::get('/assignments', [StudentAssignmentController::class, 'index'])->name('assignments.index');
-        Route::get('/assignments/{encryptedId}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
-        
-        // Student quiz routes - ONLY submit route
-        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
-        
+        // Quizzes
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
         Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
-        
-        Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
-        Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
+        Route::get('/quizzes/{encryptedId}/instructions', [StudentQuizController::class, 'instructions'])->name('quizzes.instructions');
+        Route::get('/quizzes/{encryptedId}/take', [StudentQuizController::class, 'take'])->name('quizzes.take');
+        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
+        Route::get('/quizzes/{encryptedId}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
+        Route::get('/quizzes/attempts', [StudentQuizController::class, 'attempts'])->name('quizzes.attempts');
         
         // Additional student routes
         Route::get('/timetable', function() {
             return view('student.timetable');
         })->name('timetable');
+        
         Route::get('/grades', function() {
             return view('student.grades');
         })->name('grades');
         
-        // Course specific routes
-        Route::get('/course/{encryptedId}', [StudentCourseController::class, 'show'])->name('course.show');
+        Route::get('/attendance', function() {
+            return view('student.attendance');
+        })->name('attendance');
+        
+        Route::get('/assignments', function() {
+            return view('student.assignments');
+        })->name('assignments');
+        
+        Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
     });
 
     // Profile routes

@@ -197,4 +197,11 @@ class Course extends Model
         $diff = $this->start_date->diffInDays($this->end_date);
         return ceil($diff / 7);
     }
+
+    // Add this method to get enrolled students count
+    public function getEnrolledStudentsCountAttribute()
+    {
+        return $this->enrollments()->count();
+    }
+
 }

@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\Topic;
 use App\Models\Assignment;
 use App\Models\Quiz;
+use Illuminate\Support\Facades\Crypt;
 
 class DashboardController extends Controller
 {
@@ -137,13 +138,65 @@ class DashboardController extends Controller
             ->pluck('course_id')
             ->toArray();
         
-        // Topics are standalone, not tied to courses
-        $studentTopics = Topic::where('is_published', 1)
+        // Get enrolled courses
+        $enrolledCourses = Enrollment::where('student_id', $studentId)
+            ->with(['course.teacher'])
+            ->where('status', 'active')
+            ->get();
+        
+        // Get available courses (not enrolled yet)
+        $availableCourses = Course::where('is_published', true)
+            ->whereNotIn('id', $enrolledCourseIds)
+            ->with('teacher')
+            ->orderBy('title')
+            ->limit(3)
+            ->get();
+        
+        // Get available quizzes (all published quizzes since no course relationship)
+        $availableQuizzes = Quiz::where('is_published', true)
+            ->where(function($query) {
+                $query->whereNull('available_until')
+                    ->orWhere('available_until', '>', now());
+            })
+            ->where(function($query) {
+                $query->whereNull('available_from')
+                    ->orWhere('available_from', '<=', now());
+            })
+            ->orderBy('available_from', 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Calculate statistics
+        $completedCourses = Enrollment::where('student_id', $studentId)
+            ->where('status', 'completed')
+            ->count();
+        
+        $averageGrade = Enrollment::where('student_id', $studentId)
+            ->whereNotNull('grade')
+            ->avg('grade') ?? 0;
+        
+        $totalEnrolled = $enrolledCourses->count();
+        $availableQuizzesCount = $availableQuizzes->count();
+        
+        // Get upcoming quizzes (for next 7 days)
+        $upcomingQuizzes = Quiz::where('is_published', true)
+            ->where('available_from', '>', now())
+            ->where('available_from', '<=', now()->addDays(7))
+            ->orderBy('available_from')
+            ->limit(3)
+            ->get();
+        
+        // Get recent attendance (if you have attendance model)
+        $recentAttendance = collect([]); // Empty collection for now
+        
+        // Get recent topics (for enrolled courses if topics had course relationship)
+        // Since topics are standalone, get all published topics
+        $recentTopics = Topic::where('is_published', 1)
             ->latest()
             ->take(5)
             ->get();
         
-        // Assignments have course relationship (based on your code)
+        // Get assignments for enrolled courses
         $studentAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
             ->where('is_published', 1)
             ->with('course')
@@ -151,38 +204,26 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
         
-        // FIXED: Quizzes don't have course relationship in your model
-        // If quizzes are meant to be standalone, show all quizzes
-        $studentQuizzes = Quiz::where('is_published', 1)
-            ->latest()
-            ->take(5)
-            ->get();
-        
-        // Count assignments from enrolled courses
-        $totalAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
-            ->where('is_published', 1)
-            ->count();
-        
-        // Count all quizzes (since they're standalone)
-        $totalQuizzes = Quiz::where('is_published', 1)->count();
-        
         $data = [
-            'enrolledCourses' => Enrollment::where('student_id', $studentId)
-                ->with(['course.teacher'])
-                ->where('status', 'active')
-                ->get(),
-            'completedCourses' => Enrollment::where('student_id', $studentId)
-                ->where('status', 'completed')
-                ->count(),
-            'averageGrade' => Enrollment::where('student_id', $studentId)
-                ->whereNotNull('grade')
-                ->avg('grade') ?? 0,
-            'totalTopics' => Topic::where('is_published', 1)->count(),
-            'totalAssignments' => $totalAssignments,
-            'totalQuizzes' => $totalQuizzes, // Changed: all quizzes
-            'studentTopics' => $studentTopics,
+            // Main variables for your dashboard view
+            'enrolledCourses' => $enrolledCourses,
+            'availableCourses' => $availableCourses,
+            'availableQuizzes' => $availableQuizzes,
+            'availableQuizzesCount' => $availableQuizzesCount,
+            'completedCourses' => $completedCourses,
+            'averageGrade' => $averageGrade,
+            'totalEnrolled' => $totalEnrolled,
+            'recentAttendance' => $recentAttendance,
+            'upcomingQuizzes' => $upcomingQuizzes,
+            
+            // Keep old variables for compatibility with other parts of the view
+            'studentTopics' => $recentTopics,
             'studentAssignments' => $studentAssignments,
-            'studentQuizzes' => $studentQuizzes,
+            'studentQuizzes' => $availableQuizzes, // Same as available quizzes
+            'totalTopics' => Topic::where('is_published', 1)->count(),
+            'totalAssignments' => Assignment::whereIn('course_id', $enrolledCourseIds)
+                ->where('is_published', 1)->count(),
+            'totalQuizzes' => Quiz::where('is_published', 1)->count(),
         ];
         
         return view('student.dashboard', $data);

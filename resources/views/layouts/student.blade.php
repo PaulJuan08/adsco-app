@@ -506,26 +506,10 @@
                     <i class="fas fa-book"></i>
                     <span>My Courses</span>
                 </a>
-                <a href="{{ route('student.attendance') }}" class="nav-item {{ request()->routeIs('student.attendance') ? 'active' : '' }}">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Attendance</span>
-                </a>
-                <a href="{{ route('student.quizzes') }}" class="nav-item {{ request()->routeIs('student.quizzes') ? 'active' : '' }}">
+                <a href="{{ route('student.quizzes.index') }}" class="nav-item {{ request()->routeIs('student.quizzes') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check"></i>
                     <span>Quizzes</span>
                 </a>
-                <!-- <a href="{{ route('student.grades') }}" class="nav-item {{ request()->routeIs('student.grades') ? 'active' : '' }}">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Grades</span>
-                </a> -->
-                <a href="{{ route('student.assignments') }}" class="nav-item {{ request()->routeIs('student.assignments') ? 'active' : '' }}">
-                    <i class="fas fa-tasks"></i>
-                    <span>Assignments</span>
-                </a>
-                <!-- <a href="{{ route('student.timetable') }}" class="nav-item {{ request()->routeIs('student.timetable') ? 'active' : '' }}">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Timetable</span>
-                </a> -->
             </nav>  
             
             <div class="sidebar-footer">

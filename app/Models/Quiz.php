@@ -1,6 +1,5 @@
 <?php
 
-// app/Models/Quiz.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +18,7 @@ class Quiz extends Model
         'passing_score',
         'available_from',
         'available_until',
+        'course_id', // Add this if quizzes are course-specific
     ];
 
     protected $casts = [
@@ -35,5 +35,40 @@ class Quiz extends Model
     public function attempts()
     {
         return $this->hasMany(QuizAttempt::class);
+    }
+    
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
+    
+    /**
+     * Check if quiz is available
+     */
+    public function isAvailable()
+    {
+        $now = now();
+        
+        if ($this->available_from && $this->available_from > $now) {
+            return false;
+        }
+        
+        if ($this->available_until && $this->available_until < $now) {
+            return false;
+        }
+        
+        return $this->is_published;
+    }
+    
+    /**
+     * Get time remaining
+     */
+    public function getTimeRemainingAttribute()
+    {
+        if (!$this->available_until) {
+            return null;
+        }
+        
+        return now()->diffInMinutes($this->available_until, false);
     }
 }
