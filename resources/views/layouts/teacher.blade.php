@@ -10,9 +10,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <!-- Font Awesome CDN ONLY - with proper attributes -->
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer">
+          
     <style>
         :root {
             --primary: #4f46e5;
@@ -116,6 +120,7 @@
             border: none;
             width: 100%;
             text-align: left;
+            cursor: pointer;
         }
         
         .logout-btn:hover {
@@ -512,7 +517,11 @@
             <div class="sidebar-footer">
                 <div class="user-profile">
                     <div class="user-avatar-small">
-                        <i class="fas fa-user-circle"></i>
+                        @if(Auth::check())
+                            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
+                        @else
+                            <i class="fas fa-user-circle"></i>
+                        @endif
                     </div>
                     <div class="user-details">
                         @php

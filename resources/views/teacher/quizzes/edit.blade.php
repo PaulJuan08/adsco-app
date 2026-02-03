@@ -105,17 +105,6 @@
                                placeholder="70"
                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
                     </div>
-                    
-                    <div>
-                        <label for="points_per_question" class="form-label">Default Points per Question</label>
-                        <input type="number" 
-                               id="points_per_question" 
-                               name="points_per_question" 
-                               value="{{ old('points_per_question', 1) }}"
-                               min="1"
-                               placeholder="1"
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
-                    </div>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
@@ -146,96 +135,146 @@
                 </h3>
                 
                 <div id="questions-list">
-                    <!-- Questions will be populated by JavaScript -->
+                    @foreach($quiz->questions as $questionIndex => $question)
+                    <div class="question-card" data-question-id="{{ $question->id }}" style="margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--dark);">Question {{ $loop->iteration }}</h4>
+                            <button type="button" class="remove-question-btn" style="padding: 4px 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" name="questions[{{ $questionIndex }}][id]" value="{{ $question->id }}">
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label class="form-label">Question Text *</label>
+                            <textarea name="questions[{{ $questionIndex }}][question]"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the question..."
+                                      style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;">{{ old('questions.' . $questionIndex . '.question', $question->question) }}</textarea>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label class="form-label">Explanation (Optional)</label>
+                            <textarea name="questions[{{ $questionIndex }}][explanation]"
+                                      rows="2"
+                                      placeholder="Add explanation for the correct answer..."
+                                      style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;">{{ old('questions.' . $questionIndex . '.explanation', $question->explanation) }}</textarea>
+                        </div>
+                        
+                        <div class="options-container" style="margin-top: 1rem;">
+                            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">
+                                Options (Select one as correct answer)
+                            </h5>
+                            <div class="options-list">
+                                @foreach($question->options as $optionIndex => $option)
+                                <div class="option-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 6px;">
+                                    <input type="hidden" name="questions[{{ $questionIndex }}][options][{{ $optionIndex }}][id]" value="{{ $option->id }}">
+                                    <input type="radio" 
+                                           name="questions[{{ $questionIndex }}][correct_answer]"
+                                           value="{{ $optionIndex }}"
+                                           {{ $option->is_correct ? 'checked' : '' }}>
+                                    <input type="text" 
+                                           name="questions[{{ $questionIndex }}][options][{{ $optionIndex }}][option_text]"
+                                           value="{{ old('questions.' . $questionIndex . '.options.' . $optionIndex . '.option_text', $option->option_text) }}"
+                                           placeholder="Enter option text"
+                                           required
+                                           style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;">
+                                    <button type="button" 
+                                            class="remove-option-btn"
+                                            style="padding: 4px 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                @endforeach
+                            </div>
+                            
+                            <button type="button" 
+                                    class="add-option-btn"
+                                    style="margin-top: 0.5rem; padding: 8px 16px; background: #e0e7ff; color: var(--primary); border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+                                <i class="fas fa-plus"></i> Add Option
+                            </button>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
                 
                 <button type="button" 
                         id="add-question-btn"
                         style="margin-top: 1rem; padding: 10px 20px; background: #f3f4f6; color: var(--dark); border: 1px dashed var(--border); border-radius: 6px; width: 100%; cursor: pointer; font-weight: 500;">
-                    <i class="fas fa-plus-circle"></i> Add Question
+                    <i class="fas fa-plus-circle"></i> Add New Question
                 </button>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                <form action="{{ route('teacher.quizzes.destroy', Crypt::encrypt($quiz->id)) }}" method="POST" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" 
-                            onclick="return confirm('Are you sure you want to delete this quiz? This action cannot be undone.')"
-                            style="padding: 10px 20px; background: transparent; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-trash"></i> Delete Quiz
-                    </button>
-                </form>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <a href="{{ route('teacher.quizzes.show', Crypt::encrypt($quiz->id)) }}" 
-                       style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-times"></i> Cancel
-                    </a>
-                    <button type="submit" 
-                            style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-save"></i> Update Quiz
-                    </button>
-                </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                <a href="{{ route('teacher.quizzes.show', Crypt::encrypt($quiz->id)) }}" 
+                   style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                <button type="submit" 
+                        style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-save"></i> Update Quiz
+                </button>
             </div>
         </form>
+        
+        <!-- DELETE FORM -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 1rem; font-weight: 600; color: var(--danger); margin-bottom: 1rem;">
+                <i class="fas fa-exclamation-triangle"></i> Danger Zone
+            </h3>
+            <form action="{{ route('teacher.quizzes.destroy', Crypt::encrypt($quiz->id)) }}" method="POST" id="delete-form">
+                @csrf
+                @method('DELETE')
+                <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
+                    Once you delete a quiz, there is no going back. Please be certain.
+                </p>
+                <button type="button" 
+                        onclick="if(confirm('Are you sure?')) this.form.submit();"
+                        style="padding: 10px 20px; background: transparent; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-trash"></i> Delete Quiz
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
-<template id="question-template">
-    <div class="question-card" style="margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc;">
+<!-- Template for NEW question (only used for adding NEW questions) -->
+<template id="new-question-template">
+    <div class="question-card" data-question-id="new" style="margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--dark);" class="question-title">Question <span class="question-number">1</span></h4>
+            <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--dark);" class="question-title">New Question</h4>
             <button type="button" class="remove-question-btn" style="padding: 4px 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
                 <i class="fas fa-trash"></i> Remove
             </button>
         </div>
         
-        <input type="hidden" class="question-id" name="questions[0][id]" value="">
+        <input type="hidden" class="question-id" name="" value="">
         
         <div style="margin-bottom: 1rem;">
             <label class="form-label">Question Text *</label>
-            <textarea name="questions[0][question]" 
-                      class="question-text"
+            <textarea class="question-text"
                       rows="3"
                       required
                       placeholder="Enter the question..."
                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;"></textarea>
         </div>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-            <div>
-                <label class="form-label">Question Type</label>
-                <select name="questions[0][type]" class="question-type" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
-                    <option value="single">Single Correct Answer</option>
-                    <option value="multiple">Multiple Correct Answers</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="form-label">Points</label>
-                <input type="number" 
-                       name="questions[0][points]" 
-                       class="question-points"
-                       value="1"
-                       min="1"
-                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
-            </div>
-        </div>
-        
         <div style="margin-bottom: 1rem;">
             <label class="form-label">Explanation (Optional)</label>
-            <textarea name="questions[0][explanation]" 
-                      class="question-explanation"
+            <textarea class="question-explanation"
                       rows="2"
                       placeholder="Add explanation for the correct answer..."
                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;"></textarea>
         </div>
         
         <div class="options-container" style="margin-top: 1rem;">
-            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">Options</h5>
+            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">
+                Options (Select one as correct answer)
+            </h5>
             <div class="options-list">
-                <!-- Options will be added here dynamically -->
+                <!-- Options will be added here -->
             </div>
             
             <button type="button" 
@@ -247,16 +286,12 @@
     </div>
 </template>
 
-<template id="option-template">
+<!-- Template for NEW option -->
+<template id="new-option-template">
     <div class="option-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 6px;">
-        <input type="hidden" class="option-id" name="questions[0][options][0][id]" value="">
-        <input type="checkbox" 
-               class="is-correct-checkbox"
-               name="questions[0][options][0][is_correct]"
-               value="1">
+        <input type="radio" class="is-correct-checkbox" name="" value="">
         <input type="text" 
                class="option-text"
-               name="questions[0][options][0][option_text]"
                placeholder="Enter option text"
                required
                style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;">
@@ -268,191 +303,86 @@
     </div>
 </template>
 
-<style>
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--dark);
-        font-size: 0.875rem;
-    }
-    
-    .card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--dark);
-        margin: 0;
-    }
-    
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    input, select, textarea {
-        transition: border-color 0.15s ease-in-out;
-    }
-    
-    input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    }
-</style>
-
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const questionsContainer = document.getElementById('questions-list');
         const addQuestionBtn = document.getElementById('add-question-btn');
-        const questionTemplate = document.getElementById('question-template');
-        const optionTemplate = document.getElementById('option-template');
+        const newQuestionTemplate = document.getElementById('new-question-template');
+        const newOptionTemplate = document.getElementById('new-option-template');
         
-        let questionCount = 0;
-        let optionCounts = {};
+        let questionCount = {{ $quiz->questions->count() }};
+        let newQuestionIndex = questionCount;
         
-        // Load existing questions
-        @foreach($quiz->questions as $question)
-            addExistingQuestion(@json($question));
-        @endforeach
-        
-        // If no questions, add one by default
-        if (questionCount === 0) {
-            addQuestion();
-        }
-        
-        // Add question button click event
-        addQuestionBtn.addEventListener('click', addQuestion);
-        
-        function addExistingQuestion(question) {
-            const questionClone = questionTemplate.content.cloneNode(true);
+        // Add new question button click event
+        addQuestionBtn.addEventListener('click', function() {
+            const questionClone = newQuestionTemplate.content.cloneNode(true);
             const questionCard = questionClone.querySelector('.question-card');
-            const questionNumber = questionCount + 1;
             
-            // Update question number
-            questionCard.querySelector('.question-number').textContent = questionNumber;
-            questionCard.querySelector('.question-id').value = question.id;
-            questionCard.querySelector('.question-text').value = question.question;
-            questionCard.querySelector('.question-type').value = question.type;
-            questionCard.querySelector('.question-points').value = question.points;
-            questionCard.querySelector('.question-explanation').value = question.explanation || '';
+            // Update input names for new question
+            const questionText = questionCard.querySelector('.question-text');
+            questionText.name = `questions[${newQuestionIndex}][question]`;
             
-            // Update all input names with current question count
-            const questionInputs = questionCard.querySelectorAll('[name]');
-            questionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]/, `questions[${questionCount}]`);
-                input.setAttribute('name', newName);
-            });
+            const questionExplanation = questionCard.querySelector('.question-explanation');
+            questionExplanation.name = `questions[${newQuestionIndex}][explanation]`;
+            
+            const questionIdInput = questionCard.querySelector('.question-id');
+            questionIdInput.name = `questions[${newQuestionIndex}][id]`;
+            questionIdInput.value = '';
             
             // Add remove question event
             const removeBtn = questionCard.querySelector('.remove-question-btn');
             removeBtn.addEventListener('click', function() {
-                questionCard.remove();
-                updateQuestionNumbers();
+                if (confirm('Remove this question?')) {
+                    questionCard.remove();
+                }
             });
             
             // Add option button event
             const addOptionBtn = questionCard.querySelector('.add-option-btn');
             addOptionBtn.addEventListener('click', function() {
-                addOption(questionCard, questionCount);
+                addNewOption(questionCard, newQuestionIndex);
             });
             
-            // Add question type change event
-            const questionType = questionCard.querySelector('.question-type');
-            questionType.addEventListener('change', function() {
-                updateOptionCheckboxes(questionCard, this.value);
-            });
-            
-            // Initialize option count for this question
-            optionCounts[questionCount] = 0;
-            
-            // Add existing options
-            question.options.forEach(option => {
-                addExistingOption(questionCard, questionCount, option);
-            });
-            
-            // Update option checkboxes based on question type
-            updateOptionCheckboxes(questionCard, question.type);
-            
-            // Append to questions list
-            questionsContainer.appendChild(questionCard);
-            questionCount++;
-        }
-        
-        function addQuestion() {
-            const questionClone = questionTemplate.content.cloneNode(true);
-            const questionCard = questionClone.querySelector('.question-card');
-            const questionNumber = questionCount + 1;
-            
-            // Update question number
-            questionCard.querySelector('.question-number').textContent = questionNumber;
-            
-            // Update all input names with current question count
-            const questionInputs = questionCard.querySelectorAll('[name]');
-            questionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]/, `questions[${questionCount}]`);
-                input.setAttribute('name', newName);
-            });
-            
-            // Add remove question event
-            const removeBtn = questionCard.querySelector('.remove-question-btn');
-            removeBtn.addEventListener('click', function() {
-                questionCard.remove();
-                updateQuestionNumbers();
-            });
-            
-            // Add option button event
-            const addOptionBtn = questionCard.querySelector('.add-option-btn');
-            addOptionBtn.addEventListener('click', function() {
-                addOption(questionCard, questionCount);
-            });
-            
-            // Add question type change event
-            const questionType = questionCard.querySelector('.question-type');
-            questionType.addEventListener('change', function() {
-                updateOptionCheckboxes(questionCard, this.value);
-            });
-            
-            // Initialize option count for this question
-            optionCounts[questionCount] = 0;
-            
-            // Add 4 options by default
+            // Add 4 default options for new question
             for (let i = 0; i < 4; i++) {
-                addOption(questionCard, questionCount);
+                addNewOption(questionCard, newQuestionIndex);
             }
             
             // Append to questions list
             questionsContainer.appendChild(questionCard);
-            questionCount++;
-        }
+            newQuestionIndex++;
+        });
         
-        function addExistingOption(questionCard, questionIndex, option) {
+        // Add new option function
+        function addNewOption(questionCard, qIndex) {
             const optionsList = questionCard.querySelector('.options-list');
-            const optionClone = optionTemplate.content.cloneNode(true);
+            const optionClone = newOptionTemplate.content.cloneNode(true);
             const optionItem = optionClone.querySelector('.option-item');
-            const optionCount = optionCounts[questionIndex];
             
-            // Update input names and values
-            const optionInputs = optionItem.querySelectorAll('[name]');
-            optionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]\[options\]\[\d+\]/, `questions[${questionIndex}][options][${optionCount}]`);
-                input.setAttribute('name', newName);
-                
-                if (input.classList.contains('option-id')) {
-                    input.value = option.id;
-                } else if (input.classList.contains('option-text')) {
-                    input.value = option.option_text;
-                } else if (input.classList.contains('is-correct-checkbox')) {
-                    input.checked = option.is_correct;
-                }
-            });
+            // Get current option count
+            const optionCount = optionsList.children.length;
+            
+            // Update radio button
+            const radio = optionItem.querySelector('.is-correct-checkbox');
+            radio.name = `questions[${qIndex}][correct_answer]`;
+            radio.value = optionCount;
+            
+            // Set first option as checked by default for new questions
+            if (optionCount === 0) {
+                radio.checked = true;
+            }
+            
+            // Update option text input
+            const optionText = optionItem.querySelector('.option-text');
+            optionText.name = `questions[${qIndex}][options][${optionCount}][option_text]`;
+            
+            // Add hidden ID input (empty for new options)
+            const optionIdInput = document.createElement('input');
+            optionIdInput.type = 'hidden';
+            optionIdInput.name = `questions[${qIndex}][options][${optionCount}][id]`;
+            optionIdInput.value = '';
+            optionItem.appendChild(optionIdInput);
             
             // Add remove option event
             const removeBtn = optionItem.querySelector('.remove-option-btn');
@@ -462,67 +392,63 @@
             
             // Append to options list
             optionsList.appendChild(optionItem);
-            optionCounts[questionIndex]++;
         }
         
-        function addOption(questionCard, questionIndex) {
-            const optionsList = questionCard.querySelector('.options-list');
-            const optionClone = optionTemplate.content.cloneNode(true);
-            const optionItem = optionClone.querySelector('.option-item');
-            const optionCount = optionCounts[questionIndex];
-            
-            // Update input names
-            const optionInputs = optionItem.querySelectorAll('[name]');
-            optionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]\[options\]\[\d+\]/, `questions[${questionIndex}][options][${optionCount}]`);
-                input.setAttribute('name', newName);
-            });
-            
-            // Add remove option event
-            const removeBtn = optionItem.querySelector('.remove-option-btn');
-            removeBtn.addEventListener('click', function() {
-                optionItem.remove();
-            });
-            
-            // Append to options list
-            optionsList.appendChild(optionItem);
-            optionCounts[questionIndex]++;
-            
-            // Update checkbox type based on question type
-            const questionType = questionCard.querySelector('.question-type').value;
-            updateOptionCheckboxes(questionCard, questionType);
-        }
-        
-        function updateOptionCheckboxes(questionCard, questionType) {
-            const checkboxes = questionCard.querySelectorAll('.is-correct-checkbox');
-            checkboxes.forEach(checkbox => {
-                if (questionType === 'multiple') {
-                    checkbox.type = 'checkbox';
-                    checkbox.name = checkbox.name.replace('is_correct', 'correct_options[]');
-                } else {
-                    checkbox.type = 'radio';
-                    checkbox.name = checkbox.name.replace(/\[\d+\]\[\d+\]/, `[${questionCard.dataset.index}][correct_answer]`);
+        // Add event listeners for existing remove buttons
+        document.querySelectorAll('.remove-question-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Remove this question?')) {
+                    this.closest('.question-card').remove();
                 }
             });
-        }
+        });
         
-        function updateQuestionNumbers() {
-            const questionCards = document.querySelectorAll('.question-card');
-            questionCards.forEach((card, index) => {
-                card.querySelector('.question-number').textContent = index + 1;
+        document.querySelectorAll('.remove-option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.option-item').remove();
+            });
+        });
+        
+        // Add option buttons for existing questions
+        document.querySelectorAll('.add-option-btn').forEach((btn, index) => {
+            btn.addEventListener('click', function() {
+                const questionCard = this.closest('.question-card');
+                const qIndex = index;
+                const optionsList = questionCard.querySelector('.options-list');
                 
-                // Update all input names
-                const questionInputs = card.querySelectorAll('[name]');
-                questionInputs.forEach(input => {
-                    const oldName = input.getAttribute('name');
-                    const newName = oldName.replace(/questions\[\d+\]/, `questions[${index}]`);
-                    input.setAttribute('name', newName);
+                // Get current option count
+                const optionCount = optionsList.children.length;
+                
+                // Create a new option item
+                const optionClone = newOptionTemplate.content.cloneNode(true);
+                const optionItem = optionClone.querySelector('.option-item');
+                
+                // Update radio button
+                const radio = optionItem.querySelector('.is-correct-checkbox');
+                radio.name = `questions[${qIndex}][correct_answer]`;
+                radio.value = optionCount;
+                
+                // Update option text input
+                const optionText = optionItem.querySelector('.option-text');
+                optionText.name = `questions[${qIndex}][options][${optionCount}][option_text]`;
+                
+                // Add hidden ID input (empty for new options added to existing questions)
+                const optionIdInput = document.createElement('input');
+                optionIdInput.type = 'hidden';
+                optionIdInput.name = `questions[${qIndex}][options][${optionCount}][id]`;
+                optionIdInput.value = '';
+                optionItem.appendChild(optionIdInput);
+                
+                // Add remove option event
+                const removeBtn = optionItem.querySelector('.remove-option-btn');
+                removeBtn.addEventListener('click', function() {
+                    optionItem.remove();
                 });
+                
+                // Append to options list
+                optionsList.appendChild(optionItem);
             });
-            
-            questionCount = questionCards.length;
-        }
+        });
         
         // Form validation
         document.getElementById('quiz-form').addEventListener('submit', function(e) {
@@ -534,28 +460,43 @@
                 return;
             }
             
-            // Check each question has at least 2 options
             let valid = true;
+            
             questionCards.forEach((card, index) => {
+                const questionText = card.querySelector('textarea[name$="[question]"]').value.trim();
+                if (!questionText) {
+                    valid = false;
+                    alert(`Question ${index + 1} must have text.`);
+                    return;
+                }
+                
                 const options = card.querySelectorAll('.option-item');
                 if (options.length < 2) {
                     valid = false;
                     alert(`Question ${index + 1} must have at least 2 options.`);
+                    return;
                 }
                 
-                // Check at least one correct option is selected
-                const questionType = card.querySelector('.question-type').value;
-                const checkedOptions = card.querySelectorAll('.is-correct-checkbox:checked');
-                if (checkedOptions.length === 0) {
-                    valid = false;
-                    alert(`Question ${index + 1} must have at least one correct answer.`);
+                const questionName = card.querySelector('textarea[name$="[question]"]').name;
+                const qIndexMatch = questionName.match(/questions\[(\d+)\]\[question\]/);
+                if (qIndexMatch) {
+                    const qIndex = qIndexMatch[1];
+                    const checkedRadio = document.querySelector(`input[name="questions[${qIndex}][correct_answer]"]:checked`);
+                    if (!checkedRadio) {
+                        valid = false;
+                        alert(`Question ${index + 1} must have a correct answer selected.`);
+                        return;
+                    }
                 }
                 
-                // For single answer questions, ensure only one is selected
-                if (questionType === 'single' && checkedOptions.length > 1) {
-                    valid = false;
-                    alert(`Question ${index + 1} can only have one correct answer.`);
-                }
+                options.forEach((option, optIndex) => {
+                    const optionText = option.querySelector('input[type="text"]').value.trim();
+                    if (!optionText) {
+                        valid = false;
+                        alert(`Question ${index + 1}, Option ${optIndex + 1} must have text.`);
+                        return;
+                    }
+                });
             });
             
             if (!valid) {

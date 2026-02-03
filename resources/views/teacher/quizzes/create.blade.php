@@ -41,7 +41,7 @@
             </div>
             @endif
             
-            <!-- Basic Quiz Info -->
+            <!-- Basic Quiz Info - SIMPLIFIED -->
             <div style="margin-bottom: 2rem;">
                 <h3 style="font-size: 1rem; font-weight: 600; color: var(--dark); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
                     Basic Information
@@ -119,16 +119,10 @@
                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;"></textarea>
         </div>
         
-        <div style="margin-bottom: 1rem;">
-            <label class="form-label">Question Type</label>
-            <select name="questions[0][type]" class="question-type" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
-                <option value="single">Single Correct Answer</option>
-                <option value="multiple">Multiple Correct Answers</option>
-            </select>
-        </div>
-        
         <div class="options-container" style="margin-top: 1rem;">
-            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">Options</h5>
+            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">
+                Options (Select one as correct answer)
+            </h5>
             <div class="options-list">
                 <!-- Options will be added here dynamically -->
             </div>
@@ -144,13 +138,12 @@
 
 <template id="option-template">
     <div class="option-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 6px;">
-        <input type="checkbox" 
+        <input type="hidden" class="option-id" value="">
+        <input type="radio" 
                class="is-correct-checkbox"
-               name="questions[0][options][0][is_correct]"
-               value="1">
+               value="0">
         <input type="text" 
                class="option-text"
-               name="questions[0][options][0][option_text]"
                placeholder="Enter option text"
                required
                style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;">
@@ -200,14 +193,13 @@
 
 @push('scripts')
 <script>
-    let questionCount = 0;
-    let optionCounts = {};
-    
     document.addEventListener('DOMContentLoaded', function() {
         const questionsContainer = document.getElementById('questions-list');
         const addQuestionBtn = document.getElementById('add-question-btn');
         const questionTemplate = document.getElementById('question-template');
         const optionTemplate = document.getElementById('option-template');
+        
+        let questionCount = 0;
         
         // Add first question by default
         addQuestion();
@@ -218,18 +210,18 @@
         function addQuestion() {
             const questionClone = questionTemplate.content.cloneNode(true);
             const questionCard = questionClone.querySelector('.question-card');
-            const questionNumber = questionCount + 1;
             
-            // Update question number
-            questionCard.querySelector('.question-number').textContent = questionNumber;
+            // Update question number display
+            questionCard.querySelector('.question-number').textContent = questionCount + 1;
+            
+            // Clear textarea for new question
+            const questionText = questionCard.querySelector('.question-text');
+            if (questionText) {
+                questionText.value = '';
+            }
             
             // Update all input names with current question count
-            const questionInputs = questionCard.querySelectorAll('[name]');
-            questionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]/, `questions[${questionCount}]`);
-                input.setAttribute('name', newName);
-            });
+            updateQuestionNames(questionCard, questionCount);
             
             // Add remove question event
             const removeBtn = questionCard.querySelector('.remove-question-btn');
@@ -244,16 +236,8 @@
                 addOption(questionCard, questionCount);
             });
             
-            // Add question type change event
-            const questionType = questionCard.querySelector('.question-type');
-            questionType.addEventListener('change', function() {
-                updateOptionCheckboxes(questionCard, this.value, questionCount);
-            });
-            
-            // Initialize option count for this question
-            optionCounts[questionCount] = 0;
-            
-            // Add 4 options by default
+            // Add 4 default options
+            const optionsList = questionCard.querySelector('.options-list');
             for (let i = 0; i < 4; i++) {
                 addOption(questionCard, questionCount);
             }
@@ -263,95 +247,142 @@
             questionCount++;
         }
         
+        function updateQuestionNames(questionCard, questionIndex) {
+            // Update question inputs
+            const questionInputs = questionCard.querySelectorAll('[name]');
+            questionInputs.forEach(input => {
+                let name = input.getAttribute('name');
+                name = name.replace(/questions\[0\]/, `questions[${questionIndex}]`);
+                input.setAttribute('name', name);
+            });
+            
+            // Update option names - THIS IS THE KEY FIX
+            const optionsList = questionCard.querySelector('.options-list');
+            const options = optionsList.querySelectorAll('.option-item');
+            
+            options.forEach((optionItem, optionIndex) => {
+                const optionInputs = optionItem.querySelectorAll('[name]');
+                optionInputs.forEach(input => {
+                    let name = input.getAttribute('name');
+                    
+                    // Replace question index
+                    name = name.replace(/questions\[0\]/, `questions[${questionIndex}]`);
+                    
+                    // Replace option index
+                    name = name.replace(/options\[0\]/, `options[${optionIndex}]`);
+                    
+                    // Update radio button value
+                    if (input.classList.contains('is-correct-checkbox')) {
+                        input.value = optionIndex;
+                    }
+                    
+                    input.setAttribute('name', name);
+                });
+            });
+        }
+        
         function addOption(questionCard, questionIndex) {
             const optionsList = questionCard.querySelector('.options-list');
             const optionClone = optionTemplate.content.cloneNode(true);
             const optionItem = optionClone.querySelector('.option-item');
-            const optionCount = optionCounts[questionIndex];
             
-            // Update input names
-            const optionInputs = optionItem.querySelectorAll('[name]');
-            optionInputs.forEach(input => {
-                const name = input.getAttribute('name');
-                const newName = name.replace(/questions\[\d+\]\[options\]\[\d+\]/, `questions[${questionIndex}][options][${optionCount}]`);
-                input.setAttribute('name', newName);
-            });
+            // Get current option count
+            const optionCount = optionsList.children.length;
+            
+            // Create unique names for this option
+            const optionIdInput = document.createElement('input');
+            optionIdInput.type = 'hidden';
+            optionIdInput.className = 'option-id';
+            optionIdInput.name = `questions[${questionIndex}][options][${optionCount}][id]`;
+            optionIdInput.value = '';
+            
+            const radioInput = optionItem.querySelector('.is-correct-checkbox');
+            radioInput.name = `questions[${questionIndex}][correct_answer]`;
+            radioInput.value = optionCount;
+            
+            const optionTextInput = optionItem.querySelector('.option-text');
+            optionTextInput.name = `questions[${questionIndex}][options][${optionCount}][option_text]`;
+            
+            // Replace the default inputs with our named ones
+            optionItem.querySelector('.option-id')?.replaceWith(optionIdInput);
+            optionItem.querySelector('.is-correct-checkbox')?.replaceWith(radioInput);
+            optionItem.querySelector('.option-text')?.replaceWith(optionTextInput);
+            
+            // Clear option text
+            optionTextInput.value = '';
             
             // Add remove option event
             const removeBtn = optionItem.querySelector('.remove-option-btn');
             removeBtn.addEventListener('click', function() {
                 optionItem.remove();
+                updateRadioButtonValues(questionCard, questionIndex);
             });
+            
+            // Set first option as checked by default
+            if (optionCount === 0) {
+                radioInput.checked = true;
+            }
             
             // Append to options list
             optionsList.appendChild(optionItem);
-            optionCounts[questionIndex]++;
-            
-            // Get current question type and update checkbox for this new option
-            const questionType = questionCard.querySelector('.question-type').value;
-            updateSingleOptionCheckbox(questionCard, questionType, questionIndex, optionCount - 1); // -1 because we just incremented
-            
-            // Also update all existing checkboxes to ensure consistency
-            updateOptionCheckboxes(questionCard, questionType, questionIndex);
         }
         
-        function updateSingleOptionCheckbox(questionCard, questionType, questionIndex, optionIndex) {
-            const checkboxes = questionCard.querySelectorAll('.is-correct-checkbox');
-            const checkbox = checkboxes[optionIndex];
+        function updateRadioButtonValues(questionCard, questionIndex) {
+            const optionsList = questionCard.querySelector('.options-list');
+            const options = optionsList.querySelectorAll('.option-item');
             
-            if (checkbox) {
-                if (questionType === 'multiple') {
-                    // For multiple choice: keep as checkbox
-                    checkbox.type = 'checkbox';
-                    checkbox.name = `questions[${questionIndex}][options][${optionIndex}][is_correct]`;
-                    checkbox.value = '1';
-                } else {
-                    // For single choice: change to radio
-                    checkbox.type = 'radio';
-                    checkbox.name = `questions[${questionIndex}][correct_answer]`;
-                    checkbox.value = optionIndex;
-                }
-            }
-        }
-        
-        function updateOptionCheckboxes(questionCard, questionType, questionIndex) {
-            const checkboxes = questionCard.querySelectorAll('.is-correct-checkbox');
-            const optionsList = questionCard.querySelectorAll('.option-item');
-            
-            checkboxes.forEach((checkbox, index) => {
-                if (questionType === 'multiple') {
-                    // For multiple choice: keep as checkbox
-                    checkbox.type = 'checkbox';
-                    checkbox.name = `questions[${questionIndex}][options][${index}][is_correct]`;
-                    checkbox.value = '1';
-                } else {
-                    // For single choice: change to radio
-                    checkbox.type = 'radio';
-                    checkbox.name = `questions[${questionIndex}][correct_answer]`;
-                    checkbox.value = index;
+            options.forEach((optionItem, index) => {
+                const radio = optionItem.querySelector('.is-correct-checkbox');
+                if (radio) {
+                    radio.value = index;
                 }
             });
         }
         
         function updateQuestionNumbers() {
             const questionCards = document.querySelectorAll('.question-card');
-            questionCards.forEach((card, index) => {
-                card.querySelector('.question-number').textContent = index + 1;
-                
-                // Update all input names
-                const questionInputs = card.querySelectorAll('[name]');
-                questionInputs.forEach(input => {
-                    const oldName = input.getAttribute('name');
-                    const newName = oldName.replace(/questions\[\d+\]/, `questions[${index}]`);
-                    input.setAttribute('name', newName);
-                });
-                
-                // Re-update checkbox types for this question
-                const questionType = card.querySelector('.question-type').value;
-                updateOptionCheckboxes(card, questionType, index);
-            });
-            
             questionCount = questionCards.length;
+            
+            questionCards.forEach((card, qIndex) => {
+                // Update display number
+                const questionNumberSpan = card.querySelector('.question-number');
+                if (questionNumberSpan) {
+                    questionNumberSpan.textContent = qIndex + 1;
+                }
+                
+                // Update question text name
+                const questionText = card.querySelector('.question-text');
+                if (questionText) {
+                    questionText.name = `questions[${qIndex}][question]`;
+                }
+                
+                // Update options
+                const optionsList = card.querySelector('.options-list');
+                if (optionsList) {
+                    const options = optionsList.querySelectorAll('.option-item');
+                    
+                    options.forEach((optionItem, oIndex) => {
+                        // Update option ID input
+                        const optionIdInput = optionItem.querySelector('.option-id');
+                        if (optionIdInput) {
+                            optionIdInput.name = `questions[${qIndex}][options][${oIndex}][id]`;
+                        }
+                        
+                        // Update radio button
+                        const radioInput = optionItem.querySelector('.is-correct-checkbox');
+                        if (radioInput) {
+                            radioInput.name = `questions[${qIndex}][correct_answer]`;
+                            radioInput.value = oIndex;
+                        }
+                        
+                        // Update option text input
+                        const optionTextInput = optionItem.querySelector('.option-text');
+                        if (optionTextInput) {
+                            optionTextInput.name = `questions[${qIndex}][options][${oIndex}][option_text]`;
+                        }
+                    });
+                }
+            });
         }
         
         // Form validation
@@ -364,27 +395,20 @@
                 return;
             }
             
-            // Check each question has at least 2 options
             let valid = true;
             questionCards.forEach((card, index) => {
                 const options = card.querySelectorAll('.option-item');
                 if (options.length < 2) {
                     valid = false;
                     alert(`Question ${index + 1} must have at least 2 options.`);
+                    return;
                 }
                 
-                // Check at least one correct option is selected
-                const questionType = card.querySelector('.question-type').value;
-                const checkedOptions = card.querySelectorAll('.is-correct-checkbox:checked');
-                if (checkedOptions.length === 0) {
+                // Check one correct answer is selected
+                const checkedRadio = card.querySelector('input[type="radio"]:checked');
+                if (!checkedRadio) {
                     valid = false;
-                    alert(`Question ${index + 1} must have at least one correct answer.`);
-                }
-                
-                // For single answer questions, ensure only one is selected
-                if (questionType === 'single' && checkedOptions.length > 1) {
-                    valid = false;
-                    alert(`Question ${index + 1} can only have one correct answer.`);
+                    alert(`Question ${index + 1} must have one correct answer selected.`);
                 }
             });
             
