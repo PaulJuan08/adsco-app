@@ -1,46 +1,45 @@
-<div class="sidebar bg-school-navy text-white p-3">
-    <div class="sidebar-header text-center mb-4">
-        <h5 class="text-heritage-gold">ADSCO LMS</h5>
-        <small>Registrar Portal</small>
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">S</div>
+        <div class="logo-text">SchoolSys</div>
     </div>
     
-    <ul class="nav flex-column">
-        <li class="nav-item mb-2">
-            <a href="{{ route('registrar.dashboard') }}" 
-               class="nav-link text-white {{ request()->routeIs('registrar.dashboard') ? 'active bg-heritage-gold text-dark' : '' }}">
-                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-            </a>
-        </li>
+    <nav class="sidebar-nav">
+        @php
+            $currentRoute = Route::currentRouteName();
+        @endphp
         
-        <li class="nav-item mb-2">
-            <a href="{{ route('registrar.users.index') }}" 
-               class="nav-link text-white {{ request()->routeIs('registrar.users.*') ? 'active bg-heritage-gold text-dark' : '' }}">
-                <i class="fas fa-users me-2"></i> Manage Users
-            </a>
-        </li>
+        <a href="{{ route('dashboard') }}" class="nav-item {{ $currentRoute == 'dashboard' ? 'active' : '' }}">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
         
-        <li class="nav-item mb-2">
-            <a href="{{ route('registrar.approvals') }}" 
-               class="nav-link text-white {{ request()->routeIs('registrar.approvals') ? 'active bg-heritage-gold text-dark' : '' }}">
-                <i class="fas fa-user-check me-2"></i> Pending Approvals
-                @if($pendingCount = \App\Models\User::where('is_approved', 0)->whereIn('role', [3,4])->count())
-                    <span class="badge bg-danger float-end">{{ $pendingCount }}</span>
-                @endif
-            </a>
-        </li>
+        <a href="{{ route('registrar.users.index') }}" class="nav-item {{ str_starts_with($currentRoute, 'registrar.users') ? 'active' : '' }}">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+        </a>
         
-        <li class="nav-item mb-2">
-            <a href="#" class="nav-link text-white">
-                <i class="fas fa-file-alt me-2"></i> Reports
-            </a>
-        </li>
+        <a href="{{ route('registrar.enrollments') }}" class="nav-item {{ $currentRoute == 'registrar.enrollments' ? 'active' : '' }}">
+            <i class="fas fa-user-graduate"></i>
+            <span>Enrollments</span>
+        </a>
         
-        <hr class="text-light">
+        <a href="{{ route('registrar.schedule') }}" class="nav-item {{ $currentRoute == 'registrar.schedule' ? 'active' : '' }}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+        </a>
         
-        <li class="nav-item">
-            <a href="{{ route('profile.edit') }}" class="nav-link text-white">
-                <i class="fas fa-user me-2"></i> My Profile
-            </a>
-        </li>
-    </ul>
-</div>
+        <a href="{{ route('registrar.profile.edit') }}" class="nav-item {{ $currentRoute == 'registrar.profile.edit' ? 'active' : '' }}">
+            <i class="fas fa-user-cog"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <button class="nav-item logout-btn" onclick="document.getElementById('logout-form').submit()">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+    </button>
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+        @csrf
+    </form>
+</aside>

@@ -43,10 +43,6 @@
         font-size: 0.875rem;
         color: var(--danger);
     }
-    
-    input[type="radio"] {
-        margin-right: 0.5rem;
-    }
 </style>
 @endpush
 
@@ -59,7 +55,7 @@
     </div>
     <div class="user-info">
         <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
         </div>
     </div>
 </div>
@@ -92,7 +88,7 @@
             @endif
             
             <!-- Update Form -->
-            <form action="{{ route('admin.courses.update', $course->id) }}" method="POST" id="update-form">
+            <form action="{{ route('admin.courses.update', Crypt::encrypt($course->id)) }}" method="POST" id="update-form">
                 @csrf
                 @method('PUT')
                 
@@ -110,128 +106,164 @@
                 </div>
                 @endif
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="title" class="form-label">Course Title *</label>
-                    <input type="text" 
-                           id="title" 
-                           name="title" 
-                           value="{{ old('title', $course->title) }}" 
-                           required
-                           class="form-control @error('title') is-invalid @enderror">
-                    @error('title')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label for="title" class="form-label">Course Title *</label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               value="{{ old('title', $course->title) }}" 
+                               required
+                               class="form-control @error('title') is-invalid @enderror"
+                               placeholder="e.g., Introduction to Programming">
+                        @error('title')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div>
+                        <label for="course_code" class="form-label">Course Code *</label>
+                        <input type="text" 
+                               id="course_code" 
+                               name="course_code" 
+                               value="{{ old('course_code', $course->course_code) }}" 
+                               required
+                               class="form-control @error('course_code') is-invalid @enderror"
+                               placeholder="e.g., CS101">
+                        @error('course_code')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
                 
                 <div style="margin-bottom: 1.5rem;">
-                    <label for="course_code" class="form-label">Course Code *</label>
-                    <input type="text" 
-                           id="course_code" 
-                           name="course_code" 
-                           value="{{ old('course_code', $course->course_code) }}" 
-                           required
-                           class="form-control @error('course_code') is-invalid @enderror">
-                    @error('course_code')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="description" class="form-label">Description</label>
+                    <label for="description" class="form-label">Description (Optional)</label>
                     <textarea id="description" 
                               name="description" 
                               rows="4"
-                              class="form-control @error('description') is-invalid @enderror">{{ old('description', $course->description) }}</textarea>
+                              class="form-control @error('description') is-invalid @enderror"
+                              placeholder="Enter course description...">{{ old('description', $course->description) }}</textarea>
                     @error('description')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
                 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label for="teacher_id" class="form-label">Assign Teacher (Optional)</label>
+                        <select id="teacher_id" 
+                                name="teacher_id"
+                                class="form-select @error('teacher_id') is-invalid @enderror">
+                            <option value="">-- Select Teacher --</option>
+                            @foreach($teachers as $teacher)
+                                <option value="{{ $teacher->id }}" {{ old('teacher_id', $course->teacher_id) == $teacher->id ? 'selected' : '' }}>
+                                    {{ $teacher->f_name }} {{ $teacher->l_name }} 
+                                    @if($teacher->employee_id)
+                                        ({{ $teacher->employee_id }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                            Leave blank to assign later
+                        </div>
+                        @error('teacher_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    
+                    <div>
+                        <label for="credits" class="form-label">Credits *</label>
+                        <input type="number" 
+                               id="credits" 
+                               name="credits" 
+                               value="{{ old('credits', $course->credits ?? 3) }}" 
+                               min="0" 
+                               step="0.5"
+                               required
+                               class="form-control @error('credits') is-invalid @enderror">
+                        @error('credits')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                
+                <!-- Learning Outcomes -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label for="teacher_id" class="form-label">Instructor</label>
-                    <select id="teacher_id" 
-                            name="teacher_id"
-                            class="form-select @error('teacher_id') is-invalid @enderror">
-                        <option value="">Select Instructor (Optional)</option>
-                        @foreach($teachers as $teacher)
-                            <option value="{{ $teacher->id }}" {{ old('teacher_id', $course->teacher_id) == $teacher->id ? 'selected' : '' }}>
-                                {{ $teacher->f_name }} {{ $teacher->l_name }} 
-                                @if($teacher->employee_id)
-                                    ({{ $teacher->employee_id }})
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('teacher_id')
+                    <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
+                    <textarea id="learning_outcomes" 
+                              name="learning_outcomes" 
+                              rows="2"
+                              class="form-control @error('learning_outcomes') is-invalid @enderror"
+                              placeholder="What will students learn in this course?">{{ old('learning_outcomes', $course->learning_outcomes ?? '') }}</textarea>
+                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                        Optional: Describe what students will achieve
+                    </div>
+                    @error('learning_outcomes')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
                 
+                <!-- Thumbnail URL -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label for="credits" class="form-label">Credits</label>
-                    <input type="number" 
-                           id="credits" 
-                           name="credits" 
-                           value="{{ old('credits', $course->credits ?? 3) }}" 
-                           min="1"
-                           max="10"
-                           class="form-control @error('credits') is-invalid @enderror">
-                    @error('credits')
+                    <label for="thumbnail" class="form-label">Thumbnail URL (Optional)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="url" 
+                               id="thumbnail" 
+                               name="thumbnail" 
+                               value="{{ old('thumbnail', $course->thumbnail ?? '') }}"
+                               placeholder="https://example.com/image.jpg"
+                               class="form-control @error('thumbnail') is-invalid @enderror"
+                               style="flex: 1;">
+                        <button type="button" 
+                                id="preview-thumbnail" 
+                                style="padding: 12px 20px; background: #f3f4f6; color: var(--dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            Preview
+                        </button>
+                    </div>
+                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                        <i class="fas fa-info-circle"></i> Optional: URL to course thumbnail image
+                    </div>
+                    @error('thumbnail')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    
+                    <!-- Thumbnail Preview -->
+                    <div id="thumbnail-preview" style="margin-top: 0.75rem; display: none;">
+                        <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark); margin-bottom: 0.5rem;">Preview:</div>
+                        <div style="width: 100%; max-width: 400px; height: 225px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+                            <img id="preview-image" src="" alt="Thumbnail preview" 
+                                 style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            <div id="no-preview" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: var(--secondary);">
+                                No preview available
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <label class="form-label">Publication Status</label>
-                    <div style="display: flex; align-items: center; gap: 2rem;">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" 
-                                   name="is_published" 
-                                   value="1" 
-                                   {{ old('is_published', $course->is_published) == 1 ? 'checked' : '' }}>
-                            <span style="margin-left: 0.5rem;">Published</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" 
-                                   name="is_published" 
-                                   value="0" 
-                                   {{ old('is_published', $course->is_published) == 0 ? 'checked' : '' }}>
-                            <span style="margin-left: 0.5rem;">Draft</span>
-                        </label>
+                <!-- Course Status Section - Always Active and Published -->
+                <div style="margin-bottom: 2rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                        <div style="width: 24px; height: 24px; background: var(--primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="fas fa-info-circle" style="font-size: 12px;"></i>
+                        </div>
+                        <div style="font-weight: 500; color: var(--dark);">Course Status</div>
                     </div>
-                    @error('is_published')
-                        <div class="invalid-feedback" style="display: block;">{{ $message }}</div>
-                    @enderror
+                    <div style="color: #075985; font-size: 0.875rem; line-height: 1.5;">
+                        <p style="margin: 0 0 0.5rem 0;">This course is <strong>Active</strong> and <strong>Published</strong>.</p>
+                        <p style="margin: 0; font-size: 0.75rem;">Courses are always created as active and published. To unpublish or deactivate, use the course management panel.</p>
+                    </div>
                 </div>
                 
-                <div style="margin-bottom: 2rem;">
-                    <label class="form-label">Course Status</label>
-                    <div style="display: flex; align-items: center; gap: 2rem;">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" 
-                                   name="status" 
-                                   value="active" 
-                                   {{ old('status', $course->status ?? 'active') == 'active' ? 'checked' : '' }}>
-                            <span style="margin-left: 0.5rem;">Active</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" 
-                                   name="status" 
-                                   value="inactive" 
-                                   {{ old('status', $course->status ?? 'active') == 'inactive' ? 'checked' : '' }}>
-                            <span style="margin-left: 0.5rem;">Inactive</span>
-                        </label>
-                    </div>
-                    @error('status')
-                        <div class="invalid-feedback" style="display: block;">{{ $message }}</div>
-                    @enderror
-                </div>
+                <!-- Hidden fields - Always Active and Published -->
+                <input type="hidden" name="status" value="active">
+                <input type="hidden" name="is_published" value="1">
                 
                 <!-- Form Actions -->
                 <div style="display: flex; justify-content: space-between; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
                     <div style="display: flex; gap: 1rem;">
                         <button type="button" 
-                                onclick="if(confirm('Are you sure you want to delete this course?')) { document.getElementById('delete-form').submit(); }"
+                                onclick="if(confirm('Are you sure you want to delete this course? This action cannot be undone.')) { document.getElementById('delete-form').submit(); }"
                                 style="padding: 10px 20px; background: #fee2e2; color: var(--danger); border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                             <i class="fas fa-trash"></i>
                             Delete Course
@@ -253,7 +285,7 @@
             </form>
             
             <!-- Hidden Delete Form (OUTSIDE the update form) -->
-            <form id="delete-form" action="{{ route('admin.courses.destroy', $course->id) }}" method="POST" style="display: none;">
+            <form id="delete-form" action="{{ route('admin.courses.destroy', Crypt::encrypt($course->id)) }}" method="POST" style="display: none;">
                 @csrf
                 @method('DELETE')
             </form>
@@ -340,7 +372,7 @@
                 <div class="card-title">Quick Actions</div>
             </div>
             <div style="padding: 0.5rem;">
-                <a href="{{ route('admin.courses.show', $course->id) }}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
+                <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
                     <div style="width: 36px; height: 36px; background: #e0e7ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
                         <i class="fas fa-eye"></i>
                     </div>
@@ -365,10 +397,91 @@
 
 @push('scripts')
 <script>
-// Optional: Add form validation or other JavaScript here
 document.addEventListener('DOMContentLoaded', function() {
-    // You can add any additional JavaScript functionality here
-    console.log('Course edit page loaded');
+    const thumbnailInput = document.getElementById('thumbnail');
+    const previewBtn = document.getElementById('preview-thumbnail');
+    const thumbnailPreview = document.getElementById('thumbnail-preview');
+    const previewImage = document.getElementById('preview-image');
+    const noPreview = document.getElementById('no-preview');
+    
+    // Thumbnail preview functionality
+    function updateThumbnailPreview() {
+        const url = thumbnailInput.value.trim();
+        
+        if (url) {
+            thumbnailPreview.style.display = 'block';
+            previewImage.src = url;
+            previewImage.style.display = 'block';
+            noPreview.style.display = 'none';
+            
+            // Check if image loads successfully
+            previewImage.onload = function() {
+                previewImage.style.display = 'block';
+                noPreview.style.display = 'none';
+            };
+            
+            previewImage.onerror = function() {
+                previewImage.style.display = 'none';
+                noPreview.style.display = 'flex';
+                noPreview.textContent = 'Image failed to load';
+                noPreview.style.color = '#ef4444';
+            };
+        } else {
+            thumbnailPreview.style.display = 'none';
+        }
+    }
+    
+    previewBtn.addEventListener('click', updateThumbnailPreview);
+    thumbnailInput.addEventListener('change', updateThumbnailPreview);
+    thumbnailInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            updateThumbnailPreview();
+        }
+    });
+    
+    // Initialize preview if thumbnail already exists
+    if (thumbnailInput.value) {
+        updateThumbnailPreview();
+    }
+    
+    // Form validation
+    document.getElementById('update-form').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const code = document.getElementById('course_code').value.trim();
+        const credits = document.getElementById('credits').value;
+        
+        if (!title) {
+            e.preventDefault();
+            alert('Please enter a course title.');
+            document.getElementById('title').focus();
+            return;
+        }
+        
+        if (!code) {
+            e.preventDefault();
+            alert('Please enter a course code.');
+            document.getElementById('course_code').focus();
+            return;
+        }
+        
+        if (!credits || parseFloat(credits) <= 0) {
+            e.preventDefault();
+            alert('Please enter valid credits (greater than 0).');
+            document.getElementById('credits').focus();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+        
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 3000);
+    });
 });
 </script>
 @endpush

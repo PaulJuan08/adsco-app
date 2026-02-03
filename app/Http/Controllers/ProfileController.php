@@ -15,6 +15,29 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
+        
+        // Check if user has a role attribute
+        if (!$user->role) {
+            // If no role column, try to get it from relationships or default
+            $user->role = $user->roles->first()->name ?? 'user';
+        }
+        
+        // Map roles to view paths
+        $viewMap = [
+            'admin' => 'admin.profile.edit',
+            'registrar' => 'registrar.profile.edit', 
+            'teacher' => 'teacher.profile.edit',
+            'student' => 'student.profile.edit',
+        ];
+        
+        $role = strtolower($user->role);
+        
+        // Check if the view exists
+        if (isset($viewMap[$role]) && view()->exists($viewMap[$role])) {
+            return view($viewMap[$role], compact('user'));
+        }
+        
+        // Fallback to common profile view
         return view('profile.edit', compact('user'));
     }
 
@@ -52,7 +75,16 @@ class ProfileController extends Controller
             }
         }
 
-        return redirect()->route('profile.edit')
+        // Determine redirect route based on role
+        $redirectRoute = match($user->role) {
+            'admin' => 'admin.profile.edit',
+            'registrar' => 'registrar.profile.edit',
+            'teacher' => 'teacher.profile.edit',
+            'student' => 'student.profile.edit',
+            default => 'profile.edit',
+        };
+
+        return redirect()->route($redirectRoute)
             ->with('success', 'Profile updated successfully.');
     }
 

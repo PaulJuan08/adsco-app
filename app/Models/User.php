@@ -81,8 +81,32 @@ class User extends Authenticatable
     public function enrolledCourses()
     {
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
-            ->withPivot(['status', 'enrolled_at'])
-            ->withTimestamps(['created_at']); // Only include created_at if it exists
+            ->withPivot(['grade', 'enrolled_at', 'status', 'completed_at'])
+            ->withTimestamps();
+    }
+    
+    /**
+     * Get quiz attempts for the user
+     */
+    public function quizAttempts()
+    {
+        return $this->hasMany(QuizAttempt::class, 'user_id');
+    }
+    
+    /**
+     * Get assignments submitted by the user
+     */
+    public function submittedAssignments()
+    {
+        return $this->hasMany(AssignmentSubmission::class, 'student_id');
+    }
+    
+    /**
+     * Get grades for the user
+     */
+    public function grades()
+    {
+        return $this->hasMany(Grade::class, 'student_id');
     }
     
     // Helper Methods
@@ -143,6 +167,54 @@ class User extends Authenticatable
         }
         
         return $this->email;
+    }
+    
+    /**
+     * Get student's current GPA
+     */
+    public function getGpaAttribute()
+    {
+        if (!$this->isStudent()) {
+            return null;
+        }
+        
+        $grades = $this->enrollments()
+            ->whereNotNull('grade')
+            ->get();
+        
+        if ($grades->isEmpty()) {
+            return 0.0;
+        }
+        
+        return round($grades->avg('grade'), 2);
+    }
+    
+    /**
+     * Get student's completed courses count
+     */
+    public function getCompletedCoursesCountAttribute()
+    {
+        if (!$this->isStudent()) {
+            return 0;
+        }
+        
+        return $this->enrollments()
+            ->whereNotNull('grade')
+            ->count();
+    }
+    
+    /**
+     * Get student's active courses count
+     */
+    public function getActiveCoursesCountAttribute()
+    {
+        if (!$this->isStudent()) {
+            return 0;
+        }
+        
+        return $this->enrollments()
+            ->whereNull('grade')
+            ->count();
     }
     
     /**

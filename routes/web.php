@@ -1,8 +1,26 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Admin\TopicController as AdminTopicController;
+use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController;
+use App\Http\Controllers\Admin\QuizController as AdminQuizController;
+use App\Http\Controllers\Registrar\UserController as RegistrarUserController;
+use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\Teacher\TopicController as TeacherTopicController;
+use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
+use App\Http\Controllers\Teacher\QuizController as TeacherQuizController;
+use App\Http\Controllers\Teacher\ProgressController as TeacherProgressController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\CourseController as StudentCourseController;
+use App\Http\Controllers\Student\TopicController as StudentTopicController;
+use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
+use App\Http\Controllers\Student\QuizController as StudentQuizController;
+use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 
 // Public routes
 Route::get('/', function () {
@@ -25,57 +43,168 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Admin routes
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
-        // Update resource routes to use encryptedId
-        Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->parameters([
+        Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'encryptedId'
         ]);
         
-        Route::resource('courses', \App\Http\Controllers\Admin\CourseController::class);
-        Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('attendance');
-        Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-logs');
-        Route::post('/users/{encryptedId}/approve', [\App\Http\Controllers\Admin\UserController::class, 'approve'])->name('users.approve');
+        Route::resource('courses', AdminCourseController::class)->parameters([
+            'courses' => 'encryptedId'
+        ]);
         
-        // Remove this duplicate line (line 34) as it conflicts with the resource route:
-        // Route::put('/admin/users/{encryptedId}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
+        Route::resource('topics', AdminTopicController::class)->parameters([
+            'topics' => 'encryptedId'
+        ]);
         
-        Route::get('/courses/{course}/edit', [\App\Http\Controllers\Admin\CourseController::class, 'edit'])->name('courses.edit');
+        Route::resource('assignments', AdminAssignmentController::class)->parameters([
+            'assignments' => 'encryptedId'
+        ]);
+        
+        // Quiz routes - ONLY submit route
+        Route::post('quizzes/{encryptedId}/submit', [AdminQuizController::class, 'submit'])->name('quizzes.submit');
+        
+        // Resource route (exclude submit since we defined it above)
+        Route::resource('quizzes', AdminQuizController::class)->parameters([
+            'quizzes' => 'encryptedId'
+        ])->except(['submit']);
+        
+        Route::post('/users/{encryptedId}/approve', [AdminUserController::class, 'approve'])->name('users.approve');
+        
+        // Add these topic management routes for courses
+        Route::get('/courses/{encryptedId}/available-topics', [AdminCourseController::class, 'availableTopics'])
+            ->name('courses.availableTopics');
+        
+        Route::post('/courses/{encryptedId}/add-topic', [AdminCourseController::class, 'addTopic'])
+            ->name('courses.addTopic');
+        
+        Route::post('/courses/{encryptedId}/add-topics', [AdminCourseController::class, 'addTopics'])
+            ->name('courses.addTopics');
+        
+        Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])
+            ->name('courses.removeTopic');
     });
     
     // Registrar routes
-    Route::prefix('registrar')->name('registrar.')->middleware(['auth', 'check.approval', 'role:registrar'])->group(function () {
-        Route::get('/users', [\App\Http\Controllers\Registrar\UserController::class, 'index'])->name('users.index');
-        Route::get('/users/create', [\App\Http\Controllers\Registrar\UserController::class, 'create'])->name('users.create');
-        Route::post('/users', [\App\Http\Controllers\Registrar\UserController::class, 'store'])->name('users.store');
-        Route::get('/users/{user}', [\App\Http\Controllers\Registrar\UserController::class, 'show'])->name('users.show');
-        Route::get('/users/{user}/edit', [\App\Http\Controllers\Registrar\UserController::class, 'edit'])->name('users.edit');
-        Route::put('/users/{user}', [\App\Http\Controllers\Registrar\UserController::class, 'update'])->name('users.update');
-        Route::delete('/users/{user}', [\App\Http\Controllers\Registrar\UserController::class, 'destroy'])->name('users.destroy');
-        Route::post('/users/{user}/approve', [\App\Http\Controllers\Registrar\UserController::class, 'approve'])->name('users.approve');
+    Route::prefix('registrar')->name('registrar.')->middleware(['role:registrar'])->group(function () {
+        Route::get('/users', [RegistrarUserController::class, 'index'])->name('users.index');
+        Route::get('/users/create', [RegistrarUserController::class, 'create'])->name('users.create');
+        Route::post('/users', [RegistrarUserController::class, 'store'])->name('users.store');
+        Route::get('/users/{encryptedId}', [RegistrarUserController::class, 'show'])->name('users.show');
+        Route::get('/users/{encryptedId}/edit', [RegistrarUserController::class, 'edit'])->name('users.edit');
+        Route::put('/users/{encryptedId}', [RegistrarUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{encryptedId}', [RegistrarUserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{encryptedId}/approve', [RegistrarUserController::class, 'approve'])->name('users.approve');
     });
     
     // Teacher routes
-    Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
-        Route::resource('courses', Teacher\CourseController::class);
-        Route::resource('quizzes', Teacher\QuizController::class);
-        Route::get('/progress', [Teacher\ProgressController::class, 'index'])->name('progress.index');
-        Route::get('/attendance', [Teacher\AttendanceController::class, 'index'])->name('attendance');
+    Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'check.approval', 'role:teacher'])->group(function () {
+        // Course Routes
+        Route::get('/courses', [TeacherCourseController::class, 'index'])->name('courses.index');
+        Route::get('/courses/create', [TeacherCourseController::class, 'create'])->name('courses.create');
+        Route::post('/courses', [TeacherCourseController::class, 'store'])->name('courses.store');
+        Route::get('/courses/{encryptedId}', [TeacherCourseController::class, 'show'])->name('courses.show');
+        Route::get('/courses/{encryptedId}/edit', [TeacherCourseController::class, 'edit'])->name('courses.edit');
+        Route::put('/courses/{encryptedId}', [TeacherCourseController::class, 'update'])->name('courses.update');
+        Route::delete('/courses/{encryptedId}', [TeacherCourseController::class, 'destroy'])->name('courses.destroy');
+        
+        // Course Topic Management Routes
+        Route::get('/courses/{encryptedId}/available-topics', [TeacherCourseController::class, 'availableTopics'])->name('courses.available-topics');
+        Route::post('/courses/{encryptedId}/add-topic', [TeacherCourseController::class, 'addTopic'])->name('courses.add-topic');
+        Route::post('/courses/{encryptedId}/add-topics', [TeacherCourseController::class, 'addTopics'])->name('courses.add-topics');
+        Route::post('/courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
+
+        // Topic Routes
+        Route::get('/topics', [TeacherTopicController::class, 'index'])->name('topics.index');
+        Route::get('/topics/create', [TeacherTopicController::class, 'create'])->name('topics.create');
+        Route::post('/topics', [TeacherTopicController::class, 'store'])->name('topics.store');
+        Route::get('/topics/{encryptedId}', [TeacherTopicController::class, 'show'])->name('topics.show');
+        Route::get('/topics/{encryptedId}/edit', [TeacherTopicController::class, 'edit'])->name('topics.edit');
+        Route::put('/topics/{encryptedId}', [TeacherTopicController::class, 'update'])->name('topics.update');
+        Route::delete('/topics/{encryptedId}', [TeacherTopicController::class, 'destroy'])->name('topics.destroy');
+
+        // Quiz Routes
+        Route::resource('quizzes', TeacherQuizController::class)->parameters([
+            'quizzes' => 'encryptedId'
+        ]);
+
+        // Additional teacher quiz routes
+        Route::post('/quizzes/{encryptedId}/toggle-publish', [TeacherQuizController::class, 'togglePublish'])
+            ->name('quizzes.toggle-publish');
+        Route::get('/quizzes/{encryptedId}/results', [TeacherQuizController::class, 'results'])
+            ->name('quizzes.results');
+        Route::get('/quizzes/{encryptedId}/attempts/{attemptId}', [TeacherQuizController::class, 'showAttempt'])
+            ->name('quizzes.attempts.show');
+        Route::get('/quizzes/{encryptedId}/preview', [TeacherQuizController::class, 'preview'])
+            ->name('quizzes.preview');
+
+        // Add take and submit routes (if not already in resource)
+        Route::get('/quizzes/{encryptedId}/take', [TeacherQuizController::class, 'take'])
+            ->name('quizzes.take');
+        Route::post('/quizzes/{encryptedId}/submit', [TeacherQuizController::class, 'submit'])
+            ->name('quizzes.submit');
+        
+        // Assignment Routes
+        Route::get('/assignments', [TeacherAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/create', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/assignments', [TeacherAssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'show'])->name('assignments.show');
+        Route::get('/assignments/{encryptedId}/edit', [TeacherAssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'destroy'])->name('assignments.destroy');
+        
+        // Progress & Analytics
+        Route::get('/progress', [TeacherProgressController::class, 'index'])->name('progress.index');
+        
+        // Enrollment routes
+        Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
     });
     
     // Student routes
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
-        Route::get('/dashboard', [Student\DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/courses', [Student\CourseController::class, 'index'])->name('courses.index');
-        Route::post('/courses/{course}/enroll', [Student\CourseController::class, 'enroll'])->name('courses.enroll');
-        Route::get('/progress', [Student\ProgressController::class, 'index'])->name('progress');
-        Route::get('/attendance', [Student\AttendanceController::class, 'index'])->name('attendance');
+        // Dashboard
+        Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/profile', [StudentDashboardController::class, 'profile'])->name('profile');
+        Route::post('/profile', [StudentDashboardController::class, 'updateProfile'])->name('profile.update');
+        
+        // Courses
+        Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
+        Route::post('/courses/{course}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
+        Route::get('/courses/{encryptedId}', [StudentCourseController::class, 'show'])->name('courses.show');
+        Route::get('/courses/{encryptedId}/topics', [StudentCourseController::class, 'topics'])->name('courses.topics');
+        Route::get('/courses/{encryptedId}/topics/{encryptedTopicId}', [StudentCourseController::class, 'showTopic'])->name('courses.topic.show');
+        Route::get('/courses/{encryptedId}/materials', [StudentCourseController::class, 'materials'])->name('courses.materials');
+        Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
+        
+        // Quizzes
+        Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
+        Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
+        Route::get('/quizzes/{encryptedId}/instructions', [StudentQuizController::class, 'instructions'])->name('quizzes.instructions');
+        Route::get('/quizzes/{encryptedId}/take', [StudentQuizController::class, 'take'])->name('quizzes.take');
+        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
+        Route::get('/quizzes/{encryptedId}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
+        Route::get('/quizzes/attempts', [StudentQuizController::class, 'attempts'])->name('quizzes.attempts');
+        
+        // Additional student routes
+        Route::get('/timetable', function() {
+            return view('student.timetable');
+        })->name('timetable');
+        
+        Route::get('/grades', function() {
+            return view('student.grades');
+        })->name('grades');
+        
+        Route::get('/attendance', function() {
+            return view('student.attendance');
+        })->name('attendance');
+        
+        Route::get('/assignments', function() {
+            return view('student.assignments');
+        })->name('assignments');
+        
+        Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
     });
 
     // Profile routes
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
-    
-    // Common routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
