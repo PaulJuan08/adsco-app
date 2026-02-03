@@ -189,13 +189,13 @@
                         </td>
                         <td style="padding: 16px;">
                             <div style="display: flex; gap: 8px;">
-                                <a href="{{ route('admin.courses.show', $course->id) }}" title="View" style="padding: 8px; background: #e0e7ff; color: var(--primary); border-radius: 6px; text-decoration: none;">
+                                <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" title="View" style="padding: 8px; background: #e0e7ff; color: var(--primary); border-radius: 6px; text-decoration: none;">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ route('admin.courses.edit', $course->id) }}" title="Edit" style="padding: 8px; background: #f3f4f6; color: var(--secondary); border-radius: 6px; text-decoration: none;">
+                                <a href="{{ route('admin.courses.edit', Crypt::encrypt($course->id)) }}" title="Edit" style="padding: 8px; background: #f3f4f6; color: var(--secondary); border-radius: 6px; text-decoration: none;">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form action="{{ route('admin.courses.destroy', $course->id) }}" method="POST" style="display: inline;">
+                                <form action="{{ route('admin.courses.destroy', Crypt::encrypt($course->id)) }}" method="POST" style="display: inline;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" title="Delete" 

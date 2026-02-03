@@ -67,21 +67,6 @@
                 <i class="fas fa-clock text-info me-1"></i> {{ now()->format('l') }}
             </div>
         </div>
-        
-        <div class="stat-card">
-            <div class="stat-header">
-                <div>
-                    <div class="stat-number">0</div>
-                    <div class="stat-label">Pending Grading</div>
-                </div>
-                <div class="stat-icon icon-pending">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-            </div>
-            <div class="text-sm text-secondary">
-                <i class="fas fa-exclamation-circle text-warning me-1"></i> Assignments to grade
-            </div>
-        </div>
     </div>
 
     <!-- Main Content Grid -->
@@ -181,16 +166,6 @@
                         </div>
                     </a>
                     
-                    <!-- Assignments -->
-                    <a href="{{ route('teacher.assignments.create') }}" class="course-item" style="text-decoration: none; color: inherit;">
-                        <div class="course-icon course-2">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                        <div class="course-info">
-                            <div class="course-name">Create Assignment</div>
-                            <div class="course-desc">Post new assignment</div>
-                        </div>
-                    </a>
                     
                     <!-- Quizzes -->
                     <a href="{{ route('teacher.quizzes.create') }}" class="course-item" style="text-decoration: none; color: inherit;">
@@ -220,93 +195,69 @@
 
             <!-- Upcoming Deadlines Card -->
             <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Upcoming Deadlines</h2>
-                </div>
-                
-                @php
-                    // Get upcoming deadlines for assignments and quizzes
-                    $upcomingAssignments = App\Models\Assignment::whereHas('course', function($query) {
-                        $query->where('teacher_id', auth()->id());
-                    })
-                    ->where('due_date', '>', now())
-                    ->where('is_published', true)
-                    ->orderBy('due_date', 'asc')
-                    ->take(3)
-                    ->get();
-                    
-                    $upcomingQuizzes = App\Models\Quiz::whereHas('course', function($query) {
-                        $query->where('teacher_id', auth()->id());
-                    })
-                    ->where('available_until', '>', now())
-                    ->where('is_published', true)
-                    ->orderBy('available_until', 'asc')
-                    ->take(3)
-                    ->get();
-                    
-                    $allDeadlines = collect();
-                    foreach ($upcomingAssignments as $assignment) {
-                        $allDeadlines->push([
-                            'type' => 'assignment',
-                            'title' => $assignment->title,
-                            'due_date' => $assignment->due_date,
-                            'course' => $assignment->course,
-                            'icon' => 'fas fa-tasks',
-                            'color' => 'primary'
-                        ]);
-                    }
-                    
-                    foreach ($upcomingQuizzes as $quiz) {
-                        $allDeadlines->push([
-                            'type' => 'quiz',
-                            'title' => $quiz->title,
-                            'due_date' => $quiz->available_until,
-                            'course' => $quiz->course,
-                            'icon' => 'fas fa-question-circle',
-                            'color' => 'warning'
-                        ]);
-                    }
-                    
-                    // Sort by due date
-                    $allDeadlines = $allDeadlines->sortBy('due_date')->take(5);
-                @endphp
-                
-                @if($allDeadlines->isEmpty())
-                    <div class="empty-state" style="padding: 2rem 1rem;">
-                        <i class="fas fa-flag-checkered"></i>
+            <div class="card-header">
+                <h2 class="card-title">Upcoming Deadlines</h2>
+            </div>
+            
+            <div class="card-body">
+                @if($upcomingAssignments->isEmpty() && $upcomingQuizzes->isEmpty())
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-check"></i>
                         <p>No upcoming deadlines</p>
-                        <p class="text-sm">All assignments and quizzes are up to date</p>
                     </div>
                 @else
-                    <div class="space-y-4">
-                        @foreach($allDeadlines as $deadline)
-                        <div class="course-item" style="border-left: 3px solid var(--{{ $deadline['color'] }});">
-                            <div class="course-icon" style="background: var(--{{ $deadline['color'] }}-light); color: var(--{{ $deadline['color'] }});">
-                                <i class="{{ $deadline['icon'] }}"></i>
-                            </div>
-                            <div class="course-info">
-                                <div class="course-name">{{ $deadline['title'] }}</div>
-                                <div class="course-desc">{{ $deadline['course']->title ?? $deadline['course']->course_name }}</div>
-                                <div class="course-teacher">
-                                    <span class="badge badge-{{ $deadline['color'] }}">
-                                        {{ ucfirst($deadline['type']) }}
-                                    </span>
-                                    <span class="ms-2">
-                                        Due: {{ $deadline['due_date']->format('M d, Y') }}
-                                    </span>
+                    <!-- Assignments Section -->
+                    @if(!$upcomingAssignments->isEmpty())
+                        <div class="mb-4">
+                            <h3 class="text-sm font-semibold text-gray-600 mb-2">Assignments</h3>
+                            @foreach($upcomingAssignments as $assignment)
+                                <div class="deadline-item mb-3 p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium text-gray-800">{{ $assignment->title }}</h4>
+                                            <p class="text-sm text-gray-600">{{ $assignment->course->title ?? 'No Course' }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium text-gray-700">
+                                                Due: {{ $assignment->due_date->format('M d, Y') }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ $assignment->due_date->diffForHumans() }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <a href="{{ route('teacher.' . $deadline['type'] . 's.show', Crypt::encrypt($deadline['type'] == 'assignment' ? App\Models\Assignment::where('title', $deadline['title'])->first()->id : App\Models\Quiz::where('title', $deadline['title'])->first()->id)) }}" 
-                                   class="btn btn-sm btn-outline-{{ $deadline['color'] }}">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </div>
+                            @endforeach
                         </div>
-                        @endforeach
-                    </div>
+                    @endif
+                    
+                    <!-- Quizzes Section -->
+                    @if(!$upcomingQuizzes->isEmpty())
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-600 mb-2">Quizzes</h3>
+                            @foreach($upcomingQuizzes as $quiz)
+                                <div class="deadline-item mb-3 p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-medium text-gray-800">{{ $quiz->title }}</h4>
+                                            <p class="text-sm text-gray-600">{{ Str::limit($quiz->description, 50) }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium text-gray-700">
+                                                Available Until: {{ $quiz->available_until->format('M d, Y') }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ $quiz->available_until->diffForHumans() }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 @endif
             </div>
+        </div>
         </div>
     </div>
 

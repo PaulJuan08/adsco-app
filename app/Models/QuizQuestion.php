@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -13,8 +12,7 @@ class QuizQuestion extends Model
     protected $fillable = [
         'quiz_id',
         'question',
-        'type', // 'single', 'multiple', 'text'
-        'points',
+        'points', // Always 1
         'order',
         'explanation',
     ];
@@ -34,8 +32,8 @@ class QuizQuestion extends Model
         return $this->hasMany(QuizOption::class)->orderBy('order');
     }
 
-    public function correctOptions()
+    public function correctOption()
     {
-        return $this->hasMany(QuizOption::class)->where('is_correct', true);
+        return $this->hasOne(QuizOption::class)->where('is_correct', true);
     }
 }

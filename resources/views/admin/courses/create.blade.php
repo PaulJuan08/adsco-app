@@ -120,53 +120,60 @@
                 </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <label for="status" class="form-label">Status *</label>
-                    <select id="status" 
-                            name="status"
-                            required
-                            style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('status') border-color: var(--danger); @enderror">
-                        <option value="">-- Select Status --</option>
-                        <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                        <option value="upcoming" {{ old('status') == 'upcoming' ? 'selected' : '' }}>Upcoming</option>
-                        <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
-                    </select>
-                    @error('status')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
+            <!-- Learning Outcomes -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
+                <textarea id="learning_outcomes" 
+                          name="learning_outcomes" 
+                          rows="2"
+                          placeholder="What will students learn in this course?"
+                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical; @error('learning_outcomes') border-color: var(--danger); @enderror">{{ old('learning_outcomes') }}</textarea>
+                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                    Optional: Describe what students will achieve
                 </div>
-                
-                <div>
-                    <label for="is_published" class="form-label">Publish Status</label>
-                    <select id="is_published" 
-                            name="is_published"
-                            style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('is_published') border-color: var(--danger); @enderror">
-                        <option value="0" {{ old('is_published') == '0' ? 'selected' : '' }}>Draft</option>
-                        <option value="1" {{ old('is_published') == '1' ? 'selected' : 'selected' }}>Published</option>
-                    </select>
-                    @error('is_published')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                </div>
+                @error('learning_outcomes')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
             </div>
             
             <div style="margin-bottom: 1.5rem;">
                 <label for="thumbnail" class="form-label">Thumbnail URL (Optional)</label>
-                <input type="url" 
-                       id="thumbnail" 
-                       name="thumbnail" 
-                       value="{{ old('thumbnail') }}"
-                       placeholder="https://example.com/image.jpg"
-                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('thumbnail') border-color: var(--danger); @enderror">
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="url" 
+                           id="thumbnail" 
+                           name="thumbnail" 
+                           value="{{ old('thumbnail') }}"
+                           placeholder="https://example.com/image.jpg"
+                           style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; @error('thumbnail') border-color: var(--danger); @enderror">
+                    <button type="button" 
+                            id="preview-thumbnail" 
+                            style="padding: 12px 20px; background: #f3f4f6; color: var(--dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500;">
+                        Preview
+                    </button>
+                </div>
                 <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                    URL to course thumbnail image
+                    <i class="fas fa-info-circle"></i> Optional: URL to course thumbnail image
                 </div>
                 @error('thumbnail')
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror
+                
+                <!-- Thumbnail Preview -->
+                <div id="thumbnail-preview" style="margin-top: 0.75rem; display: none;">
+                    <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark); margin-bottom: 0.5rem;">Preview:</div>
+                    <div style="width: 100%; max-width: 400px; height: 225px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+                        <img id="preview-image" src="" alt="Thumbnail preview" 
+                             style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                        <div id="no-preview" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: var(--secondary);">
+                            No preview available
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Hidden fields - Status always active and published -->
+            <input type="hidden" name="status" value="active">
+            <input type="hidden" name="is_published" value="1">
             
             <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
                 <a href="{{ route('admin.courses.index') }}" 
@@ -206,30 +213,119 @@
         padding-bottom: 0.75rem;
         border-bottom: 1px solid var(--border);
     }
+    
+    input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
 </style>
 
 <script>
-    // Auto-generate course code suggestion
-    document.getElementById('title').addEventListener('input', function() {
-        const title = this.value;
-        const codeField = document.getElementById('course_code');
+    document.addEventListener('DOMContentLoaded', function() {
+        const titleInput = document.getElementById('title');
+        const codeInput = document.getElementById('course_code');
+        const thumbnailInput = document.getElementById('thumbnail');
+        const previewBtn = document.getElementById('preview-thumbnail');
+        const thumbnailPreview = document.getElementById('thumbnail-preview');
+        const previewImage = document.getElementById('preview-image');
+        const noPreview = document.getElementById('no-preview');
         
-        if (title && !codeField.value) {
-            const words = title.toUpperCase().split(' ');
-            if (words.length >= 2) {
-                let code = '';
-                if (words[0].length >= 3) {
-                    code = words[0].substring(0, 3);
-                } else if (words.length >= 2) {
-                    code = words[0].substring(0, 2) + words[1].charAt(0);
-                }
-                
-                if (code) {
-                    const randomNum = Math.floor(Math.random() * 900) + 100;
-                    codeField.value = code + randomNum;
+        // Auto-generate course code suggestion
+        titleInput.addEventListener('input', function() {
+            const title = this.value;
+            
+            if (title && !codeInput.value) {
+                const words = title.toUpperCase().split(' ');
+                if (words.length >= 2) {
+                    let code = '';
+                    if (words[0].length >= 3) {
+                        code = words[0].substring(0, 3);
+                    } else if (words.length >= 2) {
+                        code = words[0].substring(0, 2) + words[1].charAt(0);
+                    }
+                    
+                    if (code) {
+                        const randomNum = Math.floor(Math.random() * 900) + 100;
+                        codeInput.value = code + randomNum;
+                    }
                 }
             }
+        });
+        
+        // Thumbnail preview functionality
+        function updateThumbnailPreview() {
+            const url = thumbnailInput.value.trim();
+            
+            if (url) {
+                thumbnailPreview.style.display = 'block';
+                previewImage.src = url;
+                previewImage.style.display = 'block';
+                noPreview.style.display = 'none';
+                
+                // Check if image loads successfully
+                previewImage.onload = function() {
+                    previewImage.style.display = 'block';
+                    noPreview.style.display = 'none';
+                };
+                
+                previewImage.onerror = function() {
+                    previewImage.style.display = 'none';
+                    noPreview.style.display = 'flex';
+                    noPreview.textContent = 'Image failed to load';
+                    noPreview.style.color = '#ef4444';
+                };
+            } else {
+                thumbnailPreview.style.display = 'none';
+            }
         }
+        
+        previewBtn.addEventListener('click', updateThumbnailPreview);
+        thumbnailInput.addEventListener('change', updateThumbnailPreview);
+        thumbnailInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                updateThumbnailPreview();
+            }
+        });
+        
+        // Form validation before submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const title = titleInput.value.trim();
+            const code = codeInput.value.trim();
+            const credits = document.getElementById('credits').value;
+            
+            if (!title) {
+                e.preventDefault();
+                alert('Please enter a course title.');
+                titleInput.focus();
+                return;
+            }
+            
+            if (!code) {
+                e.preventDefault();
+                alert('Please enter a course code.');
+                codeInput.focus();
+                return;
+            }
+            
+            if (!credits || parseFloat(credits) <= 0) {
+                e.preventDefault();
+                alert('Please enter valid credits (greater than 0).');
+                document.getElementById('credits').focus();
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            submitBtn.disabled = true;
+            
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
     });
 </script>
 @endsection

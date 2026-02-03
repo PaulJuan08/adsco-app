@@ -1,103 +1,140 @@
-@extends('layout.teacher')
+@extends('layouts.teacher')
+
+@section('title', 'Create Topic')
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Create Topic</h1>
-        <a href="{{ route('teacher.topics.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back
-        </a>
+<div class="top-header">
+    <div class="greeting">
+        <h1>Create New Topic</h1>
+        <p>Add new learning material for your courses</p>
     </div>
-
-    <div class="card shadow">
-        <div class="card-body">
-            <form action="{{ route('teacher.topics.store') }}" method="POST">
-                @csrf
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="course_id" class="form-label">Course *</label>
-                            <select name="course_id" id="course_id" class="form-select @error('course_id') is-invalid @enderror" required>
-                                <option value="">Select Course</option>
-                                @foreach($courses as $course)
-                                <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
-                                    {{ $course->title }} ({{ $course->course_code }})
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('course_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Title *</label>
-                            <input type="text" name="title" id="title" 
-                                   class="form-control @error('title') is-invalid @enderror" 
-                                   value="{{ old('title') }}" required>
-                            @error('title')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="order" class="form-label">Order *</label>
-                            <input type="number" name="order" id="order" 
-                                   class="form-control @error('order') is-invalid @enderror" 
-                                   value="{{ old('order', 1) }}" min="1" required>
-                            @error('order')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-8">
-                        <div class="mb-3">
-                            <label for="attachment" class="form-label">Attachment URL</label>
-                            <input type="text" name="attachment" id="attachment" 
-                                   class="form-control @error('attachment') is-invalid @enderror" 
-                                   value="{{ old('attachment') }}" 
-                                   placeholder="https://example.com/file.pdf">
-                            @error('attachment')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="content" class="form-label">Content *</label>
-                    <textarea name="content" id="content" 
-                              class="form-control @error('content') is-invalid @enderror" 
-                              rows="10" required>{{ old('content') }}</textarea>
-                    @error('content')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-                
-                <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input type="checkbox" name="is_published" id="is_published" 
-                               class="form-check-input" value="1" 
-                               {{ old('is_published') ? 'checked' : '' }}>
-                        <label class="form-check-label" for="is_published">Publish immediately</label>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Create Topic
-                    </button>
-                </div>
-            </form>
+    <div class="user-info">
+        <div class="user-avatar">
+            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
         </div>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Topic Information</h2>
+        <a href="{{ route('teacher.topics.index') }}" 
+           style="display: flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-size: 0.875rem; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Back to Topics
+        </a>
+    </div>
+    
+    <div style="padding: 1.5rem;">
+        <form action="{{ route('teacher.topics.store') }}" method="POST">
+            @csrf
+            
+            @if($errors->any())
+            <div style="margin: 0 0 1.5rem; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 0.875rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+                    <strong>Please fix the following errors:</strong>
+                </div>
+                <ul style="margin: 0; padding-left: 20px;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="title" class="form-label">Topic Title *</label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       value="{{ old('title') }}" 
+                       required
+                       placeholder="e.g., Introduction to Algebra"
+                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('title') border-color: var(--danger); @enderror">
+                @error('title')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
+                <textarea id="learning_outcomes" 
+                          name="learning_outcomes" 
+                          rows="3"
+                          placeholder="What will students learn from this topic?"
+                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('learning_outcomes') border-color: var(--danger); @enderror">{{ old('learning_outcomes') }}</textarea>
+                @error('learning_outcomes')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="video_link" class="form-label">Video Link (Optional)</label>
+                <input type="url" 
+                       id="video_link" 
+                       name="video_link" 
+                       value="{{ old('video_link') }}"
+                       placeholder="https://youtube.com/embed/..."
+                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('video_link') border-color: var(--danger); @enderror">
+                @error('video_link')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="attachment" class="form-label">Attachment URL (Optional)</label>
+                <input type="url" 
+                       id="attachment" 
+                       name="attachment" 
+                       value="{{ old('attachment') }}"
+                       placeholder="https://drive.google.com/file/..."
+                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('attachment') border-color: var(--danger); @enderror">
+                @error('attachment')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label class="form-label">Publication Status</label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="is_published" value="1" {{ old('is_published', 1) == 1 ? 'checked' : '' }}>
+                        <span>Published</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="is_published" value="0" {{ old('is_published') == 0 ? 'checked' : '' }}>
+                        <span>Draft</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                <a href="{{ route('teacher.topics.index') }}" 
+                   style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-save"></i> Create Topic
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--dark);
+        font-size: 0.875rem;
+    }
+    
+    input:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+</style>
 @endsection

@@ -56,29 +56,55 @@
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <label for="content" class="form-label">Content *</label>
-                <textarea id="content" 
-                          name="content" 
-                          rows="8"
-                          required
-                          placeholder="Enter the main content for this topic..."
-                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical; @error('content') border-color: var(--danger); @enderror">{{ old('content') }}</textarea>
-                @error('content')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-            </div>
-            
-            <div style="margin-bottom: 1.5rem;">
                 <label for="video_link" class="form-label">Video Link (Optional)</label>
                 <input type="url" 
                        id="video_link" 
                        name="video_link" 
                        value="{{ old('video_link') }}"
-                       placeholder="https://youtube.com/watch?v=..."
+                       placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('video_link') border-color: var(--danger); @enderror">
+                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                    <i class="fas fa-info-circle"></i> YouTube, Vimeo, or direct video links are supported
+                </div>
                 @error('video_link')
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror
+            </div>
+            
+            <!-- ADDED: Attachment Field -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="attachment" class="form-label">Attachment Link (Optional)</label>
+                <input type="url" 
+                       id="attachment" 
+                       name="attachment" 
+                       value="{{ old('attachment') }}"
+                       placeholder="https://drive.google.com/file/... or https://example.com/files/document.pdf"
+                       style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('attachment') border-color: var(--danger); @enderror">
+                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                    <i class="fas fa-info-circle"></i> Google Drive, Dropbox, or direct file links (PDF, Word, Excel, etc.)
+                </div>
+                @error('attachment')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label class="form-label">Publish Status</label>
+                <div style="display: flex; gap: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" 
+                               name="is_published" 
+                               value="1" 
+                               checked>
+                        <span>Published</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" 
+                               name="is_published" 
+                               value="0">
+                        <span>Draft</span>
+                    </label>
+                </div>
             </div>
             
             <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">

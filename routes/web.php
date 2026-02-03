@@ -60,13 +60,12 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         ]);
         
         // Quiz routes - ONLY submit route
-        Route::post('quizzes/{encryptedId}/submit', [AdminQuizController::class, 'submit'])->name('admin.quizzes.submit');
+        Route::post('quizzes/{encryptedId}/submit', [AdminQuizController::class, 'submit'])->name('quizzes.submit');
         
         // Resource route (exclude submit since we defined it above)
         Route::resource('quizzes', AdminQuizController::class)->parameters([
             'quizzes' => 'encryptedId'
         ])->except(['submit']);
-        
         
         Route::post('/users/{encryptedId}/approve', [AdminUserController::class, 'approve'])->name('users.approve');
         
@@ -97,31 +96,65 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     });
     
     // Teacher routes
-    Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
-        // Main resource routes
-        Route::resource('courses', TeacherCourseController::class)->parameters([
-            'courses' => 'encryptedId'
-        ]);
+    Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'check.approval', 'role:teacher'])->group(function () {
+        // Course Routes
+        Route::get('/courses', [TeacherCourseController::class, 'index'])->name('courses.index');
+        Route::get('/courses/create', [TeacherCourseController::class, 'create'])->name('courses.create');
+        Route::post('/courses', [TeacherCourseController::class, 'store'])->name('courses.store');
+        Route::get('/courses/{encryptedId}', [TeacherCourseController::class, 'show'])->name('courses.show');
+        Route::get('/courses/{encryptedId}/edit', [TeacherCourseController::class, 'edit'])->name('courses.edit');
+        Route::put('/courses/{encryptedId}', [TeacherCourseController::class, 'update'])->name('courses.update');
+        Route::delete('/courses/{encryptedId}', [TeacherCourseController::class, 'destroy'])->name('courses.destroy');
         
-        Route::resource('topics', TeacherTopicController::class)->parameters([
-            'topics' => 'encryptedId'
-        ]);
-        
-        Route::resource('assignments', TeacherAssignmentController::class)->parameters([
-            'assignments' => 'encryptedId'
-        ]);
-        
-        // Quiz routes for teacher - ONLY submit route
-        Route::post('quizzes/{encryptedId}/submit', [TeacherQuizController::class, 'submit'])->name('teacher.quizzes.submit');
-        
+        // Course Topic Management Routes
+        Route::get('/courses/{encryptedId}/available-topics', [TeacherCourseController::class, 'availableTopics'])->name('courses.available-topics');
+        Route::post('/courses/{encryptedId}/add-topic', [TeacherCourseController::class, 'addTopic'])->name('courses.add-topic');
+        Route::post('/courses/{encryptedId}/add-topics', [TeacherCourseController::class, 'addTopics'])->name('courses.add-topics');
+        Route::post('/courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
+
+        // Topic Routes
+        Route::get('/topics', [TeacherTopicController::class, 'index'])->name('topics.index');
+        Route::get('/topics/create', [TeacherTopicController::class, 'create'])->name('topics.create');
+        Route::post('/topics', [TeacherTopicController::class, 'store'])->name('topics.store');
+        Route::get('/topics/{encryptedId}', [TeacherTopicController::class, 'show'])->name('topics.show');
+        Route::get('/topics/{encryptedId}/edit', [TeacherTopicController::class, 'edit'])->name('topics.edit');
+        Route::put('/topics/{encryptedId}', [TeacherTopicController::class, 'update'])->name('topics.update');
+        Route::delete('/topics/{encryptedId}', [TeacherTopicController::class, 'destroy'])->name('topics.destroy');
+
+        // Quiz Routes
         Route::resource('quizzes', TeacherQuizController::class)->parameters([
             'quizzes' => 'encryptedId'
-        ])->except(['submit']);
+        ]);
+
+        // Additional teacher quiz routes
+        Route::post('/quizzes/{encryptedId}/toggle-publish', [TeacherQuizController::class, 'togglePublish'])
+            ->name('quizzes.toggle-publish');
+        Route::get('/quizzes/{encryptedId}/results', [TeacherQuizController::class, 'results'])
+            ->name('quizzes.results');
+        Route::get('/quizzes/{encryptedId}/attempts/{attemptId}', [TeacherQuizController::class, 'showAttempt'])
+            ->name('quizzes.attempts.show');
+        Route::get('/quizzes/{encryptedId}/preview', [TeacherQuizController::class, 'preview'])
+            ->name('quizzes.preview');
+
+        // Add take and submit routes (if not already in resource)
+        Route::get('/quizzes/{encryptedId}/take', [TeacherQuizController::class, 'take'])
+            ->name('quizzes.take');
+        Route::post('/quizzes/{encryptedId}/submit', [TeacherQuizController::class, 'submit'])
+            ->name('quizzes.submit');
         
-        // Progress routes
+        // Assignment Routes
+        Route::get('/assignments', [TeacherAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/create', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/assignments', [TeacherAssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'show'])->name('assignments.show');
+        Route::get('/assignments/{encryptedId}/edit', [TeacherAssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'destroy'])->name('assignments.destroy');
+        
+        // Progress & Analytics
         Route::get('/progress', [TeacherProgressController::class, 'index'])->name('progress.index');
         
-        // Enrollments route
+        // Enrollment routes
         Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
     });
     
@@ -140,7 +173,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/assignments/{encryptedId}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
         
         // Student quiz routes - ONLY submit route
-        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('student.quizzes.submit');
+        Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
         
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
         Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');

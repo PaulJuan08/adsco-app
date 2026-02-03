@@ -503,17 +503,9 @@
                     <i class="fas fa-list"></i>
                     <span>Topics</span>
                 </a>
-                <a href="{{ route('teacher.assignments.index') }}" class="nav-item {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
-                    <i class="fas fa-tasks"></i>
-                    <span>Assignments</span>   
-                </a>
                 <a href="{{ route('teacher.quizzes.index') }}" class="nav-item {{ request()->routeIs('teacher.quizzes.*') ? 'active' : '' }}">
                     <i class="fas fa-question-circle"></i>
                     <span>Quizzes</span>
-                </a>
-                <a href="{{ route('teacher.progress.index') }}" class="nav-item {{ request()->routeIs('teacher.progress.*') ? 'active' : '' }}">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Progress</span>
                 </a>
             </nav>  
             

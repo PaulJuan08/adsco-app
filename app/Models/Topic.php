@@ -13,15 +13,14 @@ class Topic extends Model
     
     protected $fillable = [
         'title',
-        'content',
         'order',
         'attachment',
+        'video_link', 
         'is_published',
+        'learning_outcomes',
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
     ];
-
-    
 }

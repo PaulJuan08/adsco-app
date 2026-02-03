@@ -25,10 +25,6 @@
         <div class="stat-number">{{ $quizzes->where('is_published', true)->count() }}</div>
         <div class="stat-label">Published</div>
     </div>
-    <div class="stat-item">
-        <div class="stat-number">{{ $quizzes->where('is_published', false)->count() }}</div>
-        <div class="stat-label">Unpublished</div>
-    </div>
 </div>
 
 <div class="card">

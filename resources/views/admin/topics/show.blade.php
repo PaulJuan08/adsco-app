@@ -53,54 +53,111 @@
                     {{ $topic->title }}
                 </div>
             </div>
-           
-            <!-- Content -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary); font-size: 0.875rem;">Content</label>
-                <div style="padding: 1.5rem; background: white; border-radius: 8px; border: 1px solid var(--border); line-height: 1.6; color: var(--dark);">
-                    {!! nl2br(e($topic->content)) !!}
-                </div>
-            </div>
             
             <!-- Video Link -->
             @if($topic->video_link)
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary); font-size: 0.875rem;">Video Link</label>
-                <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                        <i class="fas fa-video" style="color: #dc2626;"></i>
-                        <a href="{{ $topic->video_link }}" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <i class="fas fa-video" style="color: #dc2626; font-size: 1.25rem;"></i>
+                        <a href="{{ $topic->video_link }}" target="_blank" 
+                           style="color: var(--primary); text-decoration: none; font-weight: 500; font-size: 1rem;">
                             {{ $topic->video_link }}
                         </a>
                     </div>
                     
-                    @if(str_contains($topic->video_link, 'youtube.com') || str_contains($topic->video_link, 'youtu.be'))
-                        <!-- YouTube Embed -->
-                        @php
-                            $videoId = '';
-                            if (str_contains($topic->video_link, 'youtube.com/watch?v=')) {
-                                $videoId = substr($topic->video_link, strpos($topic->video_link, 'v=') + 2);
-                            } elseif (str_contains($topic->video_link, 'youtu.be/')) {
-                                $videoId = substr($topic->video_link, strrpos($topic->video_link, '/') + 1);
-                            }
-                            $embedUrl = $videoId ? "https://www.youtube.com/embed/{$videoId}" : null;
-                        @endphp
+                    <!-- Try to embed video if it's from supported platforms -->
+                    @php
+                        $embedUrl = null;
                         
-                        @if($embedUrl)
-                        <div style="margin-top: 1rem;">
-                            <iframe 
-                                width="100%" 
-                                height="400" 
-                                src="{{ $embedUrl }}" 
-                                title="YouTube video player" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen
-                                style="border-radius: 8px;">
-                            </iframe>
-                        </div>
-                        @endif
+                        // Check for YouTube
+                        if (str_contains($topic->video_link, 'youtube.com/watch?v=')) {
+                            $videoId = substr($topic->video_link, strpos($topic->video_link, 'v=') + 2);
+                            $videoId = strtok($videoId, '&'); // Remove any additional parameters
+                            $embedUrl = $videoId ? "https://www.youtube.com/embed/{$videoId}" : null;
+                        } 
+                        // Check for YouTube short links
+                        elseif (str_contains($topic->video_link, 'youtu.be/')) {
+                            $videoId = substr($topic->video_link, strrpos($topic->video_link, '/') + 1);
+                            $videoId = strtok($videoId, '?'); // Remove any parameters
+                            $embedUrl = $videoId ? "https://www.youtube.com/embed/{$videoId}" : null;
+                        }
+                        // Check for Vimeo
+                        elseif (str_contains($topic->video_link, 'vimeo.com/')) {
+                            $videoId = substr($topic->video_link, strrpos($topic->video_link, '/') + 1);
+                            $videoId = strtok($videoId, '?'); // Remove any parameters
+                            $embedUrl = $videoId ? "https://player.vimeo.com/video/{$videoId}" : null;
+                        }
+                    @endphp
+                    
+                    @if($embedUrl)
+                    <div style="margin-top: 1rem;">
+                        <iframe 
+                            width="100%" 
+                            height="400" 
+                            src="{{ $embedUrl }}" 
+                            title="Video Player" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                            style="border-radius: 8px;">
+                        </iframe>
+                    </div>
+                    @else
+                    <div style="margin-top: 0.5rem;">
+                        <p style="color: #6b7280; font-size: 0.875rem;">
+                            <i class="fas fa-info-circle"></i> Video cannot be embedded. Click the link above to watch.
+                        </p>
+                    </div>
                     @endif
+                </div>
+            </div>
+            @endif
+            
+            <!-- Attachment -->
+            @if($topic->attachment)
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary); font-size: 0.875rem;">Attachment</label>
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                    @php
+                        $icon = \App\Http\Controllers\Admin\TopicController::getFileIcon($topic->attachment);
+                        $color = \App\Http\Controllers\Admin\TopicController::getFileColor($topic->attachment);
+                        $type = \App\Http\Controllers\Admin\TopicController::getFileType($topic->attachment);
+                    @endphp
+                    
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="width: 48px; height: 48px; border-radius: 8px; background: {{ $color }}20; display: flex; align-items: center; justify-content: center;">
+                            <i class="{{ $icon }}" style="font-size: 1.5rem; color: {{ $color }};"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--dark); margin-bottom: 4px;">
+                                {{ $type }}
+                            </div>
+                            <a href="{{ $topic->attachment }}" target="_blank" 
+                               style="color: var(--primary); text-decoration: none; font-size: 0.875rem; word-break: break-all;">
+                                {{ $topic->attachment }}
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{{ $topic->attachment }}" target="_blank" 
+                               style="padding: 8px 16px; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.875rem;">
+                                <i class="fas fa-external-link-alt"></i> Open
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid var(--border);">
+                        <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.5rem;">
+                            <i class="fas fa-info-circle"></i> How to open this file:
+                        </h4>
+                        <ul style="margin: 0; padding-left: 1.5rem; color: #6b7280; font-size: 0.875rem; line-height: 1.5;">
+                            <li>Click the "Open" button above to view the file</li>
+                            <li>If it's a Google Drive link, you may need to sign in to your Google account</li>
+                            <li>For PDF files, they will open in your browser or download</li>
+                            <li>For Office documents, they may open in Office Online or download</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             @endif
@@ -191,6 +248,47 @@
         .content-grid {
             grid-template-columns: 1fr;
         }
+    }
+    
+    /* Video embed responsiveness */
+    iframe {
+        max-width: 100%;
+    }
+    
+    /* File attachment styles */
+    .file-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .file-pdf {
+        background: rgba(220, 38, 38, 0.1);
+        color: #dc2626;
+    }
+    
+    .file-word {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+    }
+    
+    .file-excel {
+        background: rgba(5, 150, 105, 0.1);
+        color: #059669;
+    }
+    
+    .file-powerpoint {
+        background: rgba(217, 119, 6, 0.1);
+        color: #d97706;
+    }
+    
+    .file-image {
+        background: rgba(124, 58, 237, 0.1);
+        color: #7c3aed;
     }
 </style>
 @endsection

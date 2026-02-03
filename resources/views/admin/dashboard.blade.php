@@ -272,17 +272,6 @@
                         </div>
                     </a>
                     
-                    <!-- Assignments -->
-                    <a href="{{ route('admin.assignments.create') }}" class="course-item" style="text-decoration: none; color: inherit;">
-                        <div class="course-icon course-2">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                        <div class="course-info">
-                            <div class="course-name">Create Assignment</div>
-                            <div class="course-desc">Add new assignment task</div>
-                        </div>
-                    </a>
-                    
                     <!-- Quizzes -->
                     <a href="{{ route('admin.quizzes.create') }}" class="course-item" style="text-decoration: none; color: inherit;">
                         <div class="course-icon course-3">
@@ -325,16 +314,6 @@
                 </div>
                 
                 <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div>
-                            <div class="font-semibold">{{ $totalAssignments }}</div>
-                            <div class="text-sm text-secondary">Total Assignments</div>
-                        </div>
-                        <div class="stat-icon icon-courses" style="width: 40px; height: 40px;">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                    </div>
-                    
                     <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
                             <div class="font-semibold">{{ $totalQuizzes }}</div>

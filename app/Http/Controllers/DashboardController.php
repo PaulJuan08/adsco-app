@@ -44,10 +44,7 @@ class DashboardController extends Controller
             'totalQuizzes' => Quiz::count(),
             'totalTopics' => Topic::count(),
             'totalAssignments' => Assignment::count(),
-            // REMOVED ->with('course') from Topic since it no longer has course relationship
             'recentTopics' => Topic::latest()->take(3)->get(),
-            // If Assignments and Quizzes still have course relationship, keep ->with('course')
-            // If not, remove it from these too:
             'recentAssignments' => Assignment::latest()->take(3)->get(),
             'recentQuizzes' => Quiz::latest()->take(3)->get(),
         ];
@@ -64,7 +61,7 @@ class DashboardController extends Controller
             'totalStudents' => User::where('role', 4)->count(),
             'totalPending' => User::whereIn('role', [3, 4])->where('is_approved', false)->count(),
             'totalApproved' => User::whereIn('role', [3, 4])->where('is_approved', true)->count(),
-            'totalTopics' => Topic::count(), // Added total topics for registrar
+            'totalTopics' => Topic::count(),
         ];
         
         return view('registrar.dashboard', $data)->with('layout', 'registrar');
@@ -84,7 +81,7 @@ class DashboardController extends Controller
                 ->count();
         }
         
-        // Get upcoming assignments and quizzes for deadlines section
+        // Get upcoming assignments from teacher's courses
         $upcomingAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
         })
@@ -94,31 +91,35 @@ class DashboardController extends Controller
         ->take(3)
         ->get();
         
-        $upcomingQuizzes = Quiz::whereHas('course', function($query) use ($teacherId) {
+        // FIXED: Quizzes don't have course relationship in your model
+        // If quizzes are meant to be standalone (not tied to courses), show all quizzes
+        // Or if they should be tied to courses, you need to add course_id to quizzes table
+        $upcomingQuizzes = Quiz::where('available_until', '>', now())
+            ->where('is_published', 1)
+            ->orderBy('available_until', 'asc')
+            ->take(3)
+            ->get();
+        
+        // Get all quizzes count (since they're not tied to courses)
+        $totalQuizzes = Quiz::count();
+        
+        // Get assignments count from teacher's courses
+        $totalAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
             $query->where('teacher_id', $teacherId);
-        })
-        ->where('available_until', '>', now())
-        ->where('is_published', 1)
-        ->orderBy('available_until', 'asc')
-        ->take(3)
-        ->get();
+        })->count();
         
         $data = [
             'myCourses' => $myCourses,
             'totalStudents' => Enrollment::whereIn('course_id', function($query) use ($teacherId) {
                 $query->select('id')->from('courses')->where('teacher_id', $teacherId);
-            })->distinct('student_id')->count(),
-            'totalTopics' => Topic::count(), // Added total topics for teacher
-            'totalAssignments' => Assignment::whereHas('course', function($query) use ($teacherId) {
-                $query->where('teacher_id', $teacherId);
-            })->count(),
-            'totalQuizzes' => Quiz::whereHas('course', function($query) use ($teacherId) {
-                $query->where('teacher_id', $teacherId);
-            })->count(),
+            })->where('status', 'active')->distinct('student_id')->count(),
+            'totalTopics' => Topic::count(),
+            'totalAssignments' => $totalAssignments,
+            'totalQuizzes' => $totalQuizzes, // Changed: all quizzes since not tied to courses
             'recentEnrollments' => Enrollment::whereIn('course_id', function($query) use ($teacherId) {
                 $query->select('id')->from('courses')->where('teacher_id', $teacherId);
             })->with(['student', 'course'])->latest()->take(5)->get(),
-            'pendingGrading' => 0, // You can implement this later
+            'pendingGrading' => 0,
             'upcomingAssignments' => $upcomingAssignments,
             'upcomingQuizzes' => $upcomingQuizzes,
         ];
@@ -136,28 +137,34 @@ class DashboardController extends Controller
             ->pluck('course_id')
             ->toArray();
         
-        // REMOVED course relationship from Topic since it no longer exists
-        // Topics are now standalone, not tied to courses
+        // Topics are standalone, not tied to courses
         $studentTopics = Topic::where('is_published', 1)
             ->latest()
             ->take(5)
             ->get();
         
-        // Check if Assignments and Quizzes still have course relationship
-        // If they do, keep the whereIn clause. If not, remove it.
+        // Assignments have course relationship (based on your code)
         $studentAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
             ->where('is_published', 1)
-            ->with('course') // Keep this only if Assignment has course relationship
+            ->with('course')
             ->latest()
             ->take(5)
             ->get();
         
-        $studentQuizzes = Quiz::whereIn('course_id', $enrolledCourseIds)
-            ->where('is_published', 1)
-            ->with('course') // Keep this only if Quiz has course relationship
+        // FIXED: Quizzes don't have course relationship in your model
+        // If quizzes are meant to be standalone, show all quizzes
+        $studentQuizzes = Quiz::where('is_published', 1)
             ->latest()
             ->take(5)
             ->get();
+        
+        // Count assignments from enrolled courses
+        $totalAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
+            ->where('is_published', 1)
+            ->count();
+        
+        // Count all quizzes (since they're standalone)
+        $totalQuizzes = Quiz::where('is_published', 1)->count();
         
         $data = [
             'enrolledCourses' => Enrollment::where('student_id', $studentId)
@@ -170,13 +177,9 @@ class DashboardController extends Controller
             'averageGrade' => Enrollment::where('student_id', $studentId)
                 ->whereNotNull('grade')
                 ->avg('grade') ?? 0,
-            'totalTopics' => Topic::where('is_published', 1)->count(), // Added for student
-            'totalAssignments' => Assignment::whereIn('course_id', $enrolledCourseIds)
-                ->where('is_published', 1)
-                ->count(),
-            'totalQuizzes' => Quiz::whereIn('course_id', $enrolledCourseIds)
-                ->where('is_published', 1)
-                ->count(),
+            'totalTopics' => Topic::where('is_published', 1)->count(),
+            'totalAssignments' => $totalAssignments,
+            'totalQuizzes' => $totalQuizzes, // Changed: all quizzes
             'studentTopics' => $studentTopics,
             'studentAssignments' => $studentAssignments,
             'studentQuizzes' => $studentQuizzes,

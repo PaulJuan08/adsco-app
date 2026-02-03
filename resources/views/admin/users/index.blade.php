@@ -87,13 +87,6 @@
                     <input type="text" class="search-input" placeholder="Search users..." 
                            style="padding: 8px 12px 8px 36px; border: 1px solid var(--border); border-radius: 6px; width: 200px;">
                 </div>
-                <select style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; color: var(--secondary); font-size: 0.875rem;">
-                    <option value="">All Roles</option>
-                    <option value="1">Admin</option>
-                    <option value="2">Registrar</option>
-                    <option value="3">Teacher</option>
-                    <option value="4">Student</option>
-                </select>
                 <a href="{{ route('admin.users.create') }}" class="view-all" style="display: flex; align-items: center; gap: 6px;">
                     <i class="fas fa-plus-circle"></i>
                     Add User
@@ -134,7 +127,7 @@
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Email</th>
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Role</th>
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Status</th>
-                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Joined</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Active</th>
                         <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--secondary); font-size: 0.875rem;">Actions</th>
                     </tr>
                 </thead>

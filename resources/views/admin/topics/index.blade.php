@@ -42,18 +42,7 @@
         </div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-header">
-            <div>
-                <div class="stat-number">{{ $draftTopics ?? 0 }}</div>
-                <div class="stat-label">Draft Topics</div>
-            </div>
-            <div class="stat-icon icon-users">
-                <i class="fas fa-clock"></i>
-            </div>
-        </div>
-    </div>
-    
+   
     <div class="stat-card">
         <div class="stat-header">
             <div>
@@ -152,9 +141,6 @@
                                 </div>
                             </div>
                         </td>
-                        <!-- <td style="padding: 16px;">
-                            <div class="course-desc">{{ Str::limit($topic->description, 80) }}</div>
-                        </td> -->
                         <td style="padding: 16px;">
                             @if($topic->is_published)
                                 <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: #dcfce7; color: #166534; border-radius: 6px; font-size: 0.75rem; font-weight: 500;">
