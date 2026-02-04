@@ -121,7 +121,6 @@
                             <span>Completed</span>
                         </div>
                     @endif
-
                 </div>
                 <div class="topic-actions">
                     @if($topic->attachment)
