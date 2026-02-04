@@ -57,18 +57,6 @@
             </div>
             
             <div style="margin-bottom: 1.5rem;">
-                <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
-                <textarea id="learning_outcomes" 
-                          name="learning_outcomes" 
-                          rows="3"
-                          placeholder="What will students learn from this topic?"
-                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('learning_outcomes') border-color: var(--danger); @enderror">{{ old('learning_outcomes') }}</textarea>
-                @error('learning_outcomes')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-            </div>
-            
-            <div style="margin-bottom: 1.5rem;">
                 <label for="video_link" class="form-label">Video Link (Optional)</label>
                 <input type="url" 
                        id="video_link" 

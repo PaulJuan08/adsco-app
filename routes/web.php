@@ -15,7 +15,6 @@ use App\Http\Controllers\Teacher\TopicController as TeacherTopicController;
 use App\Http\Controllers\Teacher\AssignmentController as TeacherAssignmentController;
 use App\Http\Controllers\Teacher\QuizController as TeacherQuizController;
 use App\Http\Controllers\Teacher\ProgressController as TeacherProgressController;
-use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Student\TopicController as StudentTopicController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
@@ -38,7 +37,7 @@ Route::middleware(['guest'])->group(function () {
 Route::middleware(['auth', 'check.approval'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
-    // Dashboard routes
+    // Dashboard routes - This handles all roles (admin, registrar, teacher, student)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Admin routes
@@ -105,6 +104,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/courses/{encryptedId}/edit', [TeacherCourseController::class, 'edit'])->name('courses.edit');
         Route::put('/courses/{encryptedId}', [TeacherCourseController::class, 'update'])->name('courses.update');
         Route::delete('/courses/{encryptedId}', [TeacherCourseController::class, 'destroy'])->name('courses.destroy');
+        Route::get('/courses/available', [StudentCourseController::class, 'available'])->name('courses.available');
         
         // Course Topic Management Routes
         Route::get('/courses/{encryptedId}/available-topics', [TeacherCourseController::class, 'availableTopics'])->name('courses.available-topics');
@@ -158,21 +158,24 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
     });
     
-    // Student routes
+    // Student routes - SINGLE GROUP (FIXED VERSION)
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/profile', [StudentDashboardController::class, 'profile'])->name('profile');
-        Route::post('/profile', [StudentDashboardController::class, 'updateProfile'])->name('profile.update');
+        // Dashboard is handled by the main DashboardController
         
         // Courses
         Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
-        Route::post('/courses/{course}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
         Route::get('/courses/{encryptedId}', [StudentCourseController::class, 'show'])->name('courses.show');
+        Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
         Route::get('/courses/{encryptedId}/topics', [StudentCourseController::class, 'topics'])->name('courses.topics');
-        Route::get('/courses/{encryptedId}/topics/{encryptedTopicId}', [StudentCourseController::class, 'showTopic'])->name('courses.topic.show');
         Route::get('/courses/{encryptedId}/materials', [StudentCourseController::class, 'materials'])->name('courses.materials');
         Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
+        
+        // Topics - SIMPLIFIED ROUTES
+        Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');
+        Route::get('/topics/{encryptedId}', [StudentTopicController::class, 'show'])->name('topics.show');
+        Route::post('/topics/{encryptedId}/complete', [StudentTopicController::class, 'markComplete'])->name('topics.complete');
+        Route::post('/topics/{encryptedId}/incomplete', [StudentTopicController::class, 'markIncomplete'])->name('topics.incomplete');
+        Route::post('/topics/{encryptedId}/notes', [StudentTopicController::class, 'saveNotes'])->name('topics.notes');
         
         // Quizzes
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
@@ -183,24 +186,44 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/quizzes/{encryptedId}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
         Route::get('/quizzes/attempts', [StudentQuizController::class, 'attempts'])->name('quizzes.attempts');
         
+        // Assignments
+        Route::get('/assignments', [StudentAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{encryptedId}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('/assignments/{encryptedId}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
+        Route::get('/assignments/{encryptedId}/view', [StudentAssignmentController::class, 'viewSubmission'])->name('assignments.view');
+        
+        // Progress & Grades
+        Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress.index');
+        Route::get('/grades', [StudentProgressController::class, 'grades'])->name('grades.index');
+        
         // Additional student routes
         Route::get('/timetable', function() {
             return view('student.timetable');
         })->name('timetable');
         
-        Route::get('/grades', function() {
-            return view('student.grades');
-        })->name('grades');
-        
         Route::get('/attendance', function() {
             return view('student.attendance');
         })->name('attendance');
         
-        Route::get('/assignments', function() {
-            return view('student.assignments');
-        })->name('assignments');
+        // Calendar/Events
+        Route::get('/calendar', function() {
+            return view('student.calendar');
+        })->name('calendar');
         
-        Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress');
+        // Notifications
+        Route::get('/notifications', function() {
+            return view('student.notifications');
+        })->name('notifications');
+        
+        // Settings
+        Route::get('/settings', function() {
+            return view('student.settings');
+        })->name('settings');
+        
+        // TEST ROUTE - Add this at the end
+        Route::get('/test-route', function() {
+            return response()->json(['message' => 'Student routes are working!']);
+        })->name('test.route');
     });
 
     // Profile routes

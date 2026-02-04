@@ -81,7 +81,7 @@ class User extends Authenticatable
     public function enrolledCourses()
     {
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
-            ->withPivot(['grade', 'enrolled_at', 'status', 'completed_at'])
+            ->withPivot('enrolled_at', 'status', 'grade')
             ->withTimestamps();
     }
     
@@ -280,5 +280,18 @@ class User extends Authenticatable
             'is_approved' => true,
             'approved_at' => now()
         ]);
+    }
+
+    public function completedTopics()
+    {
+        return $this->belongsToMany(Topic::class, 'progress', 'student_id', 'topic_id')
+            ->wherePivot('status', 'completed')
+            ->withPivot('completed_at', 'notes')
+            ->withTimestamps();
+    }
+
+    public function progress()
+    {
+        return $this->hasMany(Progress::class, 'student_id');
     }
 }

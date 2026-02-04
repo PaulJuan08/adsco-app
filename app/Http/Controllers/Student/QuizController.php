@@ -27,23 +27,15 @@ class QuizController extends Controller
             ->pluck('course_id')
             ->toArray();
         
-        // Get available quizzes (for enrolled courses, not expired, published)
+        // Get available quizzes (for enrolled courses, published)
         $availableQuizzes = Quiz::whereIn('course_id', $enrolledCourseIds)
             ->where('is_published', true)
-            ->where(function($query) {
-                $query->whereNull('available_until')
-                      ->orWhere('available_until', '>', now());
-            })
-            ->where(function($query) {
-                $query->whereNull('available_from')
-                      ->orWhere('available_from', '<=', now());
-            })
             ->with(['course', 'questions'])
-            ->orderBy('available_from', 'desc')
+            ->orderBy('created_at', 'desc')
             ->get();
         
-        // Get completed quizzes
-        $completedQuizzes = QuizAttempt::where('user_id', $user->id)
+        // Get completed quiz attempts
+        $completedAttempts = QuizAttempt::where('user_id', $user->id)
             ->with(['quiz.course'])
             ->orderBy('completed_at', 'desc')
             ->get();
@@ -53,9 +45,37 @@ class QuizController extends Controller
             return !$user->quizAttempts()->where('quiz_id', $quiz->id)->exists();
         });
         
+        // Calculate passed attempts
+        $passedAttempts = $completedAttempts->filter(function($attempt) {
+            return $attempt->passed;
+        });
+        
+        // Calculate average score
+        $averageScore = $completedAttempts->isNotEmpty() 
+            ? round($completedAttempts->avg('percentage'), 1)
+            : 0;
+        
+        // For backward compatibility - alias
+        $completedQuizzes = $completedAttempts;
+
+        // Encrypt quiz IDs for the view
+        $availableQuizzes->each(function($quiz) {
+            $quiz->encrypted_id = Crypt::encrypt($quiz->id);
+        });
+        
+        $completedAttempts->each(function($attempt) {
+            if ($attempt->quiz) {
+                $attempt->quiz->encrypted_id = Crypt::encrypt($attempt->quiz_id);
+            }
+        });
+        
         return view('student.quizzes.index', compact(
+            'availableQuizzes',
             'upcomingQuizzes',
-            'completedQuizzes'
+            'completedQuizzes',   
+            'completedAttempts', 
+            'passedAttempts',    
+            'averageScore'        
         ));
     }
 
@@ -82,16 +102,7 @@ class QuizController extends Controller
                     ->with('error', 'You need to be enrolled in the course to access this quiz.');
             }
             
-            // Check if quiz is available
-            if ($quiz->available_from && $quiz->available_from > now()) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'This quiz is not available yet. Available from: ' . $quiz->available_from->format('M d, Y H:i'));
-            }
-            
-            if ($quiz->available_until && $quiz->available_until < now()) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'This quiz has expired.');
-            }
+            // Removed availability checks
             
             // Check previous attempts
             $previousAttempts = $user->quizAttempts()
@@ -137,16 +148,7 @@ class QuizController extends Controller
                     ->with('error', 'You need to be enrolled in the course to take this quiz.');
             }
             
-            // Check if quiz is available
-            if ($quiz->available_from && $quiz->available_from > now()) {
-                return redirect()->route('student.quizzes.show', $encryptedId)
-                    ->with('error', 'Quiz is not available yet.');
-            }
-            
-            if ($quiz->available_until && $quiz->available_until < now()) {
-                return redirect()->route('student.quizzes.show', $encryptedId)
-                    ->with('error', 'Quiz has expired.');
-            }
+            // Removed availability checks
             
             // Check if already attempted
             $previousAttempt = $user->quizAttempts()
@@ -192,7 +194,7 @@ class QuizController extends Controller
             
             $timeTaken = now()->diffInMinutes($quizStartTime);
             
-            // Check if time limit exceeded
+            // Check if time limit exceeded (only if duration is set)
             if ($quiz->duration && $timeTaken > $quiz->duration) {
                 return redirect()->route('student.quizzes.take', $encryptedId)
                     ->with('error', 'Time limit exceeded. Please submit within ' . $quiz->duration . ' minutes.');
