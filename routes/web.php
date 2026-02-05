@@ -177,14 +177,17 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('/topics/{encryptedId}/incomplete', [StudentTopicController::class, 'markIncomplete'])->name('topics.incomplete');
         Route::post('/topics/{encryptedId}/notes', [StudentTopicController::class, 'saveNotes'])->name('topics.notes');
         
-        // Quizzes
+        // Quiz routes - USE StudentQuizController::class
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
         Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
-        Route::get('/quizzes/{encryptedId}/instructions', [StudentQuizController::class, 'instructions'])->name('quizzes.instructions');
-        Route::get('/quizzes/{encryptedId}/take', [StudentQuizController::class, 'take'])->name('quizzes.take');
         Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
-        Route::get('/quizzes/{encryptedId}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
-        Route::get('/quizzes/attempts', [StudentQuizController::class, 'attempts'])->name('quizzes.attempts');
+        Route::post('/quizzes/{encryptedId}/retake', [StudentQuizController::class, 'retake'])->name('quizzes.retake');
+        
+        // Clear results (for modal)
+        Route::post('/quizzes/clear-results', function() {
+            session()->forget('quiz_results');
+            return response()->json(['success' => true]);
+        })->name('quizzes.clear-results');
         
         // Assignments
         Route::get('/assignments', [StudentAssignmentController::class, 'index'])->name('assignments.index');

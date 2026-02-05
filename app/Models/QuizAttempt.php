@@ -10,22 +10,27 @@ class QuizAttempt extends Model
         'user_id',
         'quiz_id',
         'score',
-        'total_questions',
+        'total_points',
         'percentage',
         'passed',
         'time_taken',
+        'started_at',
         'completed_at',
         'answers',
+        'question_order',
+        'option_order',
+        'total_questions',
     ];
 
     protected $casts = [
-        'score' => 'integer',
-        'total_questions' => 'integer',
-        'percentage' => 'float',
         'passed' => 'boolean',
-        'time_taken' => 'integer',
+        'answers' => 'array', // This casts JSON to array automatically
+        'question_order' => 'array',
+        'option_order' => 'array',
         'completed_at' => 'datetime',
-        'answers' => 'array',
+        'started_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function user()
@@ -36,44 +41,5 @@ class QuizAttempt extends Model
     public function quiz()
     {
         return $this->belongsTo(Quiz::class, 'quiz_id');
-    }
-    
-    /**
-     * Get formatted time taken
-     */
-    public function getFormattedTimeTakenAttribute()
-    {
-        if ($this->time_taken < 60) {
-            return $this->time_taken . ' seconds';
-        }
-        
-        $minutes = floor($this->time_taken / 60);
-        $seconds = $this->time_taken % 60;
-        
-        if ($seconds > 0) {
-            return $minutes . 'm ' . $seconds . 's';
-        }
-        
-        return $minutes . ' minutes';
-    }
-    
-    /**
-     * Get status badge class
-     */
-    public function getStatusBadgeClassAttribute()
-    {
-        if ($this->passed) {
-            return 'badge-success';
-        } else {
-            return 'badge-danger';
-        }
-    }
-    
-    /**
-     * Get status text
-     */
-    public function getStatusTextAttribute()
-    {
-        return $this->passed ? 'Passed' : 'Failed';
     }
 }
