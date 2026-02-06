@@ -98,20 +98,9 @@ class QuizController extends Controller
                 ->whereNull('completed_at')
                 ->first();
             
-            // If no incomplete attempt, check if user can start new one
+            // If no incomplete attempt, create new one (UNLIMITED ATTEMPTS)
             if (!$attempt) {
-                // Check max attempts
-                $completedAttempts = QuizAttempt::where('quiz_id', $quizId)
-                    ->where('user_id', $userId)
-                    ->whereNotNull('completed_at')
-                    ->count();
-                
-                if ($quiz->max_attempts > 0 && $completedAttempts >= $quiz->max_attempts) {
-                    return redirect()->route('student.quizzes.index')
-                        ->with('error', 'You have reached the maximum number of attempts for this quiz.');
-                }
-                
-                // Create new attempt
+                // Create new attempt - NO MAX ATTEMPTS CHECK
                 $attempt = new QuizAttempt();
                 $attempt->quiz_id = $quizId;
                 $attempt->user_id = $userId;
@@ -253,7 +242,7 @@ class QuizController extends Controller
     }
     
     /**
-     * Clear quiz attempt and start over
+     * Clear quiz attempt and start over - UNLIMITED ATTEMPTS
      */
     public function retake($encryptedId)
     {
@@ -263,16 +252,7 @@ class QuizController extends Controller
             
             $quiz = Quiz::findOrFail($quizId);
             
-            // Check max attempts
-            $completedAttempts = QuizAttempt::where('quiz_id', $quizId)
-                ->where('user_id', $userId)
-                ->whereNotNull('completed_at')
-                ->count();
-            
-            if ($quiz->max_attempts > 0 && $completedAttempts >= $quiz->max_attempts) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'You have reached the maximum number of attempts for this quiz.');
-            }
+            // UNLIMITED ATTEMPTS - No max attempts check
             
             // Delete any incomplete attempts
             QuizAttempt::where('quiz_id', $quizId)
