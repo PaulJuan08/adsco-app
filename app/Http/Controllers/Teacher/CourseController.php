@@ -66,8 +66,6 @@ class CourseController extends Controller
             'course_code' => 'required|string|max:20|unique:courses,course_code',
             'description' => 'nullable|string',
             'credits' => 'required|numeric|min:0',
-            'status' => 'required|in:active,inactive,upcoming,archived',
-            'thumbnail' => 'nullable|url|max:255',
             'is_published' => 'nullable|boolean',
         ]);
 
@@ -152,8 +150,6 @@ class CourseController extends Controller
                 'course_code' => 'required|string|max:20|unique:courses,course_code,' . $course->id,
                 'description' => 'nullable|string',
                 'credits' => 'required|numeric|min:0',
-                'status' => 'required|in:active,inactive,upcoming,archived',
-                'thumbnail' => 'nullable|url|max:255',
                 'is_published' => 'nullable|boolean',
             ]);
             

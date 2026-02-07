@@ -132,27 +132,33 @@ class DashboardController extends Controller
     {
         $studentId = Auth::id();
         
-        // Get enrolled course IDs
-        $enrolledCourseIds = Enrollment::where('student_id', $studentId)
-            ->where('status', 'active')
-            ->pluck('course_id')
-            ->toArray();
+        // Use CourseController to get stats
+        $courseController = new \App\Http\Controllers\Student\CourseController();
+        $overallStats = $courseController->getOverallStats($studentId);
         
         // Get enrolled courses
         $enrolledCourses = Enrollment::where('student_id', $studentId)
             ->with(['course.teacher'])
             ->where('status', 'active')
+            ->take(4)
             ->get();
         
-        // Get available courses (not enrolled yet)
+        // Calculate progress for each course
+        foreach ($enrolledCourses as $enrollment) {
+            $progress = $enrollment->course->getStudentProgress($studentId);
+            $enrollment->course->progress = $progress;
+            $enrollment->progress = $progress;
+        }
+        
+        // Get available courses
         $availableCourses = Course::where('is_published', true)
-            ->whereNotIn('id', $enrolledCourseIds)
+            ->whereNotIn('id', $enrolledCourses->pluck('course_id')->toArray())
             ->with('teacher')
             ->orderBy('title')
             ->limit(3)
             ->get();
         
-        // Get available quizzes (all published quizzes since no course relationship)
+        // Get available quizzes
         $availableQuizzes = Quiz::where('is_published', true)
             ->where(function($query) {
                 $query->whereNull('available_until')
@@ -166,19 +172,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
         
-        // Calculate statistics
-        $completedCourses = Enrollment::where('student_id', $studentId)
-            ->where('status', 'completed')
-            ->count();
-        
-        $averageGrade = Enrollment::where('student_id', $studentId)
-            ->whereNotNull('grade')
-            ->avg('grade') ?? 0;
-        
-        $totalEnrolled = $enrolledCourses->count();
-        $availableQuizzesCount = $availableQuizzes->count();
-        
-        // Get upcoming quizzes (for next 7 days)
+        // Get upcoming quizzes
         $upcomingQuizzes = Quiz::where('is_published', true)
             ->where('available_from', '>', now())
             ->where('available_from', '<=', now()->addDays(7))
@@ -186,17 +180,14 @@ class DashboardController extends Controller
             ->limit(3)
             ->get();
         
-        // Get recent attendance (if you have attendance model)
-        $recentAttendance = collect([]); // Empty collection for now
-        
-        // Get recent topics (for enrolled courses if topics had course relationship)
-        // Since topics are standalone, get all published topics
+        // Get recent topics
         $recentTopics = Topic::where('is_published', 1)
             ->latest()
             ->take(5)
             ->get();
         
         // Get assignments for enrolled courses
+        $enrolledCourseIds = $enrolledCourses->pluck('course_id')->toArray();
         $studentAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)
             ->where('is_published', 1)
             ->with('course')
@@ -205,22 +196,27 @@ class DashboardController extends Controller
             ->get();
         
         $data = [
-            // Main variables for your dashboard view
+            // Progress stats
+            'stats' => $overallStats,
+            
+            // Courses
             'enrolledCourses' => $enrolledCourses,
             'availableCourses' => $availableCourses,
+            'completedCourses' => $overallStats['completed_courses'],
+            'averageGrade' => $overallStats['average_grade'],
+            'totalEnrolled' => $overallStats['total_courses'],
+            
+            // Quizzes
             'availableQuizzes' => $availableQuizzes,
-            'availableQuizzesCount' => $availableQuizzesCount,
-            'completedCourses' => $completedCourses,
-            'averageGrade' => $averageGrade,
-            'totalEnrolled' => $totalEnrolled,
-            'recentAttendance' => $recentAttendance,
+            'availableQuizzesCount' => $availableQuizzes->count(),
             'upcomingQuizzes' => $upcomingQuizzes,
             
-            // Keep old variables for compatibility with other parts of the view
+            // Other data
+            'recentAttendance' => collect([]),
             'studentTopics' => $recentTopics,
             'studentAssignments' => $studentAssignments,
-            'studentQuizzes' => $availableQuizzes, // Same as available quizzes
-            'totalTopics' => Topic::where('is_published', 1)->count(),
+            'studentQuizzes' => $availableQuizzes,
+            'totalTopics' => $overallStats['total_topics'],
             'totalAssignments' => Assignment::whereIn('course_id', $enrolledCourseIds)
                 ->where('is_published', 1)->count(),
             'totalQuizzes' => Quiz::where('is_published', 1)->count(),

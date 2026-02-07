@@ -5,352 +5,267 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
-use App\Models\QuizQuestion;
-use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class QuizController extends Controller
 {
     /**
-     * Display available quizzes
+     * Display all available quizzes for student
      */
     public function index()
     {
         $user = Auth::user();
+        $now = now();
         
-        // Get enrolled course IDs
-        $enrolledCourseIds = $user->enrollments()
-            ->pluck('course_id')
-            ->toArray();
+        // Debug: Check if user is authenticated
+        if (!$user) {
+            \Log::error('No authenticated user in quiz index');
+            abort(401, 'Not authenticated');
+        }
         
-        // Get available quizzes (for enrolled courses, not expired, published)
-        $availableQuizzes = Quiz::whereIn('course_id', $enrolledCourseIds)
-            ->where('is_published', true)
-            ->where(function($query) {
-                $query->whereNull('available_until')
-                      ->orWhere('available_until', '>', now());
-            })
-            ->where(function($query) {
+        \Log::info('Quiz index accessed by user: ' . $user->id . ' - ' . $user->email);
+        
+        // Get all published and available quizzes
+        $quizzes = Quiz::where('is_published', 1)
+            ->where(function($query) use ($now) {
                 $query->whereNull('available_from')
-                      ->orWhere('available_from', '<=', now());
+                    ->orWhere('available_from', '<=', $now);
             })
-            ->with(['course', 'questions'])
-            ->orderBy('available_from', 'desc')
+            ->where(function($query) use ($now) {
+                $query->whereNull('available_until')
+                    ->orWhere('available_until', '>=', $now);
+            })
+            ->withCount('questions')
+            ->orderBy('created_at', 'desc')
             ->get();
         
-        // Get completed quizzes
-        $completedQuizzes = QuizAttempt::where('user_id', $user->id)
-            ->with(['quiz.course'])
-            ->orderBy('completed_at', 'desc')
-            ->get();
+        \Log::info('Found ' . $quizzes->count() . ' quizzes');
         
-        // Separate quizzes by status
-        $upcomingQuizzes = $availableQuizzes->filter(function($quiz) use ($user) {
-            return !$user->quizAttempts()->where('quiz_id', $quiz->id)->exists();
-        });
+        // Get all attempts by this student
+        $attempts = QuizAttempt::where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->get()
+            ->keyBy('quiz_id');
         
-        return view('student.quizzes.index', compact(
-            'upcomingQuizzes',
-            'completedQuizzes'
-        ));
+        \Log::info('Found ' . $attempts->count() . ' attempts');
+        
+        return view('student.quizzes.index', compact('quizzes', 'attempts'));
     }
-
+    
     /**
-     * Show a specific quiz
+     * Show quiz with questions and options immediately
      */
     public function show($encryptedId)
     {
         try {
             $quizId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $userId = Auth::id();
             
-            $quiz = Quiz::with(['course', 'questions.options'])
-                ->where('is_published', true)
-                ->findOrFail($quizId);
+            // Load quiz with questions and their options
+            $quiz = Quiz::with(['questions' => function($query) {
+                $query->orderBy('order', 'asc')->orderBy('id', 'asc');
+            }, 'questions.options' => function($query) {
+                $query->orderBy('order', 'asc')->orderBy('id', 'asc');
+            }])
+            ->where('is_published', 1)
+            ->findOrFail($quizId);
             
-            // Check if student is enrolled in the course
-            $isEnrolled = $user->enrollments()
-                ->where('course_id', $quiz->course_id)
-                ->exists();
-            
-            if (!$isEnrolled) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'You need to be enrolled in the course to access this quiz.');
-            }
+            \Log::info('Quiz loaded: ' . $quiz->title . ' with ' . $quiz->questions->count() . ' questions');
             
             // Check if quiz is available
-            if ($quiz->available_from && $quiz->available_from > now()) {
+            $now = now();
+            $isAvailable = true;
+            
+            if ($quiz->available_from && $quiz->available_from > $now) {
+                $isAvailable = false;
+            }
+            
+            if ($quiz->available_until && $quiz->available_until < $now) {
+                $isAvailable = false;
+            }
+            
+            if (!$isAvailable) {
                 return redirect()->route('student.quizzes.index')
-                    ->with('error', 'This quiz is not available yet. Available from: ' . $quiz->available_from->format('M d, Y H:i'));
+                    ->with('error', 'This quiz is not currently available.');
             }
             
-            if ($quiz->available_until && $quiz->available_until < now()) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'This quiz has expired.');
-            }
-            
-            // Check previous attempts
-            $previousAttempts = $user->quizAttempts()
-                ->where('quiz_id', $quizId)
-                ->orderBy('completed_at', 'desc')
-                ->get();
-            
-            $canTakeQuiz = $previousAttempts->isEmpty();
-            
-            return view('student.quizzes.show', compact(
-                'quiz',
-                'previousAttempts',
-                'canTakeQuiz'
-            ));
-            
-        } catch (\Exception $e) {
-            return redirect()->route('student.quizzes.index')
-                ->with('error', 'Quiz not found.');
-        }
-    }
-
-    /**
-     * Start taking a quiz
-     */
-    public function take($encryptedId)
-    {
-        try {
-            $quizId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
-            
-            $quiz = Quiz::with(['questions.options' => function($query) {
-                $query->orderBy('order');
-            }])->where('is_published', true)
-               ->findOrFail($quizId);
-            
-            // Check enrollment
-            $isEnrolled = $user->enrollments()
-                ->where('course_id', $quiz->course_id)
-                ->exists();
-            
-            if (!$isEnrolled) {
-                return redirect()->route('student.quizzes.index')
-                    ->with('error', 'You need to be enrolled in the course to take this quiz.');
-            }
-            
-            // Check if quiz is available
-            if ($quiz->available_from && $quiz->available_from > now()) {
-                return redirect()->route('student.quizzes.show', $encryptedId)
-                    ->with('error', 'Quiz is not available yet.');
-            }
-            
-            if ($quiz->available_until && $quiz->available_until < now()) {
-                return redirect()->route('student.quizzes.show', $encryptedId)
-                    ->with('error', 'Quiz has expired.');
-            }
-            
-            // Check if already attempted
-            $previousAttempt = $user->quizAttempts()
-                ->where('quiz_id', $quizId)
+            // Check for existing attempts
+            $attempt = QuizAttempt::where('quiz_id', $quizId)
+                ->where('user_id', $userId)
+                ->whereNull('completed_at')
                 ->first();
             
-            if ($previousAttempt) {
-                return redirect()->route('student.quizzes.results', $encryptedId)
-                    ->with('info', 'You have already taken this quiz.');
+            // If no incomplete attempt, create new one (UNLIMITED ATTEMPTS)
+            if (!$attempt) {
+                // Create new attempt - NO MAX ATTEMPTS CHECK
+                $attempt = new QuizAttempt();
+                $attempt->quiz_id = $quizId;
+                $attempt->user_id = $userId;
+                $attempt->total_questions = $quiz->questions->count();
+                $attempt->started_at = now();
+                $attempt->answers = [];
+                $attempt->save();
+                
+                \Log::info('Created new attempt for quiz ' . $quizId . ' for user ' . $userId);
             }
             
-            // Start timing
-            session()->put('quiz_start_time', now());
-            session()->put('quiz_id', $quizId);
+            // Get user's answers
+            $userAnswers = $attempt->answers ?? [];
             
-            return view('student.quizzes.take', compact('quiz'));
+            // Get completed attempt if exists
+            $completedAttempt = QuizAttempt::where('quiz_id', $quizId)
+                ->where('user_id', $userId)
+                ->whereNotNull('completed_at')
+                ->latest()
+                ->first();
+            
+            return view('student.quizzes.show', compact('quiz', 'attempt', 'userAnswers', 'completedAttempt'));
             
         } catch (\Exception $e) {
+            \Log::error('Error in quiz show: ' . $e->getMessage());
             return redirect()->route('student.quizzes.index')
-                ->with('error', 'Quiz not found.');
+                ->with('error', 'Quiz not found: ' . $e->getMessage());
         }
     }
-
+    
     /**
      * Submit quiz answers
      */
     public function submit(Request $request, $encryptedId)
     {
         DB::beginTransaction();
-        
         try {
             $quizId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $userId = Auth::id();
             
             $quiz = Quiz::with(['questions.options'])->findOrFail($quizId);
+            $attempt = QuizAttempt::where('quiz_id', $quizId)
+                ->where('user_id', $userId)
+                ->whereNull('completed_at')
+                ->firstOrFail();
             
-            // Validate quiz timing
-            $quizStartTime = session()->get('quiz_start_time');
-            if (!$quizStartTime) {
-                return redirect()->route('student.quizzes.take', $encryptedId)
-                    ->with('error', 'Quiz session expired. Please start again.');
-            }
-            
-            $timeTaken = now()->diffInMinutes($quizStartTime);
-            
-            // Check if time limit exceeded
-            if ($quiz->duration && $timeTaken > $quiz->duration) {
-                return redirect()->route('student.quizzes.take', $encryptedId)
-                    ->with('error', 'Time limit exceeded. Please submit within ' . $quiz->duration . ' minutes.');
-            }
+            // Get answers from request
+            $answers = $request->input('answers', []);
+            $score = 0;
             
             // Calculate score
-            $score = 0;
-            $totalQuestions = $quiz->questions->count();
-            $results = [];
-            
             foreach ($quiz->questions as $question) {
-                $userAnswer = $request->input("question_{$question->id}");
-                $correctOption = $question->options->where('is_correct', true)->first();
-                
-                $isCorrect = false;
-                if ($correctOption && $userAnswer == $correctOption->id) {
-                    $isCorrect = true;
-                    $score += $question->points; // Use question points
+                if (isset($answers[$question->id])) {
+                    $selectedOptionId = $answers[$question->id];
+                    $correctOption = $question->options->where('is_correct', 1)->first();
+                    
+                    if ($correctOption && $selectedOptionId == $correctOption->id) {
+                        $score += $question->points ?? 1;
+                    }
                 }
-                
-                $results[] = [
-                    'question' => $question,
-                    'user_answer' => $userAnswer,
-                    'correct_option' => $correctOption,
-                    'is_correct' => $isCorrect,
-                ];
             }
             
-            $percentage = $totalQuestions > 0 ? round(($score / $totalQuestions) * 100, 2) : 0;
+            // Calculate results
+            $totalPoints = $quiz->questions->sum('points') ?? $quiz->questions->count();
+            $percentage = $totalPoints > 0 ? round(($score / $totalPoints) * 100, 2) : 0;
             $passed = $percentage >= $quiz->passing_score;
             
-            // Create quiz attempt record
-            $attempt = QuizAttempt::create([
-                'user_id' => $user->id,
-                'quiz_id' => $quizId,
-                'score' => $score,
-                'total_questions' => $totalQuestions,
-                'percentage' => $percentage,
-                'passed' => $passed,
-                'time_taken' => $timeTaken,
-                'completed_at' => now(),
-                'answers' => json_encode($results),
-            ]);
+            // Update attempt
+            $attempt->score = $score;
+            $attempt->total_points = $totalPoints;
+            $attempt->percentage = $percentage;
+            $attempt->passed = $passed ? 1 : 0;
+            $attempt->completed_at = now();
+            $attempt->answers = $answers;
             
-            // Clear session
-            session()->forget(['quiz_start_time', 'quiz_id']);
+            if ($attempt->started_at) {
+                $attempt->time_taken = now()->diffInSeconds($attempt->started_at);
+            }
+            
+            $attempt->save();
             
             DB::commit();
             
-            return redirect()->route('student.quizzes.results', $encryptedId)
-                ->with('success', 'Quiz submitted successfully!')
-                ->with('attempt_id', $attempt->id);
+            // Prepare results for modal
+            $results = [
+                'score' => $score,
+                'total_points' => $totalPoints,
+                'percentage' => $percentage,
+                'passed' => $passed,
+                'passing_score' => $quiz->passing_score,
+                'questions' => []
+            ];
+            
+            // Store detailed question results
+            foreach ($quiz->questions as $question) {
+                $userAnswer = $answers[$question->id] ?? null;
+                $correctOption = $question->options->where('is_correct', 1)->first();
+                $isCorrect = false;
+                
+                if ($userAnswer && $correctOption) {
+                    $isCorrect = ($userAnswer == $correctOption->id);
+                }
+                
+                // Get all options with status
+                $optionsData = [];
+                foreach ($question->options as $option) {
+                    $optionsData[] = [
+                        'id' => $option->id,
+                        'text' => $option->option_text,
+                        'is_correct' => $option->is_correct,
+                        'is_user_selected' => ($option->id == $userAnswer)
+                    ];
+                }
+                
+                $results['questions'][] = [
+                    'question' => $question->question,
+                    'question_id' => $question->id,
+                    'user_answer' => $userAnswer,
+                    'correct_answer' => $correctOption ? $correctOption->id : null,
+                    'correct_text' => $correctOption ? $correctOption->option_text : null,
+                    'is_correct' => $isCorrect,
+                    'options' => $optionsData
+                ];
+            }
+            
+            // Store results in session for modal
+            session()->flash('quiz_results', $results);
+            
+            return redirect()->route('student.quizzes.show', $encryptedId)
+                ->with('success', 'Quiz submitted successfully!');
                 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return redirect()->route('student.quizzes.take', $encryptedId)
-                ->with('error', 'Error submitting quiz: ' . $e->getMessage());
+            \Log::error('Error submitting quiz: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error submitting quiz: ' . $e->getMessage())
+                ->withInput();
         }
     }
-
+    
     /**
-     * Show quiz results
+     * Clear quiz attempt and start over - UNLIMITED ATTEMPTS
      */
-    public function results($encryptedId)
+    public function retake($encryptedId)
     {
         try {
             $quizId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $userId = Auth::id();
             
-            $quiz = Quiz::with(['course'])->findOrFail($quizId);
+            $quiz = Quiz::findOrFail($quizId);
             
-            // Get latest attempt
-            $attempt = $user->quizAttempts()
-                ->where('quiz_id', $quizId)
-                ->latest()
-                ->first();
+            // UNLIMITED ATTEMPTS - No max attempts check
             
-            if (!$attempt) {
-                return redirect()->route('student.quizzes.show', $encryptedId)
-                    ->with('error', 'No quiz attempt found.');
-            }
+            // Delete any incomplete attempts
+            QuizAttempt::where('quiz_id', $quizId)
+                ->where('user_id', $userId)
+                ->whereNull('completed_at')
+                ->delete();
             
-            // Decode answers if stored as JSON
-            $results = [];
-            if ($attempt->answers) {
-                $results = json_decode($attempt->answers, true);
-            } else {
-                // Recalculate if not stored
-                $results = $this->recalculateResults($quiz, $attempt);
-            }
-            
-            return view('student.quizzes.results', compact(
-                'quiz',
-                'attempt',
-                'results'
-            ));
+            return redirect()->route('student.quizzes.show', $encryptedId);
             
         } catch (\Exception $e) {
+            \Log::error('Error retaking quiz: ' . $e->getMessage());
             return redirect()->route('student.quizzes.index')
-                ->with('error', 'Results not found.');
-        }
-    }
-
-    /**
-     * Show all quiz attempts
-     */
-    public function attempts()
-    {
-        $user = Auth::user();
-        
-        $attempts = $user->quizAttempts()
-            ->with(['quiz.course'])
-            ->orderBy('completed_at', 'desc')
-            ->paginate(10);
-        
-        // Calculate statistics
-        $totalAttempts = $attempts->total();
-        $passedAttempts = $user->quizAttempts()->where('passed', true)->count();
-        $averageScore = $user->quizAttempts()->avg('percentage') ?? 0;
-        $bestScore = $user->quizAttempts()->max('percentage') ?? 0;
-        
-        return view('student.quizzes.attempts', compact(
-            'attempts',
-            'totalAttempts',
-            'passedAttempts',
-            'averageScore',
-            'bestScore'
-        ));
-    }
-
-    /**
-     * Helper method to recalculate results
-     */
-    private function recalculateResults($quiz, $attempt)
-    {
-        $results = [];
-        
-        // This would need to be implemented based on how you store answers
-        // For now, return empty array
-        return $results;
-    }
-
-    /**
-     * Get quiz instructions
-     */
-    public function instructions($encryptedId)
-    {
-        try {
-            $quizId = Crypt::decrypt($encryptedId);
-            
-            $quiz = Quiz::with(['course'])->findOrFail($quizId);
-            
-            return view('student.quizzes.instructions', compact('quiz'));
-            
-        } catch (\Exception $e) {
-            return redirect()->route('student.quizzes.index')
-                ->with('error', 'Quiz not found.');
+                ->with('error', 'Error retaking quiz: ' . $e->getMessage());
         }
     }
 }

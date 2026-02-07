@@ -45,11 +45,20 @@ class TopicController extends Controller
             'attachment' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'learning_outcomes' => 'nullable|string|max:1000',
+            'pdf_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB max, PDF only
         ]);
 
         // Add default values
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
+
+        // Handle PDF file upload
+        if ($request->hasFile('pdf_file')) {
+            $file = $request->file('pdf_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('pdfs', $fileName, 'public');
+            $validated['pdf_file'] = '/storage/' . $filePath;
+        }
 
         Topic::create($validated);
         
@@ -82,7 +91,24 @@ class TopicController extends Controller
             'attachment' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'learning_outcomes' => 'nullable|string|max:1000',
+            'pdf_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB max, PDF only
         ]);
+
+        // Handle PDF file upload
+        if ($request->hasFile('pdf_file')) {
+            // Delete old file if exists
+            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
+                unlink(public_path($topic->pdf_file));
+            }
+            
+            $file = $request->file('pdf_file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('pdfs', $fileName, 'public');
+            $validated['pdf_file'] = '/storage/' . $filePath;
+        } else {
+            // Keep existing pdf_file if not uploading new one
+            $validated['pdf_file'] = $topic->pdf_file;
+        }
 
         $topic->update($validated);
         
@@ -94,6 +120,12 @@ class TopicController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $topic = Topic::findOrFail($id);
+        
+        // Delete PDF file if exists
+        if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
+            unlink(public_path($topic->pdf_file));
+        }
+        
         $topic->delete();
         
         return redirect()->route('admin.topics.index')

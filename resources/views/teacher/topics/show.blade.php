@@ -15,6 +15,23 @@
     </div>
 </div>
 
+<!-- PDF Preview Modal -->
+<div id="pdfModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 90%; max-width: 1200px; height: 90%; background: white; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="padding: 1rem 1.5rem; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-weight: 600;">PDF Preview</h3>
+            <button id="closePdfModal" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="flex: 1; position: relative;">
+            <iframe id="pdfIframe" style="width: 100%; height: 100%; border: none;"></iframe>
+            <div id="pdfLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none;">
+                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <p>Loading PDF...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="content-grid">
     <!-- Topic Details -->
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -53,6 +70,37 @@
                     {{ $topic->title }}
                 </div>
             </div>
+
+            <!-- PDF Document -->
+            @if($topic->pdf_file)
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary); font-size: 0.875rem;">PDF Document</label>
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="width: 48px; height: 48px; border-radius: 8px; background: rgba(220, 38, 38, 0.1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-pdf" style="font-size: 1.5rem; color: #dc2626;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--dark); margin-bottom: 4px;">
+                                PDF Document
+                            </div>
+                            <div style="color: #6b7280; font-size: 0.875rem;">
+                                {{ basename($topic->pdf_file) }}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="openPdfModal('{{ asset($topic->pdf_file) }}')" 
+                                    style="padding: 8px 16px; background: var(--primary); color: white; border-radius: 6px; border: none; font-weight: 500; font-size: 0.875rem; cursor: pointer;">
+                                <i class="fas fa-eye"></i> Open
+                            <!-- <a href="{{ asset($topic->pdf_file) }}" target="_blank" 
+                            style="padding: 8px 16px; background: transparent; color: var(--primary); border: 1px solid var(--primary); border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.875rem;">
+                                <i class="fas fa-download"></i> Download
+                            </a> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
             
             <!-- Video Link -->
             @if($topic->video_link)
@@ -346,4 +394,60 @@
         max-width: 100%;
     }
 </style>
+
+<script>
+function openPdfModal(pdfUrl) {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    const loading = document.getElementById('pdfLoading');
+    
+    // Show modal and loading indicator
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    
+    // Set iframe source
+    iframe.src = pdfUrl;
+    
+    // Hide loading when iframe loads
+    iframe.onload = () => {
+        loading.style.display = 'none';
+    };
+    
+    iframe.onerror = () => {
+        loading.style.display = 'none';
+        alert('Failed to load PDF. Please try downloading the file instead.');
+        closePdfModal();
+    };
+}
+
+// Close modal functionality
+document.getElementById('closePdfModal').addEventListener('click', closePdfModal);
+
+// Close modal when clicking outside
+document.getElementById('pdfModal').addEventListener('click', function(e) {
+    if (e.target.id === 'pdfModal') {
+        closePdfModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('pdfModal');
+        if (modal.style.display === 'flex') {
+            closePdfModal();
+        }
+    }
+});
+
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    const loading = document.getElementById('pdfLoading');
+    
+    modal.style.display = 'none';
+    iframe.src = ''; // Clear iframe source
+    loading.style.display = 'none'; // Reset loading
+}
+</script>
 @endsection

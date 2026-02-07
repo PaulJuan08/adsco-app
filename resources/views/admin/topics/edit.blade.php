@@ -25,7 +25,7 @@
     </div>
     
     <div style="padding: 1.5rem;">
-        <form action="{{ isset($topic) ? route('admin.topics.update', Crypt::encrypt($topic->id)) : route('admin.topics.store') }}" method="POST">
+        <form action="{{ isset($topic) ? route('admin.topics.update', Crypt::encrypt($topic->id)) : route('admin.topics.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             @if(isset($topic))
                 @method('PUT')
@@ -55,6 +55,51 @@
                        required
                        placeholder="Enter topic title"
                        style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
+            </div>
+
+            <!-- PDF File Upload -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="pdf_file" class="form-label">Upload PDF Document (Optional)</label>
+                <input type="file" 
+                    id="pdf_file" 
+                    name="pdf_file" 
+                    accept=".pdf"
+                    style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; background: white; @error('pdf_file') border-color: var(--danger); @enderror">
+                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                    <i class="fas fa-info-circle"></i> Maximum file size: 10MB. PDF files only.
+                </div>
+                
+                <!-- Show current PDF if exists -->
+                @if(isset($topic) && $topic->pdf_file)
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-file-pdf" style="color: #dc2626;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 2px;">Current PDF:</div>
+                            <div style="font-size: 0.875rem; color: #6b7280; word-break: break-all;">
+                                {{ basename($topic->pdf_file) }}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            <a href="{{ asset($topic->pdf_file) }}" target="_blank" 
+                            style="padding: 6px 12px; background: var(--primary); color: white; border-radius: 4px; text-decoration: none; font-size: 0.75rem;">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ asset($topic->pdf_file) }}" download 
+                            style="padding: 6px 12px; background: transparent; color: var(--primary); border: 1px solid var(--primary); border-radius: 4px; text-decoration: none; font-size: 0.75rem;">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: #6b7280;">
+                        <i class="fas fa-exclamation-triangle"></i> Uploading a new PDF will replace the current one.
+                    </div>
+                </div>
+                @endif
+                
+                @error('pdf_file')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
             </div>
             
             <!-- Video Link -->

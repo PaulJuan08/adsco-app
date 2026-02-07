@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 
 class Course extends Model
 {
@@ -20,7 +21,7 @@ class Course extends Model
         'status',
         'start_date',
         'end_date',
-        'max_students' // Added this as it's referenced in your methods
+        'max_students'
     ];
 
     protected $casts = [
@@ -36,25 +37,26 @@ class Course extends Model
         return $this->belongsTo(User::class, 'teacher_id');
     }
 
-    // Relationship with students
-    public function students()
-    {
-        return $this->belongsToMany(User::class, 'course_student')
-            ->withTimestamps();
-    }
-
-    // Relationship with topics - ordered by 'order' field then creation date
+    // Relationship with topics through pivot table (ORDERED)
     public function topics()
     {
         return $this->belongsToMany(Topic::class, 'course_topics')
-                    ->withTimestamps()
-                    ->withPivot(['order']); // Add pivot columns if needed
+            ->withPivot('order')
+            ->withTimestamps()
+            ->orderBy('course_topics.order');
     }
 
     // Relationship with enrollments
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class, 'course_id');
+    }
+
+    // Relationship with students
+    public function students()
+    {
+        return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'student_id')
+            ->withTimestamps();
     }
 
     // Accessor for status
@@ -86,7 +88,7 @@ class Course extends Model
         return $studentsCount >= $this->max_students;
     }
 
-    // Accessor: Get available seats
+    // Get available seats
     public function getAvailableSeatsAttribute()
     {
         if (!$this->max_students) {
@@ -99,47 +101,10 @@ class Course extends Model
         return max(0, $available);
     }
 
-    // Accessor: Get formatted credits
+    // Get formatted credits
     public function getFormattedCreditsAttribute()
     {
         return $this->credits . ' ' . ($this->credits == 1 ? 'Credit' : 'Credits');
-    }
-
-    // Scope for published courses
-    public function scopePublished($query)
-    {
-        return $query->where('is_published', true);
-    }
-
-    // Scope for draft courses
-    public function scopeDraft($query)
-    {
-        return $query->where('is_published', false);
-    }
-
-    // Scope for current semester (active or upcoming)
-    public function scopeCurrentSemester($query)
-    {
-        return $query->where(function($q) {
-            $q->whereNull('end_date')
-              ->orWhere('end_date', '>=', now());
-        });
-    }
-
-    // Scope for courses taught by specific teacher
-    public function scopeByTeacher($query, $teacherId)
-    {
-        return $query->where('teacher_id', $teacherId);
-    }
-
-    // Scope for searching courses
-    public function scopeSearch($query, $search)
-    {
-        return $query->where(function($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
-              ->orWhere('course_code', 'like', "%{$search}%")
-              ->orWhere('description', 'like', "%{$search}%");
-        });
     }
 
     // Get the count of published topics
@@ -163,45 +128,96 @@ class Course extends Model
     // Get next topic order number
     public function getNextTopicOrderAttribute()
     {
-        $lastTopic = $this->topics()->orderByDesc('order')->first();
-        return $lastTopic ? $lastTopic->order + 1 : 1;
+        $lastTopic = $this->topics()->orderByDesc('course_topics.order')->first();
+        return $lastTopic ? ($lastTopic->pivot->order + 1) : 1;
     }
 
-    // Helper method to publish the course
-    public function publish()
-    {
-        $this->update(['is_published' => true]);
-        return $this;
-    }
-
-    // Helper method to unpublish the course
-    public function unpublish()
-    {
-        $this->update(['is_published' => false]);
-        return $this;
-    }
-
-    // Helper method to check if student is enrolled
-    public function isEnrolled($studentId)
-    {
-        return $this->students()->where('user_id', $studentId)->exists();
-    }
-
-    // Get course duration in weeks (if start_date and end_date are set)
-    public function getDurationInWeeksAttribute()
-    {
-        if (!$this->start_date || !$this->end_date) {
-            return null;
-        }
-        
-        $diff = $this->start_date->diffInDays($this->end_date);
-        return ceil($diff / 7);
-    }
-
-    // Add this method to get enrolled students count
+    // Get enrolled students count
     public function getEnrolledStudentsCountAttribute()
     {
         return $this->enrollments()->count();
     }
 
+    // Calculate course progress for a specific student
+    public function getStudentProgress($studentId)
+    {
+        $topics = $this->topics;
+        
+        if ($topics->isEmpty()) {
+            return [
+                'total' => 0,
+                'completed' => 0,
+                'percentage' => 0
+            ];
+        }
+        
+        $completedTopicIds = DB::table('progress')
+            ->where('student_id', $studentId)
+            ->whereIn('topic_id', $topics->pluck('id'))
+            ->where('status', 'completed')
+            ->pluck('topic_id')
+            ->toArray();
+        
+        $totalTopics = $topics->count();
+        $completedTopics = count($completedTopicIds);
+        $progressPercentage = $totalTopics > 0 ? round(($completedTopics / $totalTopics) * 100) : 0;
+        
+        return [
+            'total' => $totalTopics,
+            'completed' => $completedTopics,
+            'percentage' => $progressPercentage
+        ];
+    }
+
+    // Check if student is enrolled
+    public function isEnrolled($studentId)
+    {
+        return $this->enrollments()->where('student_id', $studentId)->exists();
+    }
+
+    // Get student enrollment
+    public function getStudentEnrollment($studentId)
+    {
+        return $this->enrollments()->where('student_id', $studentId)->first();
+    }
+
+    // Add topic to course with order
+    public function addTopicWithOrder($topicId, $order = null)
+    {
+        if ($order === null) {
+            $order = $this->next_topic_order;
+        }
+        
+        $this->topics()->attach($topicId, ['order' => $order]);
+        
+        return $this;
+    }
+
+    // Remove topic from course
+    public function removeTopic($topicId)
+    {
+        $this->topics()->detach($topicId);
+        
+        // Reorder remaining topics
+        $this->reorderTopics();
+        
+        return $this;
+    }
+
+    // Reorder topics sequentially
+    public function reorderTopics()
+    {
+        $topics = $this->topics()->orderBy('course_topics.order')->get();
+        
+        $order = 1;
+        foreach ($topics as $topic) {
+            DB::table('course_topics')
+                ->where('course_id', $this->id)
+                ->where('topic_id', $topic->id)
+                ->update(['order' => $order]);
+            $order++;
+        }
+        
+        return $this;
+    }
 }

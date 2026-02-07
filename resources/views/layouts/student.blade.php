@@ -484,6 +484,80 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Student Layout Specific */
+        .badge-student {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Progress animations */
+        @keyframes progressFill {
+            from { width: 0; }
+            to { width: var(--progress); }
+        }
+
+        /* Topic modal styles */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .video-container iframe,
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .content-grid {
+                gap: 1rem;
+            }
+            
+            .course-details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .topic-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .topic-status {
+                align-self: flex-end;
+                margin-top: 1rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar,
+            .btn,
+            .action-links,
+            .modal {
+                display: none !important;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     
     @stack('styles')

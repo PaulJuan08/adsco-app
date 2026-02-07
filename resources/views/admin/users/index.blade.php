@@ -123,7 +123,7 @@
                         <th class="hide-on-mobile">Email</th>
                         <th>Role</th>
                         <th>Status</th>
-                        <th class="hide-on-tablet">Created</th>
+                        <th class="hide-on-tablet">Active</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
