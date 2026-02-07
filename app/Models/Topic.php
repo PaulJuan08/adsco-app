@@ -11,7 +11,7 @@ class Topic extends Model
     
     protected $fillable = [
         'title', 'description', 'content', 'video_link', 
-        'attachment', 'course_id', 'order', 'estimated_time', 'is_published'
+        'attachment', 'pdf_file', 'course_id', 'order', 'estimated_time', 'is_published'
     ];
     
     protected $casts = [

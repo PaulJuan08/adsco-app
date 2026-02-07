@@ -4,6 +4,22 @@
 
 @section('content')
 
+<!-- PDF Preview Modal -->
+<div id="pdfModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; align-items: center; justify-content: center;">
+    <div style="width: 90%; max-width: 1200px; height: 90%; background: white; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="padding: 1rem 1.5rem; background: #dc2626; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-weight: 600;">PDF Preview</h3>
+            <button id="closePdfModal" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="flex: 1; position: relative;">
+            <iframe id="pdfIframe" style="width: 100%; height: 100%; border: none;"></iframe>
+            <div id="pdfLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none;">
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #dc2626; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <p style="color: #6b7280;">Loading PDF...</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Main Content -->
 <div class="topic-container">
@@ -115,6 +131,54 @@
             </div>
         </div>
         
+        <!-- PDF Materials Section -->
+        @if($topic->pdf_file)
+        <section class="pdf-section">
+            <div class="section-header">
+                <div class="header-content">
+                    <div class="section-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <h2>PDF Materials</h2>
+                </div>
+            </div>
+            
+            <div class="pdf-container">
+                <div class="pdf-card">
+                    <div class="pdf-header" style="border-color: #dc2626;">
+                        <div class="pdf-icon" style="color: #dc2626;">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="pdf-info">
+                            <h4>PDF Document</h4>
+                            <p class="pdf-desc">{{ basename($topic->pdf_file) }}</p>
+                        </div>
+                    </div>
+                    <div class="pdf-body">
+                        <div class="file-info">
+                            <div class="info-item">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>PDF Document</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Ready to View</span>
+                            </div>
+                        </div>
+                        <div class="pdf-actions">
+                            <button onclick="openPdfModal('{{ asset($topic->pdf_file) }}')" class="btn btn-primary">
+                                <i class="fas fa-eye"></i> Open
+                            </button>
+                            <!-- <a href="{{ asset($topic->pdf_file) }}" download class="btn btn-outline-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endif
+
         <div class="video-container-wrapper">
             @php
                 $embedUrl = null;
@@ -715,6 +779,105 @@
         border-radius: 4px;
         transition: width 0.5s ease;
     }
+
+        /* PDF Section */
+    .pdf-section {
+        margin-top: 2rem;
+    }
+
+    .pdf-container {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .pdf-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .pdf-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-bottom: 3px solid;
+        background: #fef2f2;
+    }
+
+    .pdf-icon {
+        font-size: 2.5rem;
+    }
+
+    .pdf-info h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .pdf-desc {
+        color: var(--secondary);
+        font-size: 0.875rem;
+        margin: 0;
+        word-break: break-all;
+    }
+
+    .pdf-body {
+        padding: 1.5rem;
+    }
+
+    .pdf-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    /* PDF Modal Styles */
+    #pdfModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 999999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #pdfIframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    /* Spinner animation */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .pdf-actions {
+            flex-direction: column;
+        }
+        
+        .pdf-actions .btn {
+            width: 100%;
+        }
+        
+        #pdfModal > div {
+            width: 95% !important;
+            height: 95% !important;
+        }
+    }
 </style>
 
 
@@ -725,13 +888,77 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// ========== GLOBAL PDF MODAL FUNCTIONS ==========
+function openPdfModal(pdfUrl) {
+    console.log('openPdfModal called with URL:', pdfUrl);
+    
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    const loading = document.getElementById('pdfLoading');
+    
+    if (!modal || !iframe) {
+        console.error('Modal or iframe not found');
+        alert('PDF preview is not available. Please try downloading the file.');
+        return;
+    }
+    
+    // Show modal and loading indicator
+    modal.style.display = 'flex';
+    if (loading) {
+        loading.style.display = 'block';
+    }
+    
+    // Set iframe source
+    console.log('Setting iframe src to PDF');
+    iframe.src = pdfUrl;
+    
+    // Hide loading when iframe loads
+    iframe.onload = () => {
+        console.log('PDF loaded successfully');
+        if (loading) {
+            loading.style.display = 'none';
+        }
+    };
+    
+    iframe.onerror = () => {
+        console.error('Failed to load PDF');
+        if (loading) {
+            loading.style.display = 'none';
+        }
+        alert('Failed to load PDF. Please try downloading the file instead.');
+        closePdfModal();
+    };
+}
+
+function closePdfModal() {
+    console.log('Closing PDF modal');
+    
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    const loading = document.getElementById('pdfLoading');
+    
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    if (iframe) {
+        iframe.src = '';
+    }
+    
+    if (loading) {
+        loading.style.display = 'none';
+    }
+}
+
+// ========== DOM CONTENT LOADED ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // Get initial data from PHP
+    console.log('DOM fully loaded and parsed');
+    
+    // Initialize progress stats
     const isCurrentlyCompleted = {{ $isCompleted ? 'true' : 'false' }};
     const totalTopics = {{ $totalTopics ?? 0 }};
     const initialCompletedTopics = {{ $completedTopics ?? 0 }};
     
-    // Initialize progress stats
     function initProgressStats() {
         const stats = {
             totalTopics: totalTopics,
@@ -743,8 +970,34 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Initial stats:', stats);
     }
     
-    // Initialize on page load
     initProgressStats();
+    
+    // PDF Modal Event Listeners
+    const closeBtn = document.getElementById('closePdfModal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closePdfModal);
+        console.log('Close button listener added');
+    }
+    
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closePdfModal();
+            }
+        });
+        console.log('Modal outside click listener added');
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('pdfModal');
+            if (modal && modal.style.display === 'flex') {
+                closePdfModal();
+            }
+        }
+    });
+    console.log('Escape key listener added');
     
     // Mark topic as complete functionality
     const markCompleteBtn = document.querySelector('.btn-complete');
@@ -888,20 +1141,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to trigger localStorage update event
     function triggerStorageUpdate() {
-        // Trigger storage event for other tabs
         const event = new StorageEvent('storage', {
             key: 'topicProgress',
             newValue: localStorage.getItem('topicProgress')
         });
         window.dispatchEvent(event);
-        
-        // Also update the current page if there are progress elements
         updateCurrentPageProgress();
     }
     
-    // Update progress on current page
     function updateCurrentPageProgress() {
         const stats = JSON.parse(localStorage.getItem('topicProgress')) || {
             totalTopics: totalTopics,
@@ -909,7 +1157,6 @@ document.addEventListener('DOMContentLoaded', function() {
             progressPercentage: 0
         };
         
-        // Update any progress elements on this page
         document.querySelectorAll('.progress-fill').forEach(el => {
             el.style.width = stats.progressPercentage + '%';
         });
@@ -919,12 +1166,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Listen for storage events from other tabs
     window.addEventListener('storage', function(e) {
         if (e.key === 'topicProgress') {
             updateCurrentPageProgress();
         }
     });
+    
+    console.log('All JavaScript initialized successfully');
 });
 </script>
 @endpush

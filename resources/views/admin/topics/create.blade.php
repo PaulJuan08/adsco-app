@@ -24,7 +24,7 @@
     </div>
     
     <div style="padding: 1.5rem;">
-        <form action="{{ route('admin.topics.store') }}" method="POST">
+        <form action="{{ route('admin.topics.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             
             @if($errors->any())
@@ -51,6 +51,22 @@
                        placeholder="e.g., Introduction to Variables"
                        style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('title') border-color: var(--danger); @enderror">
                 @error('title')
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- PDF File Upload -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="pdf_file" class="form-label">Upload PDF Document (Optional)</label>
+                <input type="file" 
+                    id="pdf_file" 
+                    name="pdf_file" 
+                    accept=".pdf"
+                    style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; background: white; @error('pdf_file') border-color: var(--danger); @enderror">
+                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+                    <i class="fas fa-info-circle"></i> Maximum file size: 10MB. PDF files only.
+                </div>
+                @error('pdf_file')
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
                 @enderror
             </div>
