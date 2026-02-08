@@ -98,56 +98,6 @@
                 @enderror
             </div>
             
-            <!-- Learning Outcomes -->
-            <div style="margin-bottom: 1.5rem;">
-                <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
-                <textarea id="learning_outcomes" 
-                          name="learning_outcomes" 
-                          rows="2"
-                          placeholder="What will students learn in this course?"
-                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical; @error('learning_outcomes') border-color: var(--danger); @enderror">{{ old('learning_outcomes') }}</textarea>
-                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                    Optional: Describe what students will achieve
-                </div>
-                @error('learning_outcomes')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-            </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label for="thumbnail" class="form-label">Thumbnail URL (Optional)</label>
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="url" 
-                           id="thumbnail" 
-                           name="thumbnail" 
-                           value="{{ old('thumbnail') }}"
-                           placeholder="https://example.com/image.jpg"
-                           style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; @error('thumbnail') border-color: var(--danger); @enderror">
-                    <button type="button" 
-                            id="preview-thumbnail" 
-                            style="padding: 12px 20px; background: #f3f4f6; color: var(--dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500;">
-                        Preview
-                    </button>
-                </div>
-                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                    <i class="fas fa-info-circle"></i> Optional: URL to course thumbnail image
-                </div>
-                @error('thumbnail')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-                
-                <!-- Thumbnail Preview -->
-                <div id="thumbnail-preview" style="margin-top: 0.75rem; display: none;">
-                    <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark); margin-bottom: 0.5rem;">Preview:</div>
-                    <div style="width: 100%; max-width: 400px; height: 225px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
-                        <img id="preview-image" src="" alt="Thumbnail preview" 
-                             style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                        <div id="no-preview" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: var(--secondary);">
-                            No preview available
-                        </div>
-                    </div>
-                </div>
-            </div>
             
             <!-- Publish Status -->
             <div style="margin-bottom: 2rem;">

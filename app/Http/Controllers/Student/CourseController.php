@@ -3,385 +3,390 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Topic;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Progress;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
     /**
-     * Display available courses and enrolled courses
+     * Display enrolled courses
      */
     public function index()
     {
-        $user = Auth::user();
+        $student = Auth::user();
         
-        // Get enrolled courses
-        $enrolledCourses = $user->enrollments()
-            ->with(['course.teacher', 'course.topics'])
-            ->get()
-            ->pluck('course');
+        // Get enrolled courses with relationships
+        $enrolledCourses = Enrollment::where('student_id', $student->id)
+            ->with(['course.teacher'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(12);
         
-        // Get available courses (not enrolled yet)
+        // Calculate progress for each course
+        foreach ($enrolledCourses as $enrollment) {
+            $progress = $enrollment->course->getStudentProgress($student->id);
+            $enrollment->course->progress = $progress;
+            
+            // Also store progress in enrollment for easy access
+            $enrollment->progress = $progress;
+        }
+        
+        // Get overall statistics
+        $overallStats = $this->getOverallStats($student->id);
+        
+        // Get enrolled course IDs
+        $enrolledCourseIds = $enrolledCourses->pluck('course_id')->toArray();
+        
+        // Get available courses
         $availableCourses = Course::where('is_published', true)
-            ->whereNotIn('id', $enrolledCourses->pluck('id')->toArray())
-            ->with('teacher')
-            ->orderBy('title')
+            ->whereNotIn('id', $enrolledCourseIds)
+            ->with(['teacher'])
+            ->withCount(['students', 'topics'])
+            ->orderBy('created_at', 'desc')
+            ->take(6)
             ->get();
         
-        // Calculate statistics
-        $enrolledCount = $enrolledCourses->count();
-        $completedCount = $enrolledCourses->whereNotNull('grade')->count();
-        $averageGrade = $enrolledCourses->whereNotNull('grade')->avg('grade') ?? 0;
+        // Get recent activities
+        $recentActivities = $this->getRecentActivities($student);
+
+        $totalAvailableCourses = Course::where('is_published', true)
+            ->whereNotIn('id', $enrolledCourseIds)
+            ->count();
+
+        $hasMoreAvailableCourses = $totalAvailableCourses > $availableCourses->count();
         
         return view('student.courses.index', compact(
-            'availableCourses',
             'enrolledCourses',
-            'enrolledCount',
-            'completedCount',
-            'averageGrade'
+            'availableCourses',
+            'hasMoreAvailableCourses',
+            'overallStats',
+            'recentActivities'
         ));
     }
-
+    
     /**
-     * Enroll in a course
-     */
-    public function enroll(Request $request, $courseId)
-    {
-        try {
-            $course = Course::findOrFail($courseId);
-            $user = Auth::user();
-            
-            // Check if already enrolled
-            if ($user->enrollments()->where('course_id', $courseId)->exists()) {
-                return redirect()->back()
-                    ->with('error', 'You are already enrolled in this course.');
-            }
-            
-            // Check if course is published
-            if (!$course->is_published) {
-                return redirect()->back()
-                    ->with('error', 'This course is not available for enrollment.');
-            }
-            
-            // Enroll the student
-            DB::beginTransaction();
-            
-            $enrollment = Enrollment::create([
-                'user_id' => $user->id,
-                'course_id' => $courseId,
-                'enrolled_at' => now(),
-                'status' => 'active',
-            ]);
-            
-            // Add student to course (pivot table)
-            $course->students()->attach($user->id);
-            
-            DB::commit();
-            
-            return redirect()->route('student.courses.show', Crypt::encrypt($courseId))
-                ->with('success', 'Successfully enrolled in ' . $course->title);
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()->back()
-                ->with('error', 'Failed to enroll: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * View a specific course
+     * Show course details and topics
      */
     public function show($encryptedId)
     {
         try {
             $courseId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $student = Auth::user();
             
+            // Verify enrollment
+            $enrollment = Enrollment::where('student_id', $student->id)
+                ->where('course_id', $courseId)
+                ->firstOrFail();
+            
+            // Get course with topics (ordered)
             $course = Course::with(['teacher', 'topics' => function($query) {
-                $query->where('is_published', true)
-                      ->orderBy('order');
-            }])->findOrFail($courseId);
+                $query->orderBy('course_topics.order');
+            }])
+            ->withCount(['students', 'topics'])
+            ->findOrFail($courseId);
             
-            // Check if student is enrolled
-            $isEnrolled = $user->enrollments()
-                ->where('course_id', $courseId)
-                ->exists();
+            // Get topics separately for easier access in view
+            $topics = $course->topics;
             
-            if (!$isEnrolled) {
-                return redirect()->route('student.courses.index')
-                    ->with('error', 'You need to enroll in this course first.');
+            // Get completed topic IDs for this student
+            $completedTopicIds = Progress::where('student_id', $student->id)
+                ->whereIn('topic_id', $topics->pluck('id'))
+                ->where('status', 'completed')
+                ->pluck('topic_id')
+                ->toArray();
+            
+            // Calculate progress
+            $completedTopics = count($completedTopicIds);
+            $totalTopics = $topics->count();
+            $remainingTopics = $totalTopics - $completedTopics;
+            $progressPercentage = $totalTopics > 0 ? round(($completedTopics / $totalTopics) * 100) : 0;
+            
+            // Get number of enrolled students
+            $enrolledStudents = $course->students_count;
+            
+            // Calculate next topic (first incomplete topic)
+            $nextTopic = null;
+            foreach ($topics as $topic) {
+                if (!in_array($topic->id, $completedTopicIds)) {
+                    $nextTopic = $topic;
+                    break;
+                }
             }
-            
-            // Get student's enrollment info
-            $enrollment = $user->enrollments()
-                ->where('course_id', $courseId)
-                ->first();
             
             return view('student.courses.show', compact(
                 'course',
                 'enrollment',
-                'isEnrolled'
+                'topics', // Add this line
+                'completedTopicIds',
+                'completedTopics',
+                'totalTopics',
+                'remainingTopics',
+                'progressPercentage',
+                'enrolledStudents',
+                'nextTopic',
+                'encryptedId'
             ));
             
         } catch (\Exception $e) {
             return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found.');
+                ->with('error', 'Course not found or access denied.');
         }
     }
 
     /**
-     * View course topics
+     * Get overall statistics for student - CHANGED FROM PRIVATE TO PUBLIC
+     */
+    public function getOverallStats($studentId)
+    {
+        // Get all enrolled courses
+        $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+            ->pluck('course_id')
+            ->toArray();
+        
+        if (empty($enrolledCourseIds)) {
+            return [
+                'total_courses' => 0,
+                'completed_courses' => 0,
+                'in_progress_courses' => 0,
+                'total_topics' => 0,
+                'completed_topics' => 0,
+                'average_progress' => 0,
+                'average_grade' => 0
+            ];
+        }
+        
+        // Get courses
+        $courses = Course::whereIn('id', $enrolledCourseIds)->get();
+        
+        $totalCourses = count($enrolledCourseIds);
+        $completedCourses = 0;
+        $totalTopics = 0;
+        $completedTopics = 0;
+        $totalProgress = 0;
+        
+        foreach ($courses as $course) {
+            $progress = $course->getStudentProgress($studentId);
+            
+            $totalTopics += $progress['total'];
+            $completedTopics += $progress['completed'];
+            $totalProgress += $progress['percentage'];
+            
+            // Consider course completed if progress is 100%
+            if ($progress['percentage'] >= 100) {
+                $completedCourses++;
+            }
+        }
+        
+        $inProgressCourses = $totalCourses - $completedCourses;
+        $averageProgress = $totalCourses > 0 ? round($totalProgress / $totalCourses) : 0;
+        
+        // Get average grade
+        $averageGrade = Enrollment::where('student_id', $studentId)
+            ->whereNotNull('grade')
+            ->avg('grade') ?? 0;
+        
+        return [
+            'total_courses' => $totalCourses,
+            'completed_courses' => $completedCourses,
+            'in_progress_courses' => $inProgressCourses,
+            'total_topics' => $totalTopics,
+            'completed_topics' => $completedTopics,
+            'average_progress' => $averageProgress,
+            'average_grade' => round($averageGrade, 1)
+        ];
+    }
+    
+    /**
+     * Get recent activities for the student
+     */
+    private function getRecentActivities($student)
+    {
+        $activities = [];
+        
+        // Get recent topic completions
+        $recentCompletions = Progress::where('student_id', $student->id)
+            ->with(['topic' => function($query) {
+                $query->with(['courses']);
+            }])
+            ->where('status', 'completed')
+            ->orderBy('completed_at', 'desc')
+            ->take(5)
+            ->get();
+        
+        foreach ($recentCompletions as $completion) {
+            if ($completion->topic) {
+                $course = $completion->topic->courses->first();
+                if ($course) {
+                    $activities[] = [
+                        'type' => 'topic',
+                        'text' => "Completed '{$completion->topic->title}' in {$course->title}",
+                        'time' => $completion->completed_at ? $completion->completed_at->diffForHumans() : 'Recently',
+                        'icon' => 'fas fa-check-circle',
+                        'color' => 'success'
+                    ];
+                }
+            }
+        }
+        
+        // Get recent enrollments
+        $recentEnrollments = Enrollment::where('student_id', $student->id)
+            ->with('course')
+            ->orderBy('enrolled_at', 'desc')
+            ->take(5 - count($activities))
+            ->get();
+        
+        foreach ($recentEnrollments as $enrollment) {
+            $activities[] = [
+                'type' => 'enrollment',
+                'text' => "Enrolled in '{$enrollment->course->title}'",
+                'time' => $enrollment->enrolled_at->diffForHumans(),
+                'icon' => 'fas fa-user-plus',
+                'color' => 'primary'
+            ];
+        }
+        
+        // Sort by time (newest first)
+        usort($activities, function($a, $b) {
+            return strtotime($b['time']) - strtotime($a['time']);
+        });
+        
+        return array_slice($activities, 0, 5);
+    }
+    
+    /**
+     * Enroll in a course
+     */
+    public function enroll(Request $request, $encryptedId)
+    {
+        try {
+            $courseId = Crypt::decrypt($encryptedId);
+            $student = Auth::user();
+            
+            // Check if already enrolled
+            $existingEnrollment = Enrollment::where('student_id', $student->id)
+                ->where('course_id', $courseId)
+                ->first();
+                
+            if ($existingEnrollment) {
+                return back()->with('error', 'You are already enrolled in this course.');
+            }
+            
+            // Create enrollment
+            Enrollment::create([
+                'student_id' => $student->id,
+                'course_id' => $courseId,
+                'enrolled_at' => now(),
+                'status' => 'active'
+            ]);
+            
+            return back()->with('success', 'Successfully enrolled in the course!');
+            
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to enroll in the course.');
+        }
+    }
+    
+    /**
+     * Show topics for a course
      */
     public function topics($encryptedId)
     {
         try {
             $courseId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $student = Auth::user();
             
-            $course = Course::with(['topics' => function($query) {
-                $query->where('is_published', true)
-                      ->orderBy('order');
-            }])->findOrFail($courseId);
-            
-            // Check if student is enrolled
-            $isEnrolled = $user->enrollments()
+            // Verify enrollment
+            $enrollment = Enrollment::where('student_id', $student->id)
                 ->where('course_id', $courseId)
-                ->exists();
-            
-            if (!$isEnrolled) {
-                return redirect()->route('student.courses.index')
-                    ->with('error', 'You need to enroll in this course first.');
-            }
-            
-            return view('student.courses.topics', compact('course'));
-            
-        } catch (\Exception $e) {
-            return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found.');
-        }
-    }
-
-    /**
-     * View a specific topic
-     */
-    public function showTopic($encryptedCourseId, $encryptedTopicId)
-    {
-        try {
-            $courseId = Crypt::decrypt($encryptedCourseId);
-            $topicId = Crypt::decrypt($encryptedTopicId);
-            $user = Auth::user();
-            
-            // Check enrollment
-            $isEnrolled = $user->enrollments()
-                ->where('course_id', $courseId)
-                ->exists();
-            
-            if (!$isEnrolled) {
-                return redirect()->route('student.courses.index')
-                    ->with('error', 'You need to enroll in this course first.');
-            }
-            
-            $course = Course::findOrFail($courseId);
-            $topic = Topic::where('id', $topicId)
-                ->where('is_published', true)
                 ->firstOrFail();
             
-            // Check if topic belongs to course
-            if (!$course->topics()->where('topics.id', $topicId)->exists()) {
-                abort(404, 'Topic not found in this course');
-            }
+            $course = Course::with(['topics'])->findOrFail($courseId);
             
-            // Get next and previous topics
-            $allTopics = $course->topics()
-                ->where('is_published', true)
-                ->orderBy('order')
-                ->get();
-            
-            $currentIndex = $allTopics->search(function($item) use ($topicId) {
-                return $item->id == $topicId;
-            });
-            
-            $previousTopic = $currentIndex > 0 ? $allTopics[$currentIndex - 1] : null;
-            $nextTopic = $currentIndex < ($allTopics->count() - 1) ? $allTopics[$currentIndex + 1] : null;
-            
-            return view('student.courses.topic-show', compact(
-                'course',
-                'topic',
-                'previousTopic',
-                'nextTopic'
-            ));
+            return view('student.courses.topics', compact('course', 'enrollment'));
             
         } catch (\Exception $e) {
             return redirect()->route('student.courses.index')
-                ->with('error', 'Topic not found.');
+                ->with('error', 'Course not found or access denied.');
         }
     }
-
+    
     /**
-     * Get course materials
+     * Show course materials
      */
     public function materials($encryptedId)
     {
         try {
             $courseId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $student = Auth::user();
             
-            // Check enrollment
-            $isEnrolled = $user->enrollments()
+            // Verify enrollment
+            $enrollment = Enrollment::where('student_id', $student->id)
                 ->where('course_id', $courseId)
-                ->exists();
+                ->firstOrFail();
             
-            if (!$isEnrolled) {
-                return redirect()->route('student.courses.index')
-                    ->with('error', 'You need to enroll in this course first.');
-            }
+            $course = Course::with(['topics'])->findOrFail($courseId);
             
-            $course = Course::with(['topics' => function($query) {
-                $query->where('is_published', true)
-                      ->orderBy('order');
-            }])->findOrFail($courseId);
-            
-            // Get all materials (attachments) from topics
-            $materials = [];
-            foreach ($course->topics as $topic) {
-                if ($topic->attachment) {
-                    $materials[] = [
-                        'topic' => $topic,
-                        'attachment' => $topic->attachment,
-                        'type' => $this->getFileType($topic->attachment),
-                        'icon' => $this->getFileIcon($topic->attachment),
-                        'color' => $this->getFileColor($topic->attachment),
-                    ];
-                }
-            }
-            
-            return view('student.courses.materials', compact('course', 'materials'));
+            return view('student.courses.materials', compact('course', 'enrollment'));
             
         } catch (\Exception $e) {
             return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found.');
+                ->with('error', 'Course not found or access denied.');
         }
     }
-
+    
     /**
-     * View course grades
+     * Show grades for a course
      */
     public function grades($encryptedId)
     {
         try {
             $courseId = Crypt::decrypt($encryptedId);
-            $user = Auth::user();
+            $student = Auth::user();
             
-            $enrollment = $user->enrollments()
+            // Verify enrollment
+            $enrollment = Enrollment::where('student_id', $student->id)
                 ->where('course_id', $courseId)
                 ->firstOrFail();
             
             $course = Course::with(['teacher'])->findOrFail($courseId);
             
-            // Get quiz attempts for this course
-            $quizAttempts = $user->quizAttempts()
-                ->whereHas('quiz', function($query) use ($courseId) {
-                    $query->where('course_id', $courseId);
-                })
-                ->with('quiz')
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // In a real app, you would fetch grades from your grades table
+            $grades = [
+                // Mock data - replace with actual grade retrieval
+                'quizzes' => [],
+                'assignments' => [],
+                'exams' => []
+            ];
             
-            return view('student.courses.grades', compact(
-                'course',
-                'enrollment',
-                'quizAttempts'
-            ));
+            return view('student.courses.grades', compact('course', 'enrollment', 'grades'));
             
         } catch (\Exception $e) {
             return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found.');
+                ->with('error', 'Course not found or access denied.');
         }
-    }
-
-    /**
-     * Helper methods for file type detection
-     */
-    private function getFileIcon($url)
-    {
-        if (empty($url)) return 'fas fa-file';
-        
-        $url = strtolower($url);
-        
-        if (str_contains($url, ['.pdf', 'pdf?', 'pdf#'])) {
-            return 'fas fa-file-pdf';
-        } elseif (str_contains($url, ['.doc', '.docx'])) {
-            return 'fas fa-file-word';
-        } elseif (str_contains($url, ['.xls', '.xlsx', '.csv'])) {
-            return 'fas fa-file-excel';
-        } elseif (str_contains($url, ['.ppt', '.pptx'])) {
-            return 'fas fa-file-powerpoint';
-        } elseif (str_contains($url, ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'])) {
-            return 'fas fa-file-image';
-        } elseif (str_contains($url, ['.zip', '.rar', '.tar', '.gz'])) {
-            return 'fas fa-file-archive';
-        } elseif (str_contains($url, '.txt')) {
-            return 'fas fa-file-alt';
-        } elseif (str_contains($url, '.mp4') || str_contains($url, '.avi') || str_contains($url, '.mov')) {
-            return 'fas fa-file-video';
-        } elseif (str_contains($url, '.mp3') || str_contains($url, '.wav')) {
-            return 'fas fa-file-audio';
-        }
-        
-        return 'fas fa-file';
     }
     
-    private function getFileColor($url)
+    public function available()
     {
-        if (empty($url)) return '#6b7280';
+        $student = Auth::user();
         
-        $url = strtolower($url);
+        // Get enrolled course IDs
+        $enrolledCourseIds = Enrollment::where('student_id', $student->id)
+            ->pluck('course_id')
+            ->toArray();
         
-        if (str_contains($url, ['.pdf', 'pdf?', 'pdf#'])) {
-            return '#dc2626';
-        } elseif (str_contains($url, ['.doc', '.docx'])) {
-            return '#2563eb';
-        } elseif (str_contains($url, ['.xls', '.xlsx', '.csv'])) {
-            return '#059669';
-        } elseif (str_contains($url, ['.ppt', '.pptx'])) {
-            return '#d97706';
-        } elseif (str_contains($url, ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'])) {
-            return '#7c3aed';
-        } elseif (str_contains($url, ['.zip', '.rar', '.tar', '.gz'])) {
-            return '#92400e';
-        }
+        // Get all available courses
+        $availableCourses = Course::where('is_published', true)
+            ->whereNotIn('id', $enrolledCourseIds)
+            ->with(['teacher'])
+            ->withCount(['students', 'topics'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(12);
         
-        return '#6b7280';
-    }
-    
-    private function getFileType($url)
-    {
-        if (empty($url)) return 'File';
-        
-        $url = strtolower($url);
-        
-        if (str_contains($url, ['.pdf', 'pdf?', 'pdf#'])) {
-            return 'PDF Document';
-        } elseif (str_contains($url, ['.doc', '.docx'])) {
-            return 'Word Document';
-        } elseif (str_contains($url, ['.xls', '.xlsx', '.csv'])) {
-            return 'Excel Spreadsheet';
-        } elseif (str_contains($url, ['.ppt', '.pptx'])) {
-            return 'PowerPoint Presentation';
-        } elseif (str_contains($url, ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg'])) {
-            return 'Image File';
-        } elseif (str_contains($url, ['.zip', '.rar', '.tar', '.gz'])) {
-            return 'Archive File';
-        } elseif (str_contains($url, '.txt')) {
-            return 'Text File';
-        }
-        
-        return 'File';
+        return view('student.courses.available', compact('availableCourses'));
     }
 }
