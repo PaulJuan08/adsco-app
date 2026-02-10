@@ -5,56 +5,173 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use App\Mail\UserApprovedMail;
 
 class UserController extends Controller
 {
+
     public function index()
     {
-        // Get search query
+        // Get filters
         $search = request()->input('search');
         $role = request()->input('role');
+        $status = request()->input('status');
         
-        // Build query
-        $query = User::query();
+        // Pre-define role names for view
+        $roleNames = [
+            1 => 'Admin',
+            2 => 'Registrar',
+            3 => 'Teacher',
+            4 => 'Student'
+        ];
         
-        // Apply search filter
+        // Get user statistics using cached method - now includes this_month
+        $stats = $this->getStats();
+        
+        // Create cache key based on filters
+        $cacheKey = 'users_index_' . md5(json_encode([
+            'search' => $search,
+            'role' => $role,
+            'status' => $status,
+            'page' => request()->get('page', 1)
+        ]));
+        
+        // Cache for 2 minutes for paginated results
+        $users = Cache::remember($cacheKey, 120, function() use ($search, $role, $status) {
+            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at']);
+            
+            // Apply search filter
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('f_name', 'like', "%{$search}%")
+                    ->orWhere('l_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+            
+            // Apply role filter
+            if ($role && in_array($role, [1, 2, 3, 4])) {
+                $query->where('role', $role);
+            }
+            
+            // Apply status filter
+            if ($status === 'pending') {
+                $query->where('is_approved', false);
+            }
+            
+            return $query->orderBy('created_at', 'desc')->paginate(10);
+        });
+        
+        // Clear this specific cache if there's a search (for real-time results)
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('f_name', 'like', "%{$search}%")
-                ->orWhere('l_name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%");
-            });
+            Cache::forget($cacheKey);
+            $users = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at'])
+                ->where(function($q) use ($search) {
+                    $q->where('f_name', 'like', "%{$search}%")
+                    ->orWhere('l_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
         }
         
-        // Apply role filter
-        if ($role && in_array($role, [1, 2, 3, 4])) {
-            $query->where('role', $role);
-        }
-        
-        // Get paginated results with 10 per page
-        $users = $query->orderBy('created_at', 'desc')->paginate(10);
-        
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'stats', 'roleNames'));
     }
     
     public function create()
     {
-        return view('admin.users.create');
+        // Only admin can create users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action. Only admins can create users.');
+        }
+
+        // Use the main getStats() method instead of separate cache
+        $stats = $this->getStats();
+
+        // Cache role options for quick access (1 hour cache)
+        $roleOptions = Cache::remember('user_role_options', 3600, function() {
+            return [
+                1 => [
+                    'name' => 'Admin', 
+                    'icon' => 'user-shield', 
+                    'color' => 'danger',
+                    'description' => 'Full system access and management',
+                    'id_required' => false
+                ],
+                2 => [
+                    'name' => 'Registrar', 
+                    'icon' => 'clipboard-list', 
+                    'color' => 'primary',
+                    'description' => 'Manage student registrations and records',
+                    'id_required' => true,
+                    'id_type' => 'employee_id'
+                ],
+                3 => [
+                    'name' => 'Teacher', 
+                    'icon' => 'chalkboard-teacher', 
+                    'color' => 'success',
+                    'description' => 'Create courses and manage students',
+                    'id_required' => true,
+                    'id_type' => 'employee_id'
+                ],
+                4 => [
+                    'name' => 'Student', 
+                    'icon' => 'user-graduate', 
+                    'color' => 'info',
+                    'description' => 'Enroll in courses and view materials',
+                    'id_required' => true,
+                    'id_type' => 'student_id'
+                ]
+            ];
+        });
+
+        // Cache form suggestions
+        $suggestions = Cache::remember('user_form_suggestions', 1800, function() {
+            $currentYear = now()->year;
+            return [
+                'employee_id_prefix' => 'EMP-' . $currentYear . '-',
+                'student_id_prefix' => 'STU-' . $currentYear . '-',
+                'current_year' => $currentYear,
+                'month' => now()->format('m'),
+                'random_suffix' => rand(1000, 9999)
+            ];
+        });
+
+        return view('admin.users.create', compact('roleOptions', 'stats', 'suggestions'));
     }
     
     public function store(Request $request)
     {
-        $request->validate([
+        // Only admin can create users
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action. Only admins can create users.');
+        }
+
+        // Determine which ID field is required based on role
+        $idRules = [];
+        $role = $request->role;
+        
+        if (in_array($role, [2, 3])) { // Registrar or Teacher
+            $idRules['employee_id'] = 'required|string|max:50|unique:users,employee_id';
+        } elseif ($role == 4) { // Student
+            $idRules['student_id'] = 'required|string|max:50|unique:users,student_id';
+        }
+        
+        $request->validate(array_merge([
             'f_name' => 'required|string|max:50',
             'l_name' => 'required|string|max:50',
             'email' => 'required|email|unique:users',
             'role' => 'required|in:1,2,3,4',
-            'password' => 'required|string|min:8'
-        ]);
+            'password' => 'required|string|min:8|confirmed',
+            'age' => 'nullable|integer|min:15|max:100',
+            'sex' => 'nullable|in:male,female',
+            'contact' => 'nullable|string|max:20'
+        ], $idRules));
         
-        $user = User::create([
+        $userData = [
             'f_name' => $request->f_name,
             'l_name' => $request->l_name,
             'email' => $request->email,
@@ -62,19 +179,97 @@ class UserController extends Controller
             'password' => bcrypt($request->password),
             'is_approved' => true,
             'approved_at' => now(),
-            'approved_by' => auth()->id()
-        ]);
+            'approved_by' => auth()->id(),
+            'age' => $request->age,
+            'sex' => $request->sex,
+            'contact' => $request->contact,
+            'created_by' => auth()->id()
+        ];
+        
+        // Add appropriate ID based on role
+        if ($request->filled('employee_id')) {
+            $userData['employee_id'] = $request->employee_id;
+        }
+        if ($request->filled('student_id')) {
+            $userData['student_id'] = $request->student_id;
+        }
+        
+        $user = User::create($userData);
+        
+        // Clear all user-related caches
+        $this->clearUserCaches();
+        
+        // Clear specific caches
+        Cache::forget('user_role_options');
+        Cache::forget('user_form_suggestions');
+        Cache::forget('create_user_stats_' . auth()->id());
+        
+        // Cache the new user for quick access
+        $cacheKey = 'user_show_' . $user->id;
+        Cache::put($cacheKey, $user, 300);
+        
+        // Log the creation
+        if (class_exists(\App\Helpers\AuditHelper::class)) {
+            \App\Helpers\AuditHelper::log('create', "Created new user: {$user->email}", $user);
+        }
         
         return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully.');
+            ->with('success', 'User created successfully.')
+            ->with('user_id', $user->id);
     }
     
     public function show($encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $user = User::findOrFail($id);
-            return view('admin.users.show', compact('user'));
+            
+            // Cache individual user show for 5 minutes with relationships
+            $cacheKey = 'user_show_detail_' . $id;
+            $user = Cache::remember($cacheKey, 300, function() use ($id) {
+                return User::with(['approvedBy', 'createdBy'])->findOrFail($id);
+            });
+            
+            // Get user stats for the header (cached)
+            $stats = Cache::remember('user_show_stats_' . auth()->id(), 300, function() {
+                return $this->getStats();
+            });
+            
+            // Cache role names for display
+            $roleNames = Cache::remember('user_role_names', 3600, function() {
+                return [
+                    1 => 'Admin',
+                    2 => 'Registrar',
+                    3 => 'Teacher',
+                    4 => 'Student'
+                ];
+            });
+            
+            // Get activity logs if available (cached for 2 minutes)
+            $activities = Cache::remember('user_activities_' . $id, 120, function() use ($user) {
+                $activities = collect();
+                
+                // Check if user has auditLogs relationship
+                if (method_exists($user, 'auditLogs')) {
+                    try {
+                        $activities = $user->auditLogs()
+                            ->latest()
+                            ->take(10)
+                            ->get();
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to fetch user audit logs: ' . $e->getMessage());
+                    }
+                }
+                
+                return $activities;
+            });
+            
+            // Get user statistics for the sidebar (cached)
+            $userStats = Cache::remember('user_detailed_stats_' . $id, 300, function() use ($user) {
+                return $this->getUserDetailedStats($user);
+            });
+            
+            return view('admin.users.show', compact('user', 'stats', 'roleNames', 'activities', 'userStats'));
+            
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
         }
@@ -86,8 +281,71 @@ class UserController extends Controller
             $id = Crypt::decrypt($encryptedId);
             $user = User::findOrFail($id);
             
-            // Pass the encrypted ID to the view
-            return view('admin.users.edit', compact('user', 'encryptedId'));
+            // Only admin can edit users, or users can edit their own profile
+            if (!auth()->user()->isAdmin() && auth()->user()->id != $user->id) {
+                abort(403, 'Unauthorized action. Only admins can edit other users.');
+            }
+            
+            // Cache individual user for edit (2 minutes for fresh data)
+            $cacheKey = 'user_edit_detail_' . $id;
+            $user = Cache::remember($cacheKey, 120, function() use ($id) {
+                return User::with(['approvedBy'])->findOrFail($id);
+            });
+            
+            // Cache role options
+            $roleOptions = Cache::remember('user_role_options', 3600, function() {
+                return [
+                    1 => [
+                        'name' => 'Admin', 
+                        'icon' => 'user-shield', 
+                        'color' => 'danger',
+                        'description' => 'Full system access and management',
+                        'id_required' => false
+                    ],
+                    2 => [
+                        'name' => 'Registrar', 
+                        'icon' => 'clipboard-list', 
+                        'color' => 'primary',
+                        'description' => 'Manage student registrations and records',
+                        'id_required' => true,
+                        'id_type' => 'employee_id'
+                    ],
+                    3 => [
+                        'name' => 'Teacher', 
+                        'icon' => 'chalkboard-teacher', 
+                        'color' => 'success',
+                        'description' => 'Create courses and manage students',
+                        'id_required' => true,
+                        'id_type' => 'employee_id'
+                    ],
+                    4 => [
+                        'name' => 'Student', 
+                        'icon' => 'user-graduate', 
+                        'color' => 'info',
+                        'description' => 'Enroll in courses and view materials',
+                        'id_required' => true,
+                        'id_type' => 'student_id'
+                    ]
+                ];
+            });
+            
+            // Get user stats for the header
+            $stats = Cache::remember('user_edit_stats_' . auth()->id(), 300, function() {
+                return $this->getStats();
+            });
+            
+            // Cache form suggestions
+            $suggestions = Cache::remember('user_form_suggestions', 1800, function() {
+                $currentYear = now()->year;
+                return [
+                    'employee_id_prefix' => 'EMP-' . $currentYear . '-',
+                    'student_id_prefix' => 'STU-' . $currentYear . '-',
+                    'current_year' => $currentYear
+                ];
+            });
+            
+            return view('admin.users.edit', compact('user', 'encryptedId', 'roleOptions', 'stats', 'suggestions'));
+            
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
         }
@@ -99,26 +357,74 @@ class UserController extends Controller
             $id = Crypt::decrypt($encryptedId);
             $user = User::findOrFail($id);
             
-            $request->validate([
+            // Only admin can update users, or users can update their own profile
+            if (!auth()->user()->isAdmin() && auth()->user()->id != $user->id) {
+                abort(403, 'Unauthorized action. Only admins can update other users.');
+            }
+            
+            // Determine which ID field validation is needed based on current and new role
+            $idRules = [];
+            $role = $request->role;
+            
+            // Only admin can change roles
+            if ($role != $user->role && !auth()->user()->isAdmin()) {
+                abort(403, 'Unauthorized action. Only admins can change user roles.');
+            }
+            
+            // If role is changing to registrar or teacher
+            if (in_array($role, [2, 3]) && !in_array($user->role, [2, 3])) {
+                $idRules['employee_id'] = 'required|string|max:50|unique:users,employee_id';
+            }
+            // If role is changing to student
+            elseif ($role == 4 && $user->role != 4) {
+                $idRules['student_id'] = 'required|string|max:50|unique:users,student_id';
+            }
+            // If role is same but ID might need updating
+            elseif (in_array($role, [2, 3]) && in_array($user->role, [2, 3])) {
+                $idRules['employee_id'] = 'required|string|max:50|unique:users,employee_id,' . $id;
+            }
+            elseif ($role == 4 && $user->role == 4) {
+                $idRules['student_id'] = 'required|string|max:50|unique:users,student_id,' . $id;
+            }
+            
+            $request->validate(array_merge([
                 'f_name' => 'required|string|max:50',
                 'l_name' => 'required|string|max:50',
                 'email' => 'required|email|unique:users,email,' . $id,
                 'role' => 'required|in:1,2,3,4',
-                'password' => 'nullable|string|min:8|confirmed'
-            ]);
+                'password' => 'nullable|string|min:8|confirmed',
+                'age' => 'nullable|integer|min:15|max:100',
+                'sex' => 'nullable|in:male,female',
+                'contact' => 'nullable|string|max:20'
+            ], $idRules));
             
             // Prepare update data
             $updateData = [
                 'f_name' => $request->f_name,
                 'l_name' => $request->l_name,
                 'email' => $request->email,
-                'role' => $request->role,
-                'employee_id' => $request->employee_id,
-                'student_id' => $request->student_id,
                 'age' => $request->age,
                 'sex' => $request->sex,
                 'contact' => $request->contact
             ];
+            
+            // Only admin can change role
+            if (auth()->user()->isAdmin()) {
+                $updateData['role'] = $request->role;
+                
+                // Handle ID fields based on role
+                if (in_array($request->role, [2, 3])) {
+                    $updateData['employee_id'] = $request->employee_id;
+                    $updateData['student_id'] = null; // Clear student_id if changing from student
+                } elseif ($request->role == 4) {
+                    $updateData['student_id'] = $request->student_id;
+                    $updateData['employee_id'] = null; // Clear employee_id if changing to student
+                } else {
+                    // Admin role - clear both IDs
+                    $updateData['employee_id'] = null;
+                    $updateData['student_id'] = null;
+                }
+            }
             
             // Only update password if provided
             if ($request->filled('password')) {
@@ -127,8 +433,23 @@ class UserController extends Controller
             
             $user->update($updateData);
             
+            // Clear user-related caches
+            $this->clearUserCaches($id);
+            
+            // Clear specific caches
+            Cache::forget('user_show_detail_' . $id);
+            Cache::forget('user_edit_detail_' . $id);
+            Cache::forget('user_activities_' . $id);
+            Cache::forget('user_edit_stats_' . auth()->id());
+            
+            // Log the update
+            if (class_exists(\App\Helpers\AuditHelper::class)) {
+                \App\Helpers\AuditHelper::log('update', "Updated user: {$user->email}", $user);
+            }
+            
             return redirect()->route('admin.users.index')
-                ->with('success', 'User updated successfully.');
+                ->with('success', 'User updated successfully.')
+                ->with('user_id', $user->id);
                 
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
@@ -140,7 +461,35 @@ class UserController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $user = User::findOrFail($id);
+            
+            // Only admin can delete users
+            if (!auth()->user()->isAdmin()) {
+                abort(403, 'Unauthorized action. Only admins can delete users.');
+            }
+            
+            // Prevent self-deletion
+            if ($user->id === auth()->id()) {
+                return redirect()->route('admin.users.index')
+                    ->with('error', 'You cannot delete your own account.');
+            }
+            
+            // Get user email for logging before deletion
+            $userEmail = $user->email;
+            
             $user->delete();
+            
+            // Clear user-related caches
+            $this->clearUserCaches($id);
+            
+            // Clear specific caches
+            Cache::forget('user_show_detail_' . $id);
+            Cache::forget('user_edit_detail_' . $id);
+            Cache::forget('user_activities_' . $id);
+            
+            // Log the deletion
+            if (class_exists(\App\Helpers\AuditHelper::class)) {
+                \App\Helpers\AuditHelper::log('delete', "Deleted user: {$userEmail}", null, ['user_id' => $id]);
+            }
             
             return redirect()->route('admin.users.index')
                 ->with('success', 'User deleted successfully.');
@@ -152,6 +501,11 @@ class UserController extends Controller
     public function approve($encryptedId)
     {
         try {
+            // Only admin and registrar can approve users
+            if (!auth()->user()->isAdmin() && !auth()->user()->isRegistrar()) {
+                abort(403, 'Unauthorized action. Only admins and registrars can approve users.');
+            }
+            
             // Decrypt the ID
             $id = Crypt::decrypt($encryptedId);
             $user = User::findOrFail($id);
@@ -169,10 +523,17 @@ class UserController extends Controller
                 'approved_by' => auth()->id()
             ]);
             
+            // Clear user-related caches
+            $this->clearUserCaches($id);
+            
+            // Clear specific caches
+            Cache::forget('user_show_detail_' . $id);
+            Cache::forget('user_edit_detail_' . $id);
+            
             // Send approval email (optional - comment out if not needed)
             try {
                 if (class_exists(\App\Mail\UserApprovedMail::class)) {
-                    Mail::to($user->email)->send(new \App\Mail\UserApprovedMail($user));
+                    Mail::to($user->email)->queue(new \App\Mail\UserApprovedMail($user));
                 }
             } catch (\Exception $e) {
                 // Log error but continue
@@ -185,7 +546,8 @@ class UserController extends Controller
             }
             
             return redirect()->route('admin.users.index')
-                ->with('success', 'User approved successfully!');
+                ->with('success', 'User approved successfully!')
+                ->with('user_id', $user->id);
                 
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             return redirect()->route('admin.users.index')
@@ -197,5 +559,150 @@ class UserController extends Controller
             return redirect()->route('admin.users.index')
                 ->with('error', 'An error occurred: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Clear all user-related caches
+     * 
+     * @param int|null $userId Specific user ID to clear
+     */
+    private function clearUserCaches($userId = null)
+    {
+        // Clear all user index caches using pattern matching
+        $cache = Cache::getStore();
+        if (method_exists($cache, 'tags')) {
+            Cache::tags(['users_index'])->flush();
+        } else {
+            // Fallback for cache drivers without tags
+            Cache::flush('users_index_*');
+        }
+        
+        // Clear specific user caches
+        if ($userId) {
+            Cache::forget('user_show_detail_' . $userId);
+            Cache::forget('user_edit_detail_' . $userId);
+            Cache::forget('user_activities_' . $userId);
+            Cache::forget('user_detailed_stats_' . $userId);
+            Cache::forget('approver_user_' . $userId);
+        }
+        
+        // Clear dashboard caches
+        Cache::forget('admin_dashboard_' . auth()->id());
+        Cache::forget('registrar_dashboard_' . auth()->id());
+        
+        // Clear user stats caches
+        Cache::forget('user_stats');
+        Cache::forget('pending_users_count');
+        Cache::forget('users_this_month');
+        
+        // Clear create/edit specific caches
+        Cache::forget('create_user_stats_' . auth()->id());
+        Cache::forget('user_edit_stats_' . auth()->id());
+        Cache::forget('user_show_stats_' . auth()->id());
+        
+        // Clear shared caches
+        Cache::forget('user_role_options');
+        Cache::forget('user_form_suggestions');
+        Cache::forget('user_role_names');
+        
+        // Clear Blade cache if exists
+        if (Cache::getStore() instanceof \Illuminate\Cache\TaggableStore) {
+            Cache::tags(['users'])->flush();
+        }
+    }
+    
+    /**
+     * Optimized user statistics (for dashboard or sidebar)
+     */
+    public function getStats()
+    {
+        return Cache::remember('user_stats', 300, function() {
+            $stats = User::selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN is_approved = 0 THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN role = 1 THEN 1 ELSE 0 END) as admins,
+                SUM(CASE WHEN role = 2 THEN 1 ELSE 0 END) as registrars,
+                SUM(CASE WHEN role = 3 THEN 1 ELSE 0 END) as teachers,
+                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students
+            ')->first();
+            
+            // Add this month's count
+            $stats['this_month'] = User::whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+            
+            return [
+                'total' => $stats->total ?? 0,
+                'pending' => $stats->pending ?? 0,
+                'admins' => $stats->admins ?? 0,
+                'registrars' => $stats->registrars ?? 0,
+                'teachers' => $stats->teachers ?? 0,
+                'students' => $stats->students ?? 0,
+                'this_month' => $stats['this_month'] ?? 0
+            ];
+        });
+    }
+    
+    /**
+     * Get detailed statistics for a specific user
+     */
+    private function getUserDetailedStats(User $user)
+    {
+        return Cache::remember('detailed_user_stats_' . $user->id, 300, function() use ($user) {
+            $stats = [
+                'login_count' => 0,
+                'course_count' => 0,
+                'enrollment_count' => 0,
+                'quiz_attempts' => 0,
+                'assignments_submitted' => 0,
+                'completed_topics' => 0,
+                'gpa' => 0.0
+            ];
+            
+            try {
+                // Get login count from audit logs if available
+                if (method_exists($user, 'auditLogs')) {
+                    $stats['login_count'] = $user->auditLogs()
+                        ->where('action', 'like', '%login%')
+                        ->count();
+                }
+                
+                // Get course count for teachers
+                if ($user->isTeacher()) {
+                    $stats['course_count'] = $user->taughtCourses()->count();
+                }
+                
+                // Get enrollment count for students
+                if ($user->isStudent()) {
+                    $stats['enrollment_count'] = $user->enrollments()->count();
+                    
+                    // Get quiz attempts
+                    if (method_exists($user, 'quizAttempts')) {
+                        $stats['quiz_attempts'] = $user->quizAttempts()->count();
+                    }
+                    
+                    // Get assignments submitted
+                    if (method_exists($user, 'submittedAssignments')) {
+                        $stats['assignments_submitted'] = $user->submittedAssignments()->count();
+                    }
+                    
+                    // Get completed topics
+                    if (method_exists($user, 'completedTopics')) {
+                        $stats['completed_topics'] = $user->completedTopics()->count();
+                    }
+                    
+                    // Get GPA
+                    if ($user->enrollments()->whereNotNull('grade')->exists()) {
+                        $stats['gpa'] = $user->enrollments()
+                            ->whereNotNull('grade')
+                            ->avg('grade');
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to get user detailed stats: ' . $e->getMessage());
+            }
+            
+            return $stats;
+        });
     }
 }

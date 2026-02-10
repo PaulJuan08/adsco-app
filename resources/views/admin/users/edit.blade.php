@@ -1,30 +1,133 @@
-<!-- resources/views/users/edit.blade.php -->
+<!-- resources/views/admin/users/edit.blade.php -->
 @extends('layouts.admin')
 
 @section('title', 'Edit User - Admin Dashboard')
 
 @push('styles')
 <style>
-    /* Additional styles for edit user form */
+    /* Form Container */
+    .form-container {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        background: var(--gray-50);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--primary-light);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.125rem;
+    }
+
+    .card-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .view-all-link {
+        color: var(--primary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        transition: all 0.2s ease;
+    }
+
+    .view-all-link:hover {
+        gap: 0.625rem;
+        color: var(--primary-dark);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Form Sections */
+    .form-section {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+    }
+    
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-section-title i {
+        color: var(--primary);
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
     .form-label {
         display: block;
         margin-bottom: 0.5rem;
         font-weight: 500;
-        color: var(--dark);
+        color: var(--gray-900);
+        font-size: 0.875rem;
+    }
+    
+    .form-label.required::after {
+        content: " *";
+        color: var(--danger);
     }
     
     .form-control {
         display: block;
         width: 100%;
-        padding: 0.75rem 1rem;
+        padding: 0.625rem 0.875rem;
         font-size: 0.875rem;
         font-weight: 400;
         line-height: 1.5;
-        color: var(--dark);
+        color: var(--gray-900);
         background-color: white;
         background-clip: padding-box;
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-sm);
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
     
@@ -36,11 +139,11 @@
     
     .form-control.is-invalid {
         border-color: var(--danger);
-    }
-    
-    .form-control.is-invalid:focus {
-        border-color: var(--danger);
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right calc(0.375em + 0.1875rem) center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        padding-right: calc(1.5em + 0.75rem);
     }
     
     .invalid-feedback {
@@ -51,23 +154,23 @@
         color: var(--danger);
     }
     
-    .text-muted {
+    .form-text {
         font-size: 0.75rem;
-        color: var(--secondary);
+        color: var(--gray-500);
         margin-top: 0.25rem;
     }
     
     .form-select {
         display: block;
         width: 100%;
-        padding: 0.75rem 2.25rem 0.75rem 1rem;
+        padding: 0.625rem 2.25rem 0.625rem 0.875rem;
         font-size: 0.875rem;
         font-weight: 400;
         line-height: 1.5;
-        color: var(--dark);
+        color: var(--gray-900);
         background-color: white;
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-sm);
         appearance: none;
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
         background-repeat: no-repeat;
@@ -83,452 +186,672 @@
     
     .form-select.is-invalid {
         border-color: var(--danger);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e"), url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-position: right calc(0.375em + 0.1875rem) center, right 0.75rem center;
+        background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem), 16px 12px;
+        padding-right: calc(2.25rem + 1.125rem);
     }
     
-    .form-select.is-invalid:focus {
-        border-color: var(--danger);
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    .password-strength-meter {
+        height: 4px;
+        background: var(--gray-200);
+        border-radius: 2px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .password-strength-fill {
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease, background-color 0.3s ease;
+        border-radius: 2px;
+    }
+    
+    .strength-weak {
+        background: var(--danger);
+        width: 33%;
+    }
+    
+    .strength-medium {
+        background: var(--warning);
+        width: 66%;
+    }
+    
+    .strength-strong {
+        background: var(--success);
+        width: 100%;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-200);
+        margin-top: 1.5rem;
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        text-align: center;
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    
+    .btn-outline {
+        background: white;
+        border-color: var(--gray-300);
+        color: var(--gray-700);
+    }
+    
+    .btn-outline:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-400);
+    }
+    
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    
+    /* Validation alert */
+    .validation-alert {
+        background: var(--danger-light);
+        color: var(--danger-dark);
+        border: 1px solid var(--danger);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .validation-alert i {
+        margin-right: 0.5rem;
+    }
+    
+    .validation-alert ul {
+        margin: 0.5rem 0 0 1.25rem;
+        padding: 0;
+    }
+    
+    /* Role options */
+    .role-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-sm);
+        border: 2px solid var(--gray-200);
+        background: white;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .role-option:hover {
+        border-color: var(--primary-light);
+        background: var(--primary-light);
+    }
+    
+    .role-option.active {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+    
+    .role-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .role-content {
+        flex: 1;
+    }
+    
+    .role-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--gray-900);
+        margin-bottom: 0.125rem;
+    }
+    
+    .role-description {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+    }
+    
+    .role-id-required {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-top: 0.125rem;
+    }
+
+    /* Status badges */
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    
+    .status-active {
+        background: var(--success-light);
+        color: var(--success-dark);
+    }
+    
+    .status-pending {
+        background: var(--warning-light);
+        color: var(--warning-dark);
+    }
+    
+    .status-inactive {
+        background: var(--danger-light);
+        color: var(--danger-dark);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>
 @endpush
 
 @section('content')
-<!-- Page Header -->
-<div class="top-header">
-    <div class="greeting">
-        <h1>Edit User</h1>
-        <p>Update user information and permissions</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-        </div>
-    </div>
-</div>
-
-<!-- Main Content -->
-<div class="content-grid">
     <!-- Edit User Form Card -->
-    <div class="card">
+    <div class="form-container">
         <div class="card-header">
-            <div class="card-title">Edit User Information</div>
-            <a href="{{ route('admin.users.index') }}" style="display: flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-                <i class="fas fa-arrow-left"></i>
-                Back to Users
+            <div class="card-title-group">
+                <i class="fas fa-user-edit card-icon"></i>
+                <h2 class="card-title">Edit User: {{ $user->f_name }} {{ $user->l_name }}</h2>
+            </div>
+            <a href="{{ route('admin.users.index') }}" class="view-all-link">
+                <i class="fas fa-arrow-left"></i> Back to Users
             </a>
         </div>
         
-        <div style="padding: 1.5rem;">
+        <div class="card-body">
+            <!-- Display validation errors -->
+            @if($errors->any())
+            <div class="validation-alert">
+                <div>
+                    <i class="fas fa-exclamation-circle"></i>
+                    <strong>Please fix the following errors:</strong>
+                </div>
+                <ul>
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+            
+            <!-- Display success message if any -->
+            @if(session('success'))
+            <div style="background: var(--success-light); color: var(--success-dark); border: 1px solid var(--success); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+            @endif
+            
             <!-- Use $encryptedId passed from controller -->
-            <form action="{{ route('admin.users.update', $encryptedId) }}" method="POST">
+            <form action="{{ route('admin.users.update', $encryptedId) }}" method="POST" id="editUserForm">
                 @csrf
                 @method('PUT')
                 
-                <!-- Display validation errors -->
-                @if($errors->any())
-                <div style="margin: 0 0 1.5rem; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 0.875rem;">
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
-                        <strong>Please fix the following errors:</strong>
-                    </div>
-                    <ul style="margin: 0; padding-left: 20px;">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div>
-                        <label for="f_name" class="form-label">First Name *</label>
-                        <input type="text" 
-                               id="f_name" 
-                               name="f_name" 
-                               value="{{ old('f_name', $user->f_name) }}" 
-                               required
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('f_name') border-color: var(--danger); @enderror">
-                        @error('f_name')
-                            <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                        @enderror
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user"></i> Personal Information
                     </div>
                     
-                    <div>
-                        <label for="l_name" class="form-label">Last Name *</label>
-                        <input type="text" 
-                               id="l_name" 
-                               name="l_name" 
-                               value="{{ old('l_name', $user->l_name) }}" 
-                               required
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('l_name') border-color: var(--danger); @enderror">
-                        @error('l_name')
-                            <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="email" class="form-label">Email Address *</label>
-                    <input type="email" 
-                           id="email" 
-                           name="email" 
-                           value="{{ old('email', $user->email) }}" 
-                           required
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('email') border-color: var(--danger); @enderror">
-                    @error('email')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                        Changing email may require verification
-                    </div>
-                </div>
-                
-                <!-- Password Update (Optional) -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div>
-                        <label for="password" class="form-label">New Password</label>
-                        <input type="password" 
-                               id="password" 
-                               name="password" 
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('password') border-color: var(--danger); @enderror">
-                        @error('password')
-                            <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                        @enderror
-                        <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                            Leave blank to keep current password
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="f_name" class="form-label required">First Name</label>
+                            <input type="text" 
+                                   id="f_name" 
+                                   name="f_name" 
+                                   value="{{ old('f_name', $user->f_name) }}" 
+                                   required
+                                   class="form-control @error('f_name') is-invalid @enderror"
+                                   placeholder="Enter first name">
+                            @error('f_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="l_name" class="form-label required">Last Name</label>
+                            <input type="text" 
+                                   id="l_name" 
+                                   name="l_name" 
+                                   value="{{ old('l_name', $user->l_name) }}" 
+                                   required
+                                   class="form-control @error('l_name') is-invalid @enderror"
+                                   placeholder="Enter last name">
+                            @error('l_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email" class="form-label required">Email Address</label>
+                            <input type="email" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{{ old('email', $user->email) }}" 
+                                   required
+                                   class="form-control @error('email') is-invalid @enderror"
+                                   placeholder="Enter email address">
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                @if($user->email_verified_at)
+                                    <i class="fas fa-check-circle text-success"></i> Email verified
+                                @else
+                                    <i class="fas fa-clock text-warning"></i> Email not verified
+                                @endif
+                            </div>
                         </div>
                     </div>
                     
-                    <div>
-                        <label for="password_confirmation" class="form-label">Confirm New Password</label>
-                        <input type="password" 
-                               id="password_confirmation" 
-                               name="password_confirmation" 
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age" class="form-label">Age</label>
+                            <input type="number" 
+                                   id="age" 
+                                   name="age" 
+                                   value="{{ old('age', $user->age) }}"
+                                   min="15"
+                                   max="100"
+                                   class="form-control @error('age') is-invalid @enderror"
+                                   placeholder="Enter age">
+                            @error('age')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sex" class="form-label">Gender</label>
+                            <select id="sex" 
+                                    name="sex"
+                                    class="form-select @error('sex') is-invalid @enderror">
+                                <option value="">Select Gender</option>
+                                <option value="male" {{ old('sex', $user->sex) == 'male' ? 'selected' : '' }}>Male</option>
+                                <option value="female" {{ old('sex', $user->sex) == 'female' ? 'selected' : '' }}>Female</option>
+                            </select>
+                            @error('sex')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contact" class="form-label">Contact Number</label>
+                            <input type="text" 
+                                   id="contact" 
+                                   name="contact" 
+                                   value="{{ old('contact', $user->contact) }}"
+                                   class="form-control @error('contact') is-invalid @enderror"
+                                   placeholder="e.g., +63 912 345 6789">
+                            @error('contact')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
                 </div>
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="role" class="form-label">User Role *</label>
-                    <select id="role" 
-                            name="role" 
-                            required
-                            onchange="toggleIdFields()"
-                            style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('role') border-color: var(--danger); @enderror">
-                        <option value="">Select Role</option>
-                        <option value="1" {{ old('role', $user->role) == '1' ? 'selected' : '' }}>Admin</option>
-                        <option value="2" {{ old('role', $user->role) == '2' ? 'selected' : '' }}>Registrar</option>
-                        <option value="3" {{ old('role', $user->role) == '3' ? 'selected' : '' }}>Teacher</option>
-                        <option value="4" {{ old('role', $user->role) == '4' ? 'selected' : '' }}>Student</option>
-                    </select>
-                    @error('role')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                </div>
-                
-                <!-- Conditional ID fields based on role -->
-                <div id="employeeIdField" style="display: none; margin-bottom: 1.5rem;">
-                    <label for="employee_id" class="form-label">Employee ID *</label>
-                    <input type="text" 
-                           id="employee_id" 
-                           name="employee_id" 
-                           value="{{ old('employee_id', $user->employee_id) }}"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('employee_id') border-color: var(--danger); @enderror">
-                    @error('employee_id')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                        Required for: Registrar & Teacher roles
+                <!-- Account Information Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user-cog"></i> Account Information
                     </div>
-                </div>
-                
-                <div id="studentIdField" style="display: none; margin-bottom: 1.5rem;">
-                    <label for="student_id" class="form-label">Student ID *</label>
-                    <input type="text" 
-                           id="student_id" 
-                           name="student_id" 
-                           value="{{ old('student_id', $user->student_id) }}"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('student_id') border-color: var(--danger); @enderror">
-                    @error('student_id')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                        Required for: Student role only
-                    </div>
-                </div>
-                
-                <!-- Additional fields for user details -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div>
-                        <label for="age" class="form-label">Age</label>
-                        <input type="number" 
-                               id="age" 
-                               name="age" 
-                               value="{{ old('age', $user->age) }}"
-                               min="15"
-                               max="100"
-                               style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('age') border-color: var(--danger); @enderror">
-                        @error('age')
-                            <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
+                    
+                    <!-- Role Selection -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label required">User Role</label>
+                        <div class="form-grid">
+                            @if(isset($roleOptions))
+                                @foreach($roleOptions as $key => $option)
+                                <div class="role-option @if(old('role', $user->role) == $key) active @endif" onclick="selectRole({{ $key }})">
+                                    <div class="role-icon" style="background: var(--{{ $option['color'] }}-light); color: var(--{{ $option['color'] }});">
+                                        <i class="fas fa-{{ $option['icon'] }}"></i>
+                                    </div>
+                                    <div class="role-content">
+                                        <div class="role-title">{{ $option['name'] }}</div>
+                                        <div class="role-description">{{ $option['description'] }}</div>
+                                        <div class="role-id-required">
+                                            @if($option['id_required'])
+                                                Requires {{ $option['id_type'] == 'employee_id' ? 'Employee ID' : 'Student ID' }}
+                                            @else
+                                                No ID required
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <input type="radio" 
+                                               name="role" 
+                                               value="{{ $key }}" 
+                                               id="role_{{ $key }}"
+                                               class="d-none"
+                                               @if(old('role', $user->role) == $key) checked @endif
+                                               required>
+                                    </div>
+                                </div>
+                                @endforeach
+                            @endif
+                        </div>
+                        <input type="hidden" name="role" id="selectedRole" value="{{ old('role', $user->role) }}">
+                        @error('role')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
                     
-                    <div>
-                        <label for="sex" class="form-label">Gender</label>
-                        <select id="sex" 
-                                name="sex"
-                                style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('sex') border-color: var(--danger); @enderror">
-                            <option value="">Select Gender</option>
-                            <option value="male" {{ old('sex', $user->sex) == 'male' ? 'selected' : '' }}>Male</option>
-                            <option value="female" {{ old('sex', $user->sex) == 'female' ? 'selected' : '' }}>Female</option>
-                        </select>
-                        @error('sex')
-                            <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                        @enderror
+                    <!-- ID Fields (Conditional) -->
+                    <div id="idFieldsSection" style="{{ in_array($user->role, [2,3,4]) ? '' : 'display: none;' }}">
+                        <div class="form-grid">
+                            <div class="form-group" id="employeeIdGroup" style="{{ in_array($user->role, [2,3]) ? '' : 'display: none;' }}">
+                                <label for="employee_id" class="form-label {{ in_array($user->role, [2,3]) ? 'required' : '' }}">Employee ID</label>
+                                <input type="text" 
+                                       id="employee_id" 
+                                       name="employee_id" 
+                                       value="{{ old('employee_id', $user->employee_id) }}"
+                                       {{ in_array($user->role, [2,3]) ? 'required' : '' }}
+                                       class="form-control @error('employee_id') is-invalid @enderror"
+                                       placeholder="Enter employee ID">
+                                @error('employee_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Required for Registrar and Teacher roles</div>
+                            </div>
+                            
+                            <div class="form-group" id="studentIdGroup" style="{{ $user->role == 4 ? '' : 'display: none;' }}">
+                                <label for="student_id" class="form-label {{ $user->role == 4 ? 'required' : '' }}">Student ID</label>
+                                <input type="text" 
+                                       id="student_id" 
+                                       name="student_id" 
+                                       value="{{ old('student_id', $user->student_id) }}"
+                                       {{ $user->role == 4 ? 'required' : '' }}
+                                       class="form-control @error('student_id') is-invalid @enderror"
+                                       placeholder="Enter student ID">
+                                @error('student_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">Required for Student role only</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <div style="margin-bottom: 2rem;">
-                    <label for="contact" class="form-label">Contact Number</label>
-                    <input type="text" 
-                           id="contact" 
-                           name="contact" 
-                           value="{{ old('contact', $user->contact) }}"
-                           placeholder="e.g., +63 912 345 6789"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('contact') border-color: var(--danger); @enderror">
-                    @error('contact')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
+                    
+                    <!-- Password Fields (Optional) -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="password" class="form-label">New Password</label>
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   class="form-control @error('password') is-invalid @enderror"
+                                   placeholder="Leave blank to keep current password">
+                            <div class="password-strength-meter">
+                                <div class="password-strength-fill" id="passwordStrength"></div>
+                            </div>
+                            @error('password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">Minimum 8 characters with letters and numbers</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password_confirmation" class="form-label">Confirm New Password</label>
+                            <input type="password" 
+                                   id="password_confirmation" 
+                                   name="password_confirmation" 
+                                   class="form-control @error('password_confirmation') is-invalid @enderror"
+                                   placeholder="Confirm new password">
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Form Actions -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                    <div>
-                        <span style="font-size: 0.875rem; color: var(--secondary);">
-                            Created: {{ $user->created_at->format('M d, Y') }}
-                        </span>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        <a href="{{ route('admin.users.show', $encryptedId) }}" 
-                           style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-eye"></i>
-                            View
-                        </a>
-                        <a href="{{ route('admin.users.index') }}" 
-                           style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
-                            Cancel
-                        </a>
-                        <button type="submit" 
-                                style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-save"></i>
-                            Update User
-                        </button>
-                    </div>
+                <div class="form-actions">
+                    <a href="{{ route('admin.users.show', $encryptedId) }}" class="btn btn-outline">
+                        <i class="fas fa-eye"></i> View Profile
+                    </a>
+                    <a href="{{ route('admin.users.index') }}" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update User
+                    </button>
                 </div>
             </form>
         </div>
     </div>
-    
-    <!-- Quick Tips Sidebar -->
-    <div>
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header">
-                <div class="card-title">Update Notes</div>
-            </div>
-            <div style="padding: 0.5rem;">
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background: #e0e7ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 0.75rem;">
-                            <i class="fas fa-key"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">Password Update</div>
-                            <div style="font-size: 0.75rem; color: var(--secondary);">Leave password fields blank to keep current password</div>
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background: #e0e7ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 0.75rem;">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">Email Changes</div>
-                            <div style="font-size: 0.75rem; color: var(--secondary);">User may need to verify their new email address</div>
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background: #e0e7ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 0.75rem;">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">Role Changes</div>
-                            <div style="font-size: 0.75rem; color: var(--secondary);">Changing roles may affect user permissions</div>
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px;">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background: #e0e7ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 0.75rem;">
-                            <i class="fas fa-id-card"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">ID Updates</div>
-                            <div style="font-size: 0.75rem; color: var(--secondary);">Update ID when changing roles if needed</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">User Details</div>
-            </div>
-            <div style="padding: 0.5rem;">
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 0.875rem; color: var(--secondary);">User ID</div>
-                        <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">
-                            {{ $user->id }}
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 0.875rem; color: var(--secondary);">Current Role</div>
-                        <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">
-                            @php
-                                $roleNames = [
-                                    '1' => 'Admin',
-                                    '2' => 'Registrar',
-                                    '3' => 'Teacher',
-                                    '4' => 'Student'
-                                ];
-                            @endphp
-                            {{ $roleNames[$user->role] ?? 'Unknown' }}
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 0.875rem; color: var(--secondary);">Email Verified</div>
-                        <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">
-                            @if($user->email_verified_at)
-                                <span style="color: #10b981;">Yes</span>
-                            @else
-                                <span style="color: #ef4444;">No</span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                <div style="padding: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 0.875rem; color: var(--secondary);">Last Updated</div>
-                        <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark);">
-                            {{ $user->updated_at->format('M d, Y h:i A') }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@endsection
 
 @push('scripts')
 <script>
-    // Show/hide ID fields based on role selection
-    function toggleIdFields() {
-        const roleSelect = document.getElementById('role');
-        const selectedRole = roleSelect.value;
-        const employeeIdField = document.getElementById('employeeIdField');
-        const studentIdField = document.getElementById('studentIdField');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize role selection
+        const initialRole = document.querySelector('input[name="role"]:checked');
+        if (initialRole) {
+            selectRole(initialRole.value);
+        }
+    });
+
+    // Role selection handler
+    function selectRole(roleId) {
+        const roleRadio = document.getElementById('role_' + roleId);
+        const selectedRoleInput = document.getElementById('selectedRole');
+        const idFieldsSection = document.getElementById('idFieldsSection');
+        const employeeIdGroup = document.getElementById('employeeIdGroup');
+        const studentIdGroup = document.getElementById('studentIdGroup');
         const employeeIdInput = document.getElementById('employee_id');
         const studentIdInput = document.getElementById('student_id');
         
-        // Hide both fields initially
-        employeeIdField.style.display = 'none';
-        studentIdField.style.display = 'none';
-        
-        // Remove required attribute
-        employeeIdInput.required = false;
-        studentIdInput.required = false;
-        
-        // Show appropriate field based on role
-        if (selectedRole === '2' || selectedRole === '3') { // Registrar or Teacher
-            employeeIdField.style.display = 'block';
-            employeeIdInput.required = true;
-        } else if (selectedRole === '4') { // Student
-            studentIdField.style.display = 'block';
-            studentIdInput.required = true;
+        // Update selected radio
+        if (roleRadio) {
+            roleRadio.checked = true;
+            selectedRoleInput.value = roleId;
+            
+            // Update visual selection
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            roleRadio.closest('.role-option').classList.add('active');
         }
-        // Admin (role 1) shows no ID field
+        
+        // Show/hide ID fields based on role
+        if ([2, 3].includes(parseInt(roleId))) { // Registrar or Teacher
+            idFieldsSection.style.display = 'block';
+            employeeIdGroup.style.display = 'block';
+            studentIdGroup.style.display = 'none';
+            
+            // Set employee ID as required
+            employeeIdInput.required = true;
+            studentIdInput.required = false;
+            if (!employeeIdInput.value) {
+                generateIdSuggestion('employee');
+            }
+        } else if (roleId == 4) { // Student
+            idFieldsSection.style.display = 'block';
+            employeeIdGroup.style.display = 'none';
+            studentIdGroup.style.display = 'block';
+            
+            // Set student ID as required
+            employeeIdInput.required = false;
+            studentIdInput.required = true;
+            if (!studentIdInput.value) {
+                generateIdSuggestion('student');
+            }
+        } else { // Admin
+            idFieldsSection.style.display = 'none';
+            employeeIdGroup.style.display = 'none';
+            studentIdGroup.style.display = 'none';
+            
+            // Clear requirements
+            employeeIdInput.required = false;
+            studentIdInput.required = false;
+        }
     }
 
-    // Real-time password strength indicator
-    const passwordInput = document.getElementById('password');
-    const passwordFeedback = document.createElement('div');
-    passwordFeedback.style.fontSize = '0.75rem';
-    passwordFeedback.style.marginTop = '0.25rem';
-    
-    if (passwordInput) {
-        passwordInput.parentNode.appendChild(passwordFeedback);
+    // Generate ID suggestion
+    function generateIdSuggestion(type) {
+        const firstName = document.getElementById('f_name').value;
+        const lastName = document.getElementById('l_name').value;
+        const selectedRole = document.getElementById('selectedRole').value;
         
+        if (firstName && lastName) {
+            const initials = firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase();
+            const timestamp = Date.now().toString().slice(-4);
+            const currentYear = new Date().getFullYear();
+            
+            if (type === 'employee') {
+                const rolePrefix = selectedRole == 2 ? 'REG' : 'TEA';
+                const suggestion = `${rolePrefix}-${currentYear}-${initials}${timestamp}`;
+                document.getElementById('employee_id').placeholder = suggestion;
+                
+                // Auto-fill if empty
+                if (!document.getElementById('employee_id').value) {
+                    document.getElementById('employee_id').value = suggestion;
+                }
+            } else if (type === 'student') {
+                const suggestion = `STU-${currentYear}-${timestamp}`;
+                document.getElementById('student_id').placeholder = suggestion;
+                
+                // Auto-fill if empty
+                if (!document.getElementById('student_id').value) {
+                    document.getElementById('student_id').value = suggestion;
+                }
+            }
+        }
+    }
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('password');
+    const passwordStrength = document.getElementById('passwordStrength');
+    
+    if (passwordInput && passwordStrength) {
         passwordInput.addEventListener('input', function() {
             const password = this.value;
-            if (password.length === 0) {
-                passwordFeedback.textContent = '';
-                return;
+            let strength = 0;
+            
+            // Length check
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            
+            // Complexity checks
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            // Update strength meter
+            passwordStrength.className = 'password-strength-fill';
+            
+            if (strength <= 2) {
+                passwordStrength.classList.add('strength-weak');
+            } else if (strength <= 4) {
+                passwordStrength.classList.add('strength-medium');
+            } else {
+                passwordStrength.classList.add('strength-strong');
             }
-            
-            let strength = 'Weak';
-            let color = '#ef4444';
-            
-            if (password.length >= 12) {
-                strength = 'Strong';
-                color = '#10b981';
-            } else if (password.length >= 8) {
-                strength = 'Medium';
-                color = '#f59e0b';
-            }
-            
-            passwordFeedback.textContent = `Password strength: ${strength}`;
-            passwordFeedback.style.color = color;
         });
     }
 
-    // Confirm password validation
+    // Password confirmation check
     const confirmPasswordInput = document.getElementById('password_confirmation');
+    const passwordMatch = document.getElementById('passwordMatch');
     
-    if (confirmPasswordInput && passwordInput) {
+    if (confirmPasswordInput && passwordMatch) {
         confirmPasswordInput.addEventListener('input', function() {
             const password = passwordInput.value;
             const confirmPassword = this.value;
             
-            if (confirmPassword && password !== confirmPassword) {
-                this.style.borderColor = '#ef4444';
+            if (confirmPassword) {
+                if (password === confirmPassword) {
+                    passwordMatch.textContent = 'Passwords match';
+                    passwordMatch.style.color = 'var(--success)';
+                    this.setCustomValidity('');
+                } else {
+                    passwordMatch.textContent = 'Passwords do not match';
+                    passwordMatch.style.color = 'var(--danger)';
+                    this.setCustomValidity('Passwords do not match');
+                }
             } else {
-                this.style.borderColor = '#e5e7eb';
+                passwordMatch.textContent = '';
             }
         });
     }
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set initial state based on user's current role
-        const roleSelect = document.getElementById('role');
-        const selectedRole = roleSelect.value;
+    // Form submission validation
+    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating User...';
+        submitBtn.disabled = true;
         
-        if (selectedRole === '2' || selectedRole === '3') {
-            document.getElementById('employeeIdField').style.display = 'block';
-            document.getElementById('employee_id').required = true;
-        } else if (selectedRole === '4') {
-            document.getElementById('studentIdField').style.display = 'block';
-            document.getElementById('student_id').required = true;
+        // Revert after 3 seconds (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 3000);
+    });
+
+    // Auto-fill ID when name changes for certain roles
+    document.getElementById('f_name').addEventListener('input', function() {
+        const role = document.getElementById('selectedRole').value;
+        if ([2, 3].includes(parseInt(role)) && !document.getElementById('employee_id').value) {
+            generateIdSuggestion('employee');
+        } else if (role == 4 && !document.getElementById('student_id').value) {
+            generateIdSuggestion('student');
+        }
+    });
+
+    document.getElementById('l_name').addEventListener('input', function() {
+        const role = document.getElementById('selectedRole').value;
+        if ([2, 3].includes(parseInt(role)) && !document.getElementById('employee_id').value) {
+            generateIdSuggestion('employee');
+        } else if (role == 4 && !document.getElementById('student_id').value) {
+            generateIdSuggestion('student');
         }
     });
 </script>
 @endpush
-@endsection

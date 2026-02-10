@@ -4,20 +4,160 @@
 
 @push('styles')
 <style>
+    /* Form Container */
+    .form-container {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        background: var(--gray-50);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--primary-light);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 1.125rem;
+    }
+
+    .card-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .view-all-link {
+        color: var(--primary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        transition: all 0.2s ease;
+    }
+
+    .view-all-link:hover {
+        gap: 0.625rem;
+        color: var(--primary-dark);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-footer-modern {
+        padding: 1.5rem;
+        border-top: 1px solid var(--gray-200);
+        background: var(--gray-50);
+    }
+
+    /* Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-published {
+        background: var(--success-light);
+        color: var(--success-dark);
+    }
+    
+    .status-draft {
+        background: var(--warning-light);
+        color: var(--warning-dark);
+    }
+    
+    .detail-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .detail-value {
+        font-size: 1.125rem;
+        color: var(--gray-900);
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .detail-subvalue {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+        margin-top: -0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .detail-section {
+        background: var(--gray-50);
+        border-radius: var(--radius-sm);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-200);
+    }
+    
+    .detail-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .detail-section-title i {
+        color: var(--primary);
+        font-size: 1.125rem;
+    }
+    
+    /* Topics specific styles */
     .topics-section {
         margin-top: 2rem;
     }
     
     .topic-card {
         background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
         margin-bottom: 1rem;
-        transition: all 0.2s;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
     }
     
     .topic-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
     }
     
     .topic-header {
@@ -25,7 +165,8 @@
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid var(--gray-100);
+        background: var(--gray-50);
     }
     
     .topic-content {
@@ -34,32 +175,34 @@
     
     .topic-title {
         font-weight: 600;
-        color: #1f2937;
+        color: var(--gray-900);
         font-size: 1.125rem;
         margin-bottom: 0.5rem;
     }
     
     .topic-description {
-        color: #6b7280;
+        color: var(--gray-600);
         font-size: 0.875rem;
-        line-height: 1.5;
+        line-height: 1.6;
     }
     
     .action-dropdown {
         position: relative;
     }
     
-    .action-btn {
+    .action-btn-small {
         padding: 0.5rem;
-        color: #6b7280;
+        color: var(--gray-600);
         border: none;
         background: none;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
     }
     
-    .action-btn:hover {
-        background: #f3f4f6;
+    .action-btn-small:hover {
+        background: var(--gray-100);
+        color: var(--danger);
     }
     
     .search-container {
@@ -70,16 +213,19 @@
     .search-input {
         width: 100%;
         padding: 0.75rem 1rem 0.75rem 3rem;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius);
         font-size: 0.875rem;
-        color: #1f2937;
+        color: var(--gray-900);
+        background: var(--gray-50);
+        transition: all 0.2s;
     }
     
     .search-input:focus {
         outline: none;
-        border-color: #4f46e5;
+        border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        background: white;
     }
     
     .search-icon {
@@ -87,67 +233,19 @@
         left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: #9ca3af;
-    }
-    
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .section-title i {
-        color: #4f46e5;
+        color: var(--gray-400);
     }
     
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
-        color: #6b7280;
+        color: var(--gray-500);
     }
     
     .empty-state i {
         font-size: 3rem;
-        color: #d1d5db;
+        color: var(--gray-300);
         margin-bottom: 1rem;
-    }
-    
-    .course-info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .info-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
-    }
-    
-    .info-label {
-        color: #6b7280;
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .info-value {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.25rem;
-    }
-    
-    .info-subvalue {
-        color: #6b7280;
-        font-size: 0.875rem;
     }
     
     /* Modal Styles */
@@ -171,12 +269,12 @@
     
     .modal-container {
         background: white;
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
         width: 100%;
         max-width: 600px;
         max-height: 80vh;
         overflow: hidden;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-xl);
         animation: modalSlideIn 0.3s ease;
     }
     
@@ -193,29 +291,31 @@
     
     .modal-header {
         padding: 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--gray-200);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: var(--gray-50);
     }
     
     .modal-title {
         font-size: 1.25rem;
-        font-weight: 600;
-        color: #1f2937;
+        font-weight: 700;
+        color: var(--gray-900);
     }
     
     .modal-close {
         background: none;
         border: none;
-        color: #6b7280;
+        color: var(--gray-600);
         cursor: pointer;
         padding: 0.5rem;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
     }
     
     .modal-close:hover {
-        background: #f3f4f6;
+        background: var(--gray-100);
     }
     
     .modal-body {
@@ -226,15 +326,16 @@
     
     .modal-footer {
         padding: 1.5rem;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--gray-200);
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;
+        background: var(--gray-50);
     }
     
     .btn {
         padding: 0.625rem 1.25rem;
-        border-radius: 6px;
+        border-radius: var(--radius);
         font-weight: 500;
         font-size: 0.875rem;
         cursor: pointer;
@@ -243,22 +344,22 @@
     }
     
     .btn-primary {
-        background: #4f46e5;
+        background: var(--primary);
         color: white;
     }
     
     .btn-primary:hover {
-        background: #4338ca;
+        background: var(--primary-dark);
     }
     
     .btn-secondary {
-        background: #f3f4f6;
-        color: #374151;
-        border: 1px solid #e5e7eb;
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
     }
     
     .btn-secondary:hover {
-        background: #e5e7eb;
+        background: var(--gray-200);
     }
     
     /* Topic List in Modal */
@@ -270,20 +371,22 @@
     
     .topic-item {
         padding: 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
         cursor: pointer;
         transition: all 0.2s;
+        background: var(--gray-50);
     }
     
     .topic-item:hover {
-        border-color: #4f46e5;
-        background: #f8fafc;
+        border-color: var(--primary);
+        background: var(--primary-light);
+        transform: translateX(4px);
     }
     
     .topic-item.selected {
-        border-color: #4f46e5;
-        background: #f0f9ff;
+        border-color: var(--primary);
+        background: var(--primary-light);
         border-width: 2px;
     }
     
@@ -296,22 +399,22 @@
     
     .topic-item-title {
         font-weight: 600;
-        color: #1f2937;
+        color: var(--gray-900);
         font-size: 1rem;
     }
     
     .topic-item-description {
-        color: #6b7280;
+        color: var(--gray-600);
         font-size: 0.875rem;
         line-height: 1.5;
     }
     
     .add-btn {
         padding: 0.25rem 0.75rem;
-        background: #10b981;
+        background: var(--success);
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         font-size: 0.75rem;
         font-weight: 500;
         cursor: pointer;
@@ -325,18 +428,18 @@
     }
     
     .add-btn:hover {
-        background: #059669;
+        background: var(--success-dark);
     }
     
     .no-topics {
         text-align: center;
         padding: 2rem;
-        color: #6b7280;
+        color: var(--gray-500);
     }
     
     .no-topics i {
         font-size: 2rem;
-        color: #d1d5db;
+        color: var(--gray-300);
         margin-bottom: 0.75rem;
     }
     
@@ -349,8 +452,8 @@
     .spinner {
         width: 40px;
         height: 40px;
-        border: 3px solid #e5e7eb;
-        border-top-color: #4f46e5;
+        border: 3px solid var(--gray-200);
+        border-top-color: var(--primary);
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin: 0 auto 1rem;
@@ -366,26 +469,27 @@
         top: 20px;
         right: 20px;
         padding: 1rem 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-lg);
         z-index: 1001;
         animation: slideIn 0.3s ease;
         display: flex;
         align-items: center;
+        gap: 0.75rem;
     }
     
     .notification.success {
-        background: #10b981;
+        background: var(--success);
         color: white;
     }
     
     .notification.error {
-        background: #ef4444;
+        background: var(--danger);
         color: white;
     }
     
     .notification i {
-        margin-right: 0.5rem;
+        font-size: 1.25rem;
     }
     
     @keyframes slideIn {
@@ -409,332 +513,499 @@
             opacity: 0;
         }
     }
+
+    /* Action buttons grid */
+    .action-buttons-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn-edit {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+    }
+    
+    .btn-edit:hover {
+        background: var(--primary);
+        color: white;
+    }
+    
+    .btn-delete {
+        background: var(--danger-light);
+        color: var(--danger-dark);
+    }
+    
+    .btn-delete:hover {
+        background: var(--danger);
+        color: white;
+    }
+    
+    .btn-back {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+    
+    .btn-back:hover {
+        background: var(--gray-200);
+        color: var(--gray-900);
+    }
+    
+    .loading-spinner {
+        animation: spin 1s linear infinite;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .detail-section {
+            padding: 1rem;
+        }
+        
+        .detail-value {
+            font-size: 1rem;
+        }
+        
+        .action-buttons-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .topic-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .topic-content {
+            padding: 1rem;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
-<!-- Page Header -->
-<div class="top-header">
-    <div class="greeting">
-        <h1>Course Details</h1>
-        <p>View detailed information about this course</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-        </div>
-    </div>
-</div>
-
-<!-- Main Content -->
-<div class="content-grid">
-    <!-- Left Column - Course Information -->
-    <div>
-        <!-- Course Header -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title">{{ $course->title }}</div>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    @if($course->is_published)
-                    <span style="padding: 0.375rem 1rem; background: #10b98110; color: #10b981; border-radius: 20px; font-size: 0.875rem; font-weight: 500; border: 1px solid #10b98130;">
-                        <i class="fas fa-check-circle" style="margin-right: 0.375rem;"></i>Published
-                    </span>
-                    @else
-                    <span style="padding: 0.375rem 1rem; background: #f59e0b10; color: #f59e0b; border-radius: 20px; font-size: 0.875rem; font-weight: 500; border: 1px solid #f59e0b30;">
-                        <i class="fas fa-clock" style="margin-right: 0.375rem;"></i>Draft
-                    </span>
-                    @endif
-                    
-                    <a href="{{ route('admin.courses.index') }}" 
-                       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #f3f4f6; color: #4b5563; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-                        <i class="fas fa-arrow-left"></i>
-                        Back
-                    </a>
-                </div>
+    <!-- Course Profile Card -->
+    <div class="form-container">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-book card-icon"></i>
+                <h2 class="card-title">Course Details: {{ $course->title }}</h2>
             </div>
-            
-            <div style="padding: 1.5rem;">
-                @if(session('success'))
-                <div style="margin-bottom: 1.5rem; padding: 0.75rem; background: #dcfce7; color: #065f46; border-radius: 6px; font-size: 0.875rem; border-left: 4px solid #10b981;">
-                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
-                    {{ session('success') }}
-                </div>
-                @endif
-                
-                @if(session('error'))
-                <div style="margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 0.875rem; border-left: 4px solid #dc2626;">
-                    <i class="fas fa-exclamation-circle" style="margin-right: 0.5rem;"></i>
-                    {{ session('error') }}
-                </div>
-                @endif
-                
-                <!-- Course Information Grid -->
-                <div class="course-info-grid">
-                    <div class="info-card">
-                        <div class="info-label">Course Code</div>
-                        <div class="info-value">{{ $course->course_code }}</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Credits</div>
-                        <div class="info-value">{{ $course->credits ?? 3 }}</div>
-                        <div class="info-subvalue">Academic Units</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Course ID</div>
-                        <div class="info-value">#{{ $course->id }}</div>
-                        <div class="info-subvalue">Unique Identifier</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Enrolled Students</div>
-                        <div class="info-value">
-                            @php
-                                $studentCount = $course->students ? $course->students->count() : 0;
-                            @endphp
-                            {{ $studentCount }}
-                        </div>
-                        <div class="info-subvalue">Active Enrollments</div>
-                    </div>
-                </div>
-                
-                <!-- Description Section -->
-                <div style="margin-bottom: 2rem;">
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Description</div>
-                    <div style="padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; color: #374151; line-height: 1.6;">
-                        {{ $course->description ?: 'No description provided for this course.' }}
-                    </div>
-                </div>
-                
-                <!-- Instructor Information -->
-                @if($course->teacher)
-                <div style="margin-bottom: 2rem;">
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Instructor</div>
-                    <div style="padding: 1.5rem; background: white; border-radius: 8px; border: 1px solid #e5e7eb;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem;">
-                                {{ strtoupper(substr($course->teacher->f_name, 0, 1)) }}
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 1.125rem; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">
-                                    {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}
-                                </div>
-                                <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">{{ $course->teacher->email }}</div>
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    @if($course->teacher->employee_id)
-                                    <span style="padding: 0.25rem 0.75rem; background: #e0e7ff; color: #4f46e5; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
-                                        ID: {{ $course->teacher->employee_id }}
-                                    </span>
-                                    @endif
-                                    <span style="padding: 0.25rem 0.75rem; background: #dcfce7; color: #166534; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
-                                        <i class="fas fa-chalkboard-teacher" style="margin-right: 0.25rem;"></i>Instructor
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endif
-            </div>
+            <a href="{{ route('admin.courses.edit', Crypt::encrypt($course->id)) }}" class="view-all-link">
+                Edit Course <i class="fas fa-edit"></i>
+            </a>
         </div>
         
-        <!-- Topics Section -->
-        <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title">Topics</div>
-                <button onclick="openAddTopicModal()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
-                    <i class="fas fa-plus"></i>Add Topics
-                </button>
+        <div class="card-body">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 1.5rem;">
+                    {{ strtoupper(substr($course->course_code, 0, 1)) }}
+                </div>
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">
+                    {{ $course->title }}
+                </h3>
+                <p style="color: var(--gray-600); margin-bottom: 1rem;">{{ $course->course_code }}</p>
+                
+                <div class="status-badge {{ $course->is_published ? 'status-published' : 'status-draft' }}">
+                    <i class="fas {{ $course->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                    {{ $course->is_published ? 'Course Published' : 'Draft Mode' }}
+                </div>
             </div>
             
-            <div style="padding: 1.5rem;">
-                <!-- Search Bar -->
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Search topics..." id="topicSearch">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Course Information
+                    </div>
+                    
+                    <div>
+                        <div class="detail-label">Course Title</div>
+                        <div class="detail-value">{{ $course->title }}</div>
+                        
+                        <div class="detail-label">Course Code</div>
+                        <div class="detail-value">{{ $course->course_code }}</div>
+                        
+                        <div class="detail-label">Credits</div>
+                        <div class="detail-value">{{ $course->credits ?? 3 }} units</div>
+                        
+                        @if($course->department)
+                        <div class="detail-label">Department</div>
+                        <div class="detail-value">{{ $course->department }}</div>
+                        @endif
+                        
+                        @if($course->semester)
+                        <div class="detail-label">Semester</div>
+                        <div class="detail-value">{{ ucfirst($course->semester) }}</div>
+                        @endif
+                    </div>
                 </div>
                 
-                <!-- Topics List -->
-                <div class="topics-section" id="topicsList">
-                    @if($course->topics && $course->topics->count() > 0)
-                        @foreach($course->topics as $topic)
-                        <div class="topic-card" id="topic-{{ $topic->id }}">
-                            <div class="topic-header">
-                                <div>
-                                    <div class="topic-title">{{ $topic->title }}</div>
-                                    <div style="font-size: 0.75rem; color: #9ca3af;">
-                                        <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
-                                        Added {{ $topic->created_at->diffForHumans() }}
-                                    </div>
-                                </div>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="removeTopic({{ $topic->id }}, '{{ $topic->title }}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="topic-content">
-                                <div class="topic-description">
-                                    {{ $topic->description ?? 'No description provided for this topic.' }}
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    @else
-                    <div class="empty-state">
-                        <i class="fas fa-folder-open"></i>
-                        <div style="font-size: 1rem; font-weight: 500; color: #6b7280; margin-bottom: 0.5rem;">No Topics Yet</div>
-                        <div style="font-size: 0.875rem; color: #9ca3af;">Start by adding topics to this course</div>
-                        <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
-                            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Add First Topic
-                        </button>
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Instructor Information
                     </div>
-                    @endif
+                    
+                    <div>
+                        @if($course->teacher)
+                        <div class="detail-label">Instructor</div>
+                        <div class="detail-value">
+                            {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}
+                        </div>
+                        <div class="detail-subvalue">
+                            <i class="fas fa-envelope"></i> {{ $course->teacher->email }}
+                        </div>
+                        
+                        @if($course->teacher->employee_id)
+                        <div class="detail-label">Employee ID</div>
+                        <div class="detail-value">{{ $course->teacher->employee_id }}</div>
+                        @endif
+                        @else
+                        <div class="detail-label">Instructor</div>
+                        <div class="detail-value" style="color: var(--warning);">
+                            <i class="fas fa-exclamation-triangle"></i> No Instructor Assigned
+                        </div>
+                        @endif
+                        
+                        <div class="detail-label">Course ID</div>
+                        <div class="detail-value">#{{ $course->id }}</div>
+                        
+                        <div class="detail-label">Course Created</div>
+                        <div class="detail-value">{{ $course->created_at->format('F d, Y') }}</div>
+                        <div class="detail-subvalue">
+                            <i class="fas fa-clock"></i> {{ $course->created_at->diffForHumans() }}
+                        </div>
+                        
+                        <div class="detail-label">Last Updated</div>
+                        <div class="detail-value">{{ $course->updated_at->format('F d, Y') }}</div>
+                        <div class="detail-subvalue">
+                            <i class="fas fa-clock"></i> {{ $course->updated_at->diffForHumans() }}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Right Column - Sidebar -->
-    <div>
-        <!-- Course Actions -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header">
-                <div class="card-title">Course Actions</div>
+            
+            <div class="detail-section">
+                <div class="detail-section-title">
+                    <i class="fas fa-align-left"></i>
+                    Course Description
+                </div>
+                
+                <div style="padding: 1rem; background: white; border-radius: var(--radius-sm); border: 1px solid var(--gray-200);">
+                    {{ $course->description ?: 'No description provided for this course.' }}
+                </div>
             </div>
-            <div style="padding: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <a href="{{ route('admin.courses.edit', Crypt::encrypt($course->id)) }}" 
-                       style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; text-decoration: none; color: #374151; transition: all 0.2s;">
-                        <div style="width: 32px; height: 32px; background: #4f46e5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
-                            <i class="fas fa-edit"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 500; font-size: 0.875rem;">Edit Course</div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">Modify course information</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="margin-left: auto; color: #9ca3af;"></i>
-                    </a>
-
-                    <button onclick="if(confirm('Are you sure you want to delete this course? This action cannot be undone.')) { document.getElementById('delete-form').submit(); }"
-                            style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; cursor: pointer; width: 100%;">
-                        <div style="width: 32px; height: 32px; background: #dc2626; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
-                            <i class="fas fa-trash"></i>
-                        </div>
-                        <div style="text-align: left;">
-                            <div style="font-weight: 500; font-size: 0.875rem;">Delete Course</div>
-                            <div style="font-size: 0.75rem; color: #f87171;">Permanently remove course</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="margin-left: auto; color: #f87171;"></i>
+            
+            <!-- Success/Error Messages -->
+            @if(session('success'))
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--success-light); color: var(--success-dark); border-radius: var(--radius-sm); border-left: 4px solid var(--success);">
+                <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                {{ session('success') }}
+            </div>
+            @endif
+            
+            @if(session('error'))
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--danger-light); color: var(--danger-dark); border-radius: var(--radius-sm); border-left: 4px solid var(--danger);">
+                <i class="fas fa-exclamation-circle" style="margin-right: 0.5rem;"></i>
+                {{ session('error') }}
+            </div>
+            @endif
+        </div>
+        
+        <div class="card-footer-modern">
+            <div class="action-buttons-grid">
+                <a href="{{ route('admin.courses.edit', Crypt::encrypt($course->id)) }}" class="action-btn btn-edit">
+                    <i class="fas fa-edit"></i>
+                    Edit Course
+                </a>
+                
+                @if(!$course->is_published)
+                <form action="{{ route('admin.courses.publish', Crypt::encrypt($course->id)) }}" method="POST" id="publishForm">
+                    @csrf
+                    <button type="submit" class="action-btn btn-edit" id="publishButton">
+                        <i class="fas fa-upload"></i>
+                        Publish Course
                     </button>
-                    
-                    <form id="delete-form" action="{{ route('admin.courses.destroy', $course->id) }}" method="POST" style="display: none;">
-                        @csrf
-                        @method('DELETE')
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Course Metadata -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header">
-                <div class="card-title">Course Metadata</div>
-            </div>
-            <div style="padding: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Created</div>
-                        <div style="font-weight: 500; color: #1f2937;">{{ $course->created_at->format('F d, Y') }}</div>
-                        <div style="font-size: 0.75rem; color: #9ca3af;">{{ $course->created_at->format('h:i A') }} • {{ $course->created_at->diffForHumans() }}</div>
-                    </div>
-                    
-                    <div>
-                        <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Last Updated</div>
-                        <div style="font-weight: 500; color: #1f2937;">{{ $course->updated_at->format('F d, Y') }}</div>
-                        <div style="font-size: 0.75rem; color: #9ca3af;">{{ $course->updated_at->format('h:i A') }} • {{ $course->updated_at->diffForHumans() }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Quick Stats</div>
-            </div>
-            <div style="padding: 1rem;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div style="padding: 1rem; background: #f0f9ff; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: #0369a1; margin-bottom: 0.25rem;">
-                            @php
-                                $studentCount = $course->students ? $course->students->count() : 0;
-                            @endphp
-                            {{ $studentCount }}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #0c4a6e; font-weight: 500;">Students</div>
-                    </div>
-                    
-                    <div style="padding: 1rem; background: #f0fdf4; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: #15803d; margin-bottom: 0.25rem;">
-                            {{ $course->topics ? $course->topics->count() : 0 }}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #166534; font-weight: 500;">Topics</div>
-                    </div>
-                    
-                    <div style="padding: 1rem; background: #fef3c7; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: #b45309; margin-bottom: 0.25rem;">
-                            {{ $course->credits ?? 3 }}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #92400e; font-weight: 500;">Credits</div>
-                    </div>
-                    
-                    <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">
-                            {{ $course->created_at->diffInDays(now()) }}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #4b5563; font-weight: 500;">Days Active</div>
-                    </div>
-                </div>
+                </form>
+                @endif
+                
+                <form action="{{ route('admin.courses.destroy', urlencode(Crypt::encrypt($course->id))) }}" method="POST" id="deleteForm">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="action-btn btn-delete" id="deleteButton">
+                        <i class="fas fa-trash"></i>
+                        Delete Course
+                    </button>
+                </form>
+                
+                <a href="{{ route('admin.courses.index') }}" class="action-btn btn-back">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Courses
+                </a>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Add Topic Modal -->
-<div class="modal-overlay" id="addTopicModal">
-    <div class="modal-container">
-        <div class="modal-header">
-            <div class="modal-title">Add Topics to Course</div>
-            <button class="modal-close" onclick="closeAddTopicModal()">
-                <i class="fas fa-times"></i>
+    <!-- Topics Card -->
+    <div class="form-container" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-list card-icon"></i>
+                <h2 class="card-title">Course Topics</h2>
+            </div>
+            <button onclick="openAddTopicModal()" class="view-all-link">
+                <i class="fas fa-plus"></i> Add Topics
             </button>
         </div>
-        <div class="modal-body">
+        
+        <div class="card-body">
+            <!-- Search Bar -->
             <div class="search-container">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search available topics..." id="modalTopicSearch" onkeyup="searchTopics()">
+                <input type="text" class="search-input" placeholder="Search topics..." id="topicSearch">
             </div>
             
-            <div id="availableTopicsList" class="topics-list">
-                <!-- Topics will be loaded here via AJAX -->
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <div>Loading topics...</div>
+            <!-- Topics List -->
+            <div class="topics-section" id="topicsList">
+                @if($course->topics && $course->topics->count() > 0)
+                    @foreach($course->topics as $topic)
+                    <div class="topic-card" id="topic-{{ $topic->id }}">
+                        <div class="topic-header">
+                            <div>
+                                <div class="topic-title">{{ $topic->title }}</div>
+                                <div style="font-size: 0.75rem; color: var(--gray-500);">
+                                    <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
+                                    Added {{ $topic->created_at->diffForHumans() }}
+                                </div>
+                            </div>
+                            <div class="action-dropdown">
+                                <button class="action-btn-small" onclick="removeTopic({{ $topic->id }}, '{{ addslashes($topic->title) }}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="topic-content">
+                            <div class="topic-description">
+                                {{ $topic->description ?? 'No description provided for this topic.' }}
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                @else
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <div style="font-size: 1rem; font-weight: 500; color: var(--gray-600); margin-bottom: 0.5rem;">No Topics Yet</div>
+                    <div style="font-size: 0.875rem; color: var(--gray-500);">Start by adding topics to this course</div>
+                    <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: var(--primary); color: white; border-radius: var(--radius); border: none; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+                        <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Add First Topic
+                    </button>
                 </div>
+                @endif
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeAddTopicModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="addSelectedTopics()">Add Selected Topics</button>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="form-container" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-bolt card-icon"></i>
+                <h2 class="card-title">Quick Actions</h2>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <a href="{{ route('admin.courses.edit', Crypt::encrypt($course->id)) }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--primary-light); border-radius: var(--radius-sm); border: 1px solid var(--primary); text-decoration: none; color: var(--primary-dark); transition: all 0.2s ease;">
+                    <div style="width: 44px; height: 44px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">Edit Course</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Update course information</div>
+                    </div>
+                </a>
+                
+                <a href="{{ route('admin.courses.index') }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--gray-100); border-radius: var(--radius-sm); border: 1px solid var(--gray-300); text-decoration: none; color: var(--gray-700); transition: all 0.2s ease;">
+                    <div style="width: 44px; height: 44px; background: var(--gray-300); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gray-700);">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">All Courses</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">View all system courses</div>
+                    </div>
+                </a>
+                
+                <a href="#" onclick="openAddTopicModal()" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--success-light); border-radius: var(--radius-sm); border: 1px solid var(--success); text-decoration: none; color: var(--success-dark); transition: all 0.2s ease;">
+                    <div style="width: 44px; height: 44px; background: var(--success); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">Add Topics</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Add topics to this course</div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
-</div>
+
+    <!-- Add Topic Modal -->
+    <div class="modal-overlay" id="addTopicModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title">Add Topics to Course</div>
+                <button class="modal-close" onclick="closeAddTopicModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search available topics..." id="modalTopicSearch" onkeyup="searchTopics()">
+                </div>
+                
+                <div id="availableTopicsList" class="topics-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Loading topics...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddTopicModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addSelectedTopics()">Add Selected Topics</button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle publish button click
+        const publishButton = document.getElementById('publishButton');
+        if (publishButton) {
+            publishButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (confirm('Are you sure you want to publish this course?\n\nOnce published, the course will be visible to enrolled students.')) {
+                    // Show loading state
+                    const originalHTML = publishButton.innerHTML;
+                    publishButton.innerHTML = '<i class="fas fa-spinner loading-spinner"></i> Publishing...';
+                    publishButton.disabled = true;
+                    
+                    // Submit the form
+                    document.getElementById('publishForm').submit();
+                }
+            });
+        }
+        
+        // Handle delete button click
+        const deleteButton = document.getElementById('deleteButton');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (confirm('WARNING: Are you sure you want to delete this course?\n\nThis action cannot be undone. All course data will be permanently removed.')) {
+                    // Show loading state
+                    const originalHTML = deleteButton.innerHTML;
+                    deleteButton.innerHTML = '<i class="fas fa-spinner loading-spinner"></i> Deleting...';
+                    deleteButton.disabled = true;
+                    
+                    // Submit the form
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        }
+        
+        // Show success message from session
+        @if(session('success'))
+            showNotification('{{ session('success') }}', 'success');
+        @endif
+        
+        @if(session('error'))
+            showNotification('{{ session('error') }}', 'error');
+        @endif
+        
+        @if(session('warning'))
+            showNotification('{{ session('warning') }}', 'warning');
+        @endif
+    });
+    
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--danger)' : 'var(--warning)'};
+            color: white;
+            z-index: 9999;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            max-width: 400px;
+        `;
+        
+        const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle';
+        
+        notification.innerHTML = `
+            <i class="fas fa-${icon}" style="font-size: 1.25rem;"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+    
+    // Add CSS animations if not present
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Topics management scripts
     let selectedTopics = [];
     let allAvailableTopics = [];
     let currentCourseTopics = {!! $course->topics->pluck('id')->toJson() !!};
@@ -797,12 +1068,12 @@
             document.getElementById('availableTopicsList').innerHTML = `
                 <div class="no-topics">
                     <i class="fas fa-exclamation-circle"></i>
-                    <div style="color: #dc2626; font-weight: 500;">Error Loading Topics</div>
-                    <div style="font-size: 0.875rem; color: #9ca3af; margin-top: 0.5rem;">
+                    <div style="color: var(--danger); font-weight: 500;">Error Loading Topics</div>
+                    <div style="font-size: 0.875rem; color: var(--gray-500); margin-top: 0.5rem;">
                         ${error.message}
                     </div>
                     <button onclick="loadAvailableTopics()" 
-                            style="margin-top: 1rem; padding: 0.5rem 1rem; background: #4f46e5; color: white; border-radius: 6px; border: none; cursor: pointer;">
+                            style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary); color: white; border-radius: var(--radius); border: none; cursor: pointer;">
                         <i class="fas fa-redo"></i> Retry Loading Topics
                     </button>
                 </div>
@@ -818,11 +1089,11 @@
                 <div class="no-topics">
                     <i class="fas fa-folder-open"></i>
                     <div>No available topics to add.</div>
-                    <div style="font-size: 0.875rem; color: #9ca3af; margin-top: 0.5rem;">
+                    <div style="font-size: 0.875rem; color: var(--gray-500); margin-top: 0.5rem;">
                         All topics are already added to this course or no topics exist.
                     </div>
-                    <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">
-                        <a href="{{ route('admin.topics.create') }}" style="color: #4f46e5; text-decoration: underline;">
+                    <div style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">
+                        <a href="{{ route('admin.topics.create') }}" style="color: var(--primary); text-decoration: underline;">
                             Click here to create new topics
                         </a>
                     </div>
@@ -979,13 +1250,13 @@
             <div class="topic-header">
                 <div>
                     <div class="topic-title">${topic.title || 'Untitled Topic'}</div>
-                    <div style="font-size: 0.75rem; color: #9ca3af;">
+                    <div style="font-size: 0.75rem; color: var(--gray-500);">
                         <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
                         Just added
                     </div>
                 </div>
                 <div class="action-dropdown">
-                    <button class="action-btn" onclick="removeTopic(${topic.id}, '${(topic.title || 'Untitled Topic').replace(/'/g, "\\'")}')">
+                    <button class="action-btn-small" onclick="removeTopic(${topic.id}, '${(topic.title || 'Untitled Topic').replace(/'/g, "\\'")}')">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1036,9 +1307,9 @@
                     topicsList.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-folder-open"></i>
-                            <div style="font-size: 1rem; font-weight: 500; color: #6b7280; margin-bottom: 0.5rem;">No Topics Yet</div>
-                            <div style="font-size: 0.875rem; color: #9ca3af;">Start by adding topics to this course</div>
-                            <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
+                            <div style="font-size: 1rem; font-weight: 500; color: var(--gray-600); margin-bottom: 0.5rem;">No Topics Yet</div>
+                            <div style="font-size: 0.875rem; color: var(--gray-500);">Start by adding topics to this course</div>
+                            <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: var(--primary); color: white; border-radius: var(--radius); border: none; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
                                 <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Add First Topic
                             </button>
                         </div>
@@ -1068,38 +1339,6 @@
                    content.includes(searchTerm);
         });
         renderAvailableTopics(filteredTopics);
-    }
-
-    function showNotification(message, type) {
-        const existingNotifications = document.querySelectorAll('.notification');
-        existingNotifications.forEach(notification => notification.remove());
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            background: ${type === 'success' ? '#10b981' : '#ef4444'};
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 1001;
-            animation: slideIn 0.3s ease;
-        `;
-        
-        notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}" style="margin-right: 0.5rem;"></i>
-            ${message}
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
     }
 
     // Close modal on escape key
