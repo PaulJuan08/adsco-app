@@ -96,10 +96,10 @@ class User extends Authenticatable
     /**
      * Get assignments submitted by the user
      */
-    public function submittedAssignments()
-    {
-        return $this->hasMany(AssignmentSubmission::class, 'student_id');
-    }
+    // public function submittedAssignments()
+    // {
+    //     return $this->hasMany(AssignmentSubmission::class, 'student_id');
+    // }
     
     /**
      * Get grades for the user

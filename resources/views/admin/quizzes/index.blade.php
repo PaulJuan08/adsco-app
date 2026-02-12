@@ -3,101 +3,72 @@
 @section('title', 'Quizzes - Admin Dashboard')
 
 @section('content')
-    <!-- Header with Dashboard Style -->
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar-large">
+                <div class="user-avatar">
                     {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
                 </div>
                 <div class="greeting-text">
-                    <h1 class="welcome-title">Quizzes</h1>
+                    <h1 class="welcome-title">Quiz Management</h1>
                     <p class="welcome-subtitle">
-                        <i class="fas fa-question-circle"></i> Manage and organize assessment quizzes
+                        <i class="fas fa-question-circle"></i> Manage all assessment quizzes
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards with Dashboard Style -->
-    <div class="stats-grid">
-        <div class="stat-card stat-primary">
-            <div class="stat-content">
-                <div class="stat-info">
+    <!-- Stats Cards -->
+    <div class="stats-grid stats-grid-compact">
+        <a href="{{ route('admin.quizzes.index') }}" class="stat-card stat-card-primary clickable-card">
+            <div class="stat-header">
+                <div>
                     <div class="stat-label">Total Quizzes</div>
                     <div class="stat-number">{{ number_format($quizzes->total()) }}</div>
-                    <div class="stat-meta">
-                        <i class="fas fa-question-circle"></i> All assessment quizzes
-                    </div>
                 </div>
-                <div class="stat-icon-wrapper">
+                <div class="stat-icon">
                     <i class="fas fa-question-circle"></i>
                 </div>
             </div>
-            <div class="stat-footer">
-                <a href="{{ route('admin.quizzes.index') }}" class="stat-link">
-                    View all quizzes <i class="fas fa-arrow-right"></i>
-                </a>
+            <div class="stat-link">
+                View all quizzes <i class="fas fa-arrow-right"></i>
             </div>
-        </div>
+        </a>
         
-        <div class="stat-card stat-success">
-            <div class="stat-content">
-                <div class="stat-info">
+        <a href="{{ route('admin.quizzes.index') }}?status=published" class="stat-card stat-card-success clickable-card">
+            <div class="stat-header">
+                <div>
                     <div class="stat-label">Published Quizzes</div>
                     <div class="stat-number">{{ number_format($quizzes->where('is_published', true)->count()) }}</div>
-                    <div class="stat-meta">
-                        <i class="fas fa-eye"></i> Available to students
-                    </div>
                 </div>
-                <div class="stat-icon-wrapper">
+                <div class="stat-icon">
                     <i class="fas fa-eye"></i>
                 </div>
             </div>
-            <div class="stat-footer">
-                <a href="{{ route('admin.quizzes.index') }}?status=published" class="stat-link">
-                    View published <i class="fas fa-arrow-right"></i>
-                </a>
+            <div class="stat-link">
+                View published <i class="fas fa-arrow-right"></i>
             </div>
-        </div>
-        
-        <div class="stat-card stat-warning">
-            <div class="stat-content">
-                <div class="stat-info">
-                    <div class="stat-label">Private Quizzes</div>
-                    <div class="stat-number">{{ number_format($quizzes->where('is_published', false)->count()) }}</div>
-                    <div class="stat-meta">
-                        <i class="fas fa-lock"></i> Draft mode
-                    </div>
-                </div>
-                <div class="stat-icon-wrapper">
-                    <i class="fas fa-lock"></i>
-                </div>
-            </div>
-            <div class="stat-footer">
-                <a href="{{ route('admin.quizzes.index') }}?status=draft" class="stat-link">
-                    View drafts <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Content Grid -->
     <div class="content-grid">
         <!-- Left Column -->
         <div class="left-column">
             <!-- Quiz List Card -->
             <div class="dashboard-card">
-                <div class="card-header-modern">
-                    <div class="card-title-group">
-                        <i class="fas fa-question-circle card-icon"></i>
-                        <h2 class="card-title-modern">Quiz List</h2>
-                    </div>
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-question-circle" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quiz List
+                    </h2>
                     <div class="header-actions">
-                        <div class="search-box">
+                        <div class="search-container">
                             <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Search quizzes..." id="search-input">
+                            <input type="text" class="search-input" placeholder="Search quizzes..." id="search-input">
                         </div>
                         <a href="{{ route('admin.quizzes.create') }}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> New Quiz
@@ -105,10 +76,10 @@
                     </div>
                 </div>
                 
-                <div class="card-body-modern">
+                <div class="card-body">
                     @if($quizzes->isEmpty())
                     <!-- Empty State -->
-                    <div class="empty-state-modern">
+                    <div class="empty-state">
                         <div class="empty-icon">
                             <i class="fas fa-question-circle"></i>
                         </div>
@@ -120,69 +91,49 @@
                     </div>
                     @else
                     <!-- Quiz List -->
-                    <div class="table-container">
-                        <table class="quiz-table">
+                    <div class="table-responsive">
+                        <table class="quiz-table" id="quiz-table">
                             <thead>
                                 <tr>
                                     <th>Quiz Title</th>
                                     <th>Questions</th>
                                     <th>Status</th>
                                     <th>Created</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($quizzes as $quiz)
-                                <tr class="quiz-row" data-search="{{ strtolower($quiz->title . ' ' . $quiz->description) }}">
+                                <tr class="clickable-row" 
+                                    data-href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}"
+                                    data-search="{{ strtolower($quiz->title . ' ' . $quiz->description) }}">
                                     <td>
-                                        <div class="quiz-info">
+                                        <div class="quiz-info-cell">
                                             <div class="quiz-icon">
                                                 <i class="fas fa-question-circle"></i>
                                             </div>
-                                            <div>
+                                            <div class="quiz-details">
                                                 <div class="quiz-title">{{ $quiz->title }}</div>
                                                 <div class="quiz-desc">{{ Str::limit($quiz->description, 60) }}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge">{{ $quiz->total_questions ?? 0 }} Qs</span>
+                                        <span class="item-badge badge-info">{{ $quiz->total_questions ?? 0 }} Qs</span>
                                     </td>
                                     <td>
                                         @if($quiz->is_published)
-                                            <span class="status published">
-                                                <i class="fas fa-circle"></i> Public
+                                            <span class="item-badge badge-success">
+                                                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 0.25rem;"></i> Public
                                             </span>
                                         @else
-                                            <span class="status draft">
-                                                <i class="fas fa-circle"></i> Private
+                                            <span class="item-badge badge-warning">
+                                                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 0.25rem;"></i> Private
                                             </span>
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="date">{{ $quiz->created_at->format('M d, Y') }}</div>
-                                        <div class="time">{{ $quiz->created_at->diffForHumans() }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}" 
-                                               class="btn-icon view" title="View Quiz">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
-                                               class="btn-icon edit" title="Edit Quiz">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form action="{{ route('admin.quizzes.destroy', Crypt::encrypt($quiz->id)) }}" 
-                                                  method="POST" class="d-inline"
-                                                  onsubmit="return confirm('Are you sure?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn-icon delete" title="Delete Quiz">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
+                                        <div class="created-date">{{ $quiz->created_at->format('M d, Y') }}</div>
+                                        <div class="created-ago">{{ $quiz->created_at->diffForHumans() }}</div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -193,9 +144,9 @@
                 </div>
 
                 @if($quizzes->hasPages())
-                <div class="card-footer-modern">
+                <div class="card-footer">
                     <div class="pagination-info">
-                        Showing {{ $quizzes->firstItem() }}-{{ $quizzes->lastItem() }} of {{ $quizzes->total() }}
+                        Showing {{ $quizzes->firstItem() }} to {{ $quizzes->lastItem() }} of {{ $quizzes->total() }} entries
                     </div>
                     <div class="pagination-links">
                         {{ $quizzes->links() }}
@@ -209,14 +160,14 @@
         <div class="right-column">
             <!-- Quick Actions Card -->
             <div class="dashboard-card">
-                <div class="card-header-modern">
-                    <div class="card-title-group">
-                        <i class="fas fa-bolt card-icon"></i>
-                        <h2 class="card-title-modern">Quick Actions</h2>
-                    </div>
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-bolt" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quick Actions
+                    </h2>
                 </div>
                 
-                <div class="card-body-modern">
+                <div class="card-body">
                     <div class="quick-actions-grid">
                         <a href="{{ route('admin.quizzes.create') }}" class="action-card action-primary">
                             <div class="action-icon">
@@ -262,30 +213,57 @@
 
             <!-- Quiz Statistics Card -->
             <div class="dashboard-card">
-                <div class="card-header-modern">
-                    <div class="card-title-group">
-                        <i class="fas fa-chart-pie card-icon"></i>
-                        <h2 class="card-title-modern">Quiz Statistics</h2>
-                    </div>
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quiz Statistics
+                    </h2>
                 </div>
                 
-                <div class="card-body-modern">
-                    <div class="stats-list">
-                        <div class="stat-item">
-                            <span class="stat-label">Quizzes This Month</span>
-                            <span class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Published Quizzes</span>
-                            <span class="stat-value">{{ $quizzes->where('is_published', true)->count() }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Draft Quizzes</span>
-                            <span class="stat-value">{{ $quizzes->where('is_published', false)->count() }}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Avg Questions</span>
-                            <span class="stat-value">0</span>
+                <div class="card-body">
+                    <div class="items-list">
+                        <a href="{{ route('admin.quizzes.index') }}?month={{ now()->format('Y-m') }}" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--primary-light), var(--primary));">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Quizzes This Month</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">
+                                {{ $quizzes->where('created_at', '>=', now()->startOfMonth())->count() }}
+                            </div>
+                        </a>
+                        
+                        <a href="{{ route('admin.quizzes.index') }}?status=published" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--success-light), var(--success));">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Published Quizzes</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $quizzes->where('is_published', true)->count() }}</div>
+                        </a>
+                        
+                        <a href="{{ route('admin.quizzes.index') }}?status=draft" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--warning-light), var(--warning));">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Private Quizzes</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $quizzes->where('is_published', false)->count() }}</div>
+                        </a>
+                        
+                        <div class="list-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--info-light), var(--info));">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Avg Questions</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">
+                                {{ $quizzes->count() > 0 ? round($quizzes->sum('total_questions') / $quizzes->count()) : 0 }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -295,391 +273,172 @@
 
     <!-- Footer -->
     <footer class="dashboard-footer">
-        <div class="footer-content">
-            <p class="footer-text">© {{ date('Y') }} School Management System. All rights reserved.</p>
-            <p class="footer-meta">
-                <span><i class="fas fa-question-circle"></i> Quiz Management</span>
-                <span class="separator">•</span>
-                <span><i class="fas fa-calendar"></i> {{ now()->format('M d, Y') }}</span>
-            </p>
-        </div>
+        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
+        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
+            Quiz Management • Updated {{ now()->format('M d, Y') }}
+        </p>
     </footer>
+</div>
 @endsection
 
 @push('styles')
 <style>
-    /* Apply all the dashboard CSS variables and styles */
-    :root {
-        --primary: #4f46e5;
-        --primary-light: #eef2ff;
-        --primary-dark: #3730a3;
-        
-        --success: #10b981;
-        --success-light: #d1fae5;
-        --success-dark: #059669;
-        
-        --warning: #f59e0b;
-        --warning-light: #fef3c7;
-        --warning-dark: #d97706;
-        
-        --info: #06b6d4;
-        --info-light: #cffafe;
-        --info-dark: #0891b2;
-        
-        --danger: #ef4444;
-        --danger-light: #fee2e2;
-        --danger-dark: #dc2626;
-        
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-400: #9ca3af;
-        --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
-        --gray-900: #111827;
-        
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        
-        --radius: 12px;
-        --radius-sm: 8px;
-        --radius-lg: 16px;
-    }
-
-    /* Dashboard Header */
-    .dashboard-header {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow-lg);
-    }
-    
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 2rem;
-    }
-    
-    .user-greeting {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-    }
-    
-    .user-avatar-large {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: white;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        flex-shrink: 0;
-    }
-    
-    .greeting-text {
-        color: white;
-    }
-    
-    .welcome-title {
-        font-size: 1.875rem;
-        font-weight: 700;
-        margin: 0 0 0.5rem 0;
-        color: white;
-    }
-    
-    .welcome-subtitle {
-        font-size: 0.95rem;
-        opacity: 0.9;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: var(--radius);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        transition: all 0.3s ease;
-        border: 1px solid var(--gray-200);
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-    }
-    
-    .stat-content {
-        padding: 1.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-    
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--gray-600);
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-number {
-        font-size: 2.25rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 0.5rem;
-        line-height: 1;
-    }
-    
-    .stat-meta {
-        font-size: 0.875rem;
-        color: var(--gray-500);
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-    }
-    
-    .stat-icon-wrapper {
-        width: 60px;
-        height: 60px;
-        border-radius: var(--radius);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        flex-shrink: 0;
-    }
-    
-    .stat-primary .stat-icon-wrapper {
-        background: var(--primary-light);
-        color: var(--primary);
-    }
-    
-    .stat-success .stat-icon-wrapper {
-        background: var(--success-light);
-        color: var(--success);
-    }
-    
-    .stat-warning .stat-icon-wrapper {
-        background: var(--warning-light);
-        color: var(--warning);
-    }
-    
-    .stat-footer {
-        background: var(--gray-50);
-        padding: 0.75rem 1.5rem;
-        border-top: 1px solid var(--gray-200);
-    }
-    
-    .stat-link {
-        color: var(--gray-700);
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
-    }
-    
-    .stat-link:hover {
-        color: var(--primary);
-        gap: 0.75rem;
-    }
-
-    /* Content Grid */
-    .content-grid {
-        display: grid;
-        grid-template-columns: 1fr 400px;
-        gap: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    @media (max-width: 1200px) {
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* Dashboard Cards */
-    .dashboard-card {
-        background: white;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        margin-bottom: 1.5rem;
-        border: 1px solid var(--gray-200);
-        overflow: hidden;
-    }
-    
-    .card-header-modern {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--gray-200);
-        background: var(--gray-50);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .card-title-group {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .card-icon {
-        font-size: 1.25rem;
-        color: var(--primary);
-    }
-    
-    .card-title-modern {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin: 0;
-    }
-    
-    .card-body-modern {
-        padding: 1.5rem;
-    }
-    
-    .card-footer-modern {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid var(--gray-200);
-        background: var(--gray-50);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* Header Actions - KEEP ORIGINAL STRUCTURE */
+    /* Additional styles specific to quizzes index */
     .header-actions {
         display: flex;
         gap: 1rem;
         align-items: center;
     }
-
-    /* Search Box - KEEP ORIGINAL STRUCTURE */
-    .search-box {
+    
+    .search-container {
         position: relative;
         min-width: 250px;
     }
     
-    .search-box i {
+    .search-container i {
         position: absolute;
-        left: 12px;
+        left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--gray-500);
+        color: var(--gray-400);
+        z-index: 1;
     }
     
-    .search-box input {
+    .search-input {
         width: 100%;
-        padding: 0.5rem 1rem 0.5rem 2.5rem;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
         border: 1px solid var(--gray-300);
-        border-radius: 6px;
-        font-size: 0.875rem;
-        background: white;
+        border-radius: var(--radius-lg);
+        font-size: var(--font-size-sm);
+        transition: all var(--transition-base);
+        background: var(--white);
+        box-shadow: var(--shadow-sm);
     }
     
-    .search-box input:focus {
+    .search-input:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 3px var(--primary-light);
     }
-
-    /* Buttons - KEEP ORIGINAL STRUCTURE */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.875rem;
+    
+    /* Compact Stats Cards */
+    .stats-grid-compact {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 1rem;
+        min-height: auto;
+    }
+    
+    .stats-grid-compact .stat-header {
+        margin-bottom: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-label {
+        font-size: var(--font-size-sm);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.75rem;
+        font-weight: var(--font-bold);
+    }
+    
+    .stats-grid-compact .stat-icon {
+        font-size: 1.5rem;
+        opacity: 0.8;
+    }
+    
+    .stats-grid-compact .stat-link {
+        padding: 0.5rem;
+        font-size: var(--font-size-xs);
+    }
+    
+    /* Clickable Cards */
+    .clickable-card {
+        display: block;
         text-decoration: none;
+        color: inherit;
         cursor: pointer;
-        font-weight: 500;
-        transition: background 0.2s;
-        white-space: nowrap;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
     
-    .btn:hover {
-        background: var(--primary-dark);
-    }
-
-    /* Empty State - Update classes */
-    .empty-state-modern {
-        padding: 3rem 2rem;
-        text-align: center;
+    .clickable-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
     
-    .empty-icon {
-        font-size: 3rem;
-        color: var(--gray-400);
-        opacity: 0.5;
-        margin-bottom: 1rem;
+    .clickable-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: currentColor;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
     }
     
-    .empty-state-modern h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--gray-900);
-        margin-bottom: 0.5rem;
+    .clickable-card:hover::after {
+        opacity: 0.05;
     }
     
-    .empty-state-modern p {
-        color: var(--gray-600);
-        margin-bottom: 1.5rem;
+    /* Clickable items in lists */
+    .clickable-item {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
-
-    /* Table - KEEP ORIGINAL STRUCTURE */
-    .table-container {
+    
+    .clickable-item:hover {
+        background: var(--gray-50);
+        transform: translateX(4px);
+        border-color: var(--primary);
+    }
+    
+    /* Ensure links within clickable cards don't interfere */
+    .clickable-card a {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Make stat cards look interactive */
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    
+    .table-responsive {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius);
+        border: 1px solid var(--gray-200);
     }
     
     .quiz-table {
         width: 100%;
         border-collapse: collapse;
+        background: var(--white);
     }
     
     .quiz-table thead {
         background: var(--gray-50);
-        border-bottom: 2px solid var(--gray-200);
     }
     
     .quiz-table th {
         padding: 1rem;
         text-align: left;
-        font-weight: 600;
-        color: var(--gray-600);
-        font-size: 0.875rem;
+        font-weight: var(--font-semibold);
+        color: var(--gray-700);
+        font-size: var(--font-size-sm);
+        border-bottom: 2px solid var(--gray-300);
         white-space: nowrap;
     }
     
@@ -689,274 +448,72 @@
         vertical-align: middle;
     }
     
-    .quiz-table tbody tr:hover {
-        background: var(--gray-50);
+    /* Clickable row styling */
+    .clickable-row {
+        cursor: pointer;
+        transition: all var(--transition-base);
     }
-
-    /* Quiz Info - KEEP ORIGINAL STRUCTURE */
-    .quiz-info {
+    
+    .clickable-row:hover {
+        background: var(--gray-50);
+        transform: translateX(4px);
+        box-shadow: -4px 0 0 var(--primary-light);
+    }
+    
+    .quiz-info-cell {
         display: flex;
         gap: 1rem;
-        align-items: center;
+        align-items: flex-start;
     }
     
     .quiz-icon {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
         background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        border-radius: 8px;
+        border-radius: var(--radius);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-size: 1.125rem;
+        color: var(--white);
+        font-size: 1.25rem;
         flex-shrink: 0;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .quiz-details {
+        flex: 1;
+        min-width: 0;
     }
     
     .quiz-title {
-        font-weight: 500;
+        font-weight: var(--font-semibold);
         color: var(--gray-900);
         margin-bottom: 0.25rem;
+        font-size: var(--font-size-base);
     }
     
     .quiz-desc {
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         color: var(--gray-600);
-    }
-
-    /* Badges - KEEP ORIGINAL STRUCTURE with updated colors */
-    .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        background: var(--primary-light);
-        color: var(--primary-dark);
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-
-    /* Status - KEEP ORIGINAL STRUCTURE with updated colors */
-    .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-size: 0.75rem;
-        font-weight: 500;
+        line-height: var(--leading-snug);
     }
     
-    .status i {
-        font-size: 0.5rem;
-    }
-    
-    .status.published {
-        color: var(--success-dark);
-    }
-    
-    .status.draft {
-        color: var(--danger-dark);
-    }
-
-    /* Date - KEEP ORIGINAL STRUCTURE */
-    .date {
-        font-weight: 500;
+    .created-date {
+        font-weight: var(--font-medium);
         color: var(--gray-800);
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
+        margin-bottom: 0.125rem;
     }
     
-    .time {
-        font-size: 0.75rem;
-        color: var(--gray-600);
-        margin-top: 0.125rem;
-    }
-
-    /* Action Buttons - KEEP ORIGINAL STRUCTURE */
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-icon {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: transparent;
-        font-size: 0.875rem;
-    }
-    
-    .btn-icon.view {
-        color: #3b82f6;
-    }
-    
-    .btn-icon.edit {
-        color: #f59e0b;
-    }
-    
-    .btn-icon.delete {
-        color: #ef4444;
-    }
-    
-    .btn-icon.view:hover {
-        background: #dbeafe;
-        transform: translateY(-1px);
-    }
-    
-    .btn-icon.edit:hover {
-        background: #fef3c7;
-        transform: translateY(-1px);
-    }
-    
-    .btn-icon.delete:hover {
-        background: #fee2e2;
-        transform: translateY(-1px);
-    }
-
-    /* Pagination - KEEP ORIGINAL STRUCTURE with updated classes */
-    .pagination-info {
-        font-size: 0.875rem;
+    .created-ago {
+        font-size: var(--font-size-xs);
         color: var(--gray-600);
     }
     
-    .pagination-links {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .pagination-btn {
-        padding: 0.5rem 0.75rem;
-        background: var(--gray-100);
-        color: var(--gray-700);
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.875rem;
-        transition: all 0.2s;
-        border: none;
-        cursor: pointer;
-        font-weight: 500;
-    }
-    
-    .pagination-btn:hover:not(.disabled):not(.active) {
-        background: var(--primary-light);
-        color: var(--primary);
-    }
-    
-    .pagination-btn.active {
-        background: var(--primary);
-        color: white;
-    }
-    
-    .pagination-btn.disabled {
-        background: var(--gray-200);
-        color: var(--gray-400);
-        cursor: not-allowed;
-    }
-
-    /* Quick Actions */
-    .quick-actions-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .action-card {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        border-radius: var(--radius-sm);
-        text-decoration: none;
-        transition: all 0.2s ease;
-        border: 2px solid;
-        width: 100%;
-        border: none;
-        background: none;
-        cursor: pointer;
-    }
-    
-    .action-card:hover {
-        transform: translateX(4px);
-        box-shadow: var(--shadow-md);
-    }
-    
-    .action-primary {
-        background: var(--primary-light);
-        border-color: var(--primary);
-    }
-    
-    .action-primary:hover {
-        background: var(--primary);
-    }
-    
-    .action-primary:hover .action-title,
-    .action-primary:hover .action-subtitle,
-    .action-primary:hover .action-icon,
-    .action-primary:hover .action-arrow {
-        color: white;
-    }
-    
-    .action-success {
-        background: var(--success-light);
-        border-color: var(--success);
-    }
-    
-    .action-success:hover {
-        background: var(--success);
-    }
-    
-    .action-success:hover .action-title,
-    .action-success:hover .action-subtitle,
-    .action-success:hover .action-icon,
-    .action-success:hover .action-arrow {
-        color: white;
-    }
-    
-    .action-warning {
-        background: var(--warning-light);
-        border-color: var(--warning);
-    }
-    
-    .action-warning:hover {
-        background: var(--warning);
-    }
-    
-    .action-warning:hover .action-title,
-    .action-warning:hover .action-subtitle,
-    .action-warning:hover .action-icon,
-    .action-warning:hover .action-arrow {
-        color: white;
-    }
-    
-    .action-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-    }
-    
-    .action-primary .action-icon {
-        color: var(--primary);
-    }
-    
-    .action-success .action-icon {
-        color: var(--success);
-    }
-    
-    .action-warning .action-icon {
-        color: var(--warning);
+    .badge-info {
+        background: linear-gradient(135deg, var(--info-light), var(--info-lighter));
+        color: var(--info-dark);
+        border-color: var(--info);
     }
     
     .action-content {
@@ -964,151 +521,29 @@
     }
     
     .action-title {
-        font-weight: 600;
-        font-size: 1rem;
+        font-weight: var(--font-semibold);
+        font-size: var(--font-size-base);
         margin-bottom: 0.25rem;
-        transition: all 0.2s ease;
-    }
-    
-    .action-primary .action-title {
-        color: var(--primary-dark);
-    }
-    
-    .action-success .action-title {
-        color: var(--success-dark);
-    }
-    
-    .action-warning .action-title {
-        color: var(--warning-dark);
     }
     
     .action-subtitle {
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         color: var(--gray-600);
-        transition: all 0.2s ease;
     }
     
     .action-arrow {
-        font-size: 1.125rem;
-        transition: all 0.2s ease;
+        font-size: var(--font-size-lg);
+        opacity: 0.8;
+        transition: transform var(--transition-fast);
     }
     
-    .action-primary .action-arrow {
-        color: var(--primary);
+    .action-card:hover .action-arrow {
+        transform: translateX(4px);
     }
     
-    .action-success .action-arrow {
-        color: var(--success);
-    }
-    
-    .action-warning .action-arrow {
-        color: var(--warning);
-    }
-
-    /* Stats List - KEEP ORIGINAL STRUCTURE */
-    .stats-list {
-        padding: 0.5rem;
-    }
-
-    .stat-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem;
-        border-bottom: 1px solid var(--gray-200);
-    }
-
-    .stat-item:last-child {
-        border-bottom: none;
-    }
-
-    .stat-label {
-        color: var(--gray-600);
-        font-size: 0.875rem;
-    }
-
-    .stat-value {
-        font-weight: 600;
-        color: var(--gray-900);
-    }
-
-    /* Footer */
-    .dashboard-footer {
-        background: white;
-        border-top: 1px solid var(--gray-200);
-        border-radius: var(--radius);
-        padding: 1.5rem;
-        margin-top: 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-    
-    .footer-content {
-        text-align: center;
-    }
-    
-    .footer-text {
-        font-size: 0.875rem;
-        color: var(--gray-600);
-        margin: 0 0 0.5rem 0;
-    }
-    
-    .footer-meta {
-        font-size: 0.75rem;
-        color: var(--gray-500);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        margin: 0;
-    }
-    
-    .separator {
-        opacity: 0.5;
-    }
-
-    /* Responsive Design */
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1.5rem;
-        }
-        
-        .header-content {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .user-avatar-large {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-        }
-        
-        .welcome-title {
-            font-size: 1.5rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .stat-number {
-            font-size: 1.875rem;
-        }
-        
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .footer-meta {
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        .separator {
-            display: none;
-        }
-        
-        .card-header-modern {
+        .card-header {
             flex-direction: column;
             align-items: stretch;
             gap: 1rem;
@@ -1119,25 +554,54 @@
             width: 100%;
         }
         
-        .search-box {
-            width: 100%;
+        .search-container {
             min-width: unset;
+            width: 100%;
         }
         
-        .action-buttons {
-            flex-wrap: wrap;
-        }
-        
-        .quiz-info {
+        .quiz-info-cell {
             flex-direction: column;
             align-items: flex-start;
             gap: 0.5rem;
         }
         
         .quiz-icon {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             font-size: 1rem;
+        }
+        
+        .quiz-title {
+            font-size: var(--font-size-sm);
+        }
+        
+        .stats-grid-compact {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .stats-grid-compact .stat-card {
+            padding: 0.75rem;
+        }
+        
+        .clickable-row:hover {
+            transform: translateX(2px);
+            box-shadow: -2px 0 0 var(--primary-light);
+        }
+        
+        .clickable-card:hover {
+            transform: translateY(-2px);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .quiz-table th,
+        .quiz-table td {
+            padding: 0.75rem;
+        }
+        
+        .stats-grid-compact {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -1146,9 +610,29 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Simple search functionality - EXACTLY AS IN ORIGINAL
+        // Make rows clickable
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        
+        clickableRows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Don't redirect if user clicked on a link or button
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                    return;
+                }
+                
+                const href = this.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+            
+            // Add hover effect
+            row.style.cursor = 'pointer';
+        });
+
+        // Simple search functionality
         const searchInput = document.getElementById('search-input');
-        const quizRows = document.querySelectorAll('.quiz-row');
+        const quizRows = document.querySelectorAll('.clickable-row');
         
         if (searchInput && quizRows.length > 0) {
             searchInput.addEventListener('input', function(e) {
