@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Progress;
 use App\Models\Enrollment;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 
 class TopicController extends Controller
 {
@@ -19,94 +21,95 @@ class TopicController extends Controller
     public function index()
     {
         $student = Auth::user();
+        $studentId = $student->id;
         
-        try {
-            // Get all enrolled courses
-            $enrolledCourseIds = Enrollment::where('student_id', $student->id)
-                ->pluck('course_id')
-                ->toArray();
-            
-            // Check if topics table has course_id column
-            $hasCourseIdColumn = \Schema::hasColumn('topics', 'course_id');
-            
-            if ($hasCourseIdColumn) {
-                // Get all topics from enrolled courses
-                $allTopics = Topic::whereIn('course_id', $enrolledCourseIds)
-                    ->with(['course.teacher'])
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(12);
-            } else {
+        // Cache key based on student ID and page
+        $cacheKey = 'student_topics_index_' . $studentId . '_page_' . request('page', 1);
+        
+        // Cache for 1 minute only
+        $data = Cache::remember($cacheKey, 60, function() use ($student, $studentId) {
+            try {
+                // Get all enrolled courses
+                $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+                    ->where('status', 'active')
+                    ->pluck('course_id')
+                    ->toArray();
+                
                 // Get topics through course_topics pivot table
                 $allTopics = Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
-                    $query->whereIn('courses.id', $enrolledCourseIds);
-                })
-                ->with(['courses.teacher'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(12);
-            }
-            
-            // Get completed topic IDs
-            $completedTopicIds = $student->completedTopics()->pluck('topic_id')->toArray();
-            
-            // Calculate stats
-            $totalTopics = $allTopics->total();
-            $completedTopics = count(array_intersect(
-                $allTopics->pluck('id')->toArray(),
-                $completedTopicIds
-            ));
-            
-            // Get courses for filter
-            $courses = Course::whereIn('id', $enrolledCourseIds)
-                ->withCount(['topics'])
-                ->get();
-            
-            // Get topics with video
-            if ($hasCourseIdColumn) {
-                $topicsWithVideo = Topic::whereIn('course_id', $enrolledCourseIds)
+                        $query->whereIn('courses.id', $enrolledCourseIds);
+                    })
+                    ->with(['courses.teacher' => function($query) {
+                        $query->select(['id', 'f_name', 'l_name']);
+                    }])
+                    ->select(['id', 'title', 'content', 'video_link', 'attachment', 'pdf_file', 'created_at'])
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(12);
+                
+                // Get completed topic IDs
+                $completedTopicIds = Progress::where('student_id', $studentId)
+                    ->where('status', 'completed')
+                    ->pluck('topic_id')
+                    ->toArray();
+                
+                // Calculate stats
+                $totalTopics = $allTopics->total();
+                $completedTopics = count(array_intersect(
+                    $allTopics->pluck('id')->toArray(),
+                    $completedTopicIds
+                ));
+                
+                // Get courses for filter
+                $courses = Course::whereIn('id', $enrolledCourseIds)
+                    ->withCount(['topics'])
+                    ->select(['id', 'title', 'course_code'])
+                    ->get();
+                
+                // Get topics with video
+                $topicsWithVideo = Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
+                        $query->whereIn('courses.id', $enrolledCourseIds);
+                    })
                     ->whereNotNull('video_link')
                     ->count();
-            } else {
-                // Count topics with video through pivot table
-                $topicsWithVideo = Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
-                    $query->whereIn('courses.id', $enrolledCourseIds);
-                })
-                ->whereNotNull('video_link')
-                ->count();
+                
+                // Get recently completed topics
+                $recentlyCompleted = Progress::where('student_id', $studentId)
+                    ->where('status', 'completed')
+                    ->with(['topic' => function($query) {
+                        $query->select(['id', 'title']);
+                    }])
+                    ->orderBy('completed_at', 'desc')
+                    ->take(5)
+                    ->get();
+                
+                return [
+                    'allTopics' => $allTopics,
+                    'completedTopicIds' => $completedTopicIds,
+                    'totalTopics' => $totalTopics,
+                    'completedTopics' => $completedTopics,
+                    'courses' => $courses,
+                    'topicsWithVideo' => $topicsWithVideo,
+                    'recentlyCompleted' => $recentlyCompleted,
+                    'enrolledCourseIds' => $enrolledCourseIds
+                ];
+                
+            } catch (\Exception $e) {
+                \Log::error('Error in TopicController@index: ' . $e->getMessage());
+                
+                return [
+                    'allTopics' => collect([]),
+                    'completedTopicIds' => [],
+                    'totalTopics' => 0,
+                    'completedTopics' => 0,
+                    'courses' => collect([]),
+                    'topicsWithVideo' => 0,
+                    'recentlyCompleted' => collect([]),
+                    'enrolledCourseIds' => []
+                ];
             }
-            
-            // Get recently completed topics
-            $recentlyCompleted = Progress::where('student_id', $student->id)
-                ->where('status', 'completed')
-                ->with('topic')
-                ->orderBy('completed_at', 'desc')
-                ->take(5)
-                ->get();
-            
-            return view('student.topics.index', compact(
-                'allTopics',
-                'completedTopicIds',
-                'totalTopics',
-                'completedTopics',
-                'courses',
-                'topicsWithVideo',
-                'recentlyCompleted'
-            ));
-            
-        } catch (\Exception $e) {
-            // Log the error
-            \Log::error('Error in TopicController@index: ' . $e->getMessage());
-            
-            // Return empty data with error message
-            return view('student.topics.index', [
-                'allTopics' => collect([]),
-                'completedTopicIds' => [],
-                'totalTopics' => 0,
-                'completedTopics' => 0,
-                'courses' => collect([]),
-                'topicsWithVideo' => 0,
-                'recentlyCompleted' => collect([]),
-            ])->with('error', 'Unable to load topics. Please contact administrator.');
-        }
+        });
+        
+        return view('student.topics.index', $data);
     }
     
     /**
@@ -117,71 +120,76 @@ class TopicController extends Controller
         try {
             $topicId = Crypt::decrypt($encryptedId);
             $student = Auth::user();
+            $studentId = $student->id;
             
-            // Get the topic with courses and teacher info
-            $topic = Topic::with(['courses.teacher'])
-                ->findOrFail($topicId);
+            // Cache key for topic details - 5 minutes
+            $cacheKey = 'student_topic_show_' . $topicId . '_student_' . $studentId;
             
-            // Get the first course for this topic (if any)
-            $course = $topic->courses->first();
-            
-            if (!$course) {
-                // Still allow access even without course association
-                // This is for topics that might be standalone
-                $course = new \stdClass();
-                $course->id = 0;
-                $course->title = 'General Topics';
-                $course->course_code = 'GEN';
-            }
-            
-            // Check if topic is completed - but allow access regardless
-            $isCompleted = Progress::where('student_id', $student->id)
-                ->where('topic_id', $topicId)
-                ->where('status', 'completed')
-                ->exists();
-            
-            // Get completion date if completed
-            $completionDate = null;
-            if ($isCompleted) {
-                $progress = Progress::where('student_id', $student->id)
+            $data = Cache::remember($cacheKey, 300, function() use ($topicId, $student, $studentId) {
+                // Get the topic with courses and teacher info
+                $topic = Topic::with(['courses.teacher' => function($query) {
+                        $query->select(['id', 'f_name', 'l_name']);
+                    }])
+                    ->select(['id', 'title', 'content', 'video_link', 'attachment', 'pdf_file', 'created_at', 'updated_at'])
+                    ->findOrFail($topicId);
+                
+                // Get the first course for this topic
+                $course = $topic->courses->first();
+                
+                if (!$course) {
+                    return redirect()->route('student.topics.index')
+                        ->with('error', 'Topic not associated with any course.');
+                }
+                
+                // Check if topic is completed
+                $progress = Progress::where('student_id', $studentId)
                     ->where('topic_id', $topicId)
+                    ->select(['status', 'completed_at', 'notes'])
                     ->first();
-                $completionDate = $progress->completed_at ?? now();
-            }
-            
-            // Get enrolled course IDs for stats
-            $enrolledCourseIds = Enrollment::where('student_id', $student->id)
-                ->pluck('course_id')
-                ->toArray();
-            
-            // Get total topics for enrolled courses
-            $hasCourseIdColumn = \Schema::hasColumn('topics', 'course_id');
-            
-            if ($hasCourseIdColumn) {
-                $totalTopics = Topic::whereIn('course_id', $enrolledCourseIds)->count();
-            } else {
+                
+                $isCompleted = $progress && $progress->status === 'completed';
+                $completionDate = $progress ? $progress->completed_at : null;
+                $notes = $progress ? $progress->notes : null;
+                
+                // Get enrolled course IDs for stats
+                $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+                    ->where('status', 'active')
+                    ->pluck('course_id')
+                    ->toArray();
+                
+                // Get total topics for enrolled courses
                 $totalTopics = Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
                     $query->whereIn('courses.id', $enrolledCourseIds);
                 })->count();
-            }
+                
+                // Get completed topics count
+                $completedTopics = Progress::where('student_id', $studentId)
+                    ->where('status', 'completed')
+                    ->count();
+                
+                return [
+                    'topic' => $topic,
+                    'course' => $course,
+                    'isCompleted' => $isCompleted,
+                    'completionDate' => $completionDate,
+                    'notes' => $notes,
+                    'totalTopics' => $totalTopics,
+                    'completedTopics' => $completedTopics,
+                    'enrolledCourseIds' => $enrolledCourseIds
+                ];
+            });
             
-            // Get completed topics count
-            $completedTopics = Progress::where('student_id', $student->id)
-                ->where('status', 'completed')
-                ->count();
-            
-            return view('student.topics.show', compact(
-                'topic',
-                'course',
-                'isCompleted',
-                'completionDate',
-                'encryptedId',
-                'totalTopics',
-                'completedTopics'
-            ));
+            return view('student.topics.show', array_merge($data, [
+                'encryptedId' => $encryptedId
+            ]));
             
         } catch (\Exception $e) {
-            \Log::error('Error in TopicController@show: ' . $e->getMessage());
+            \Log::error('Error in TopicController@show: ' . $e->getMessage(), [
+                'encryptedId' => $encryptedId,
+                'student_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('student.topics.index')
                 ->with('error', 'Topic not found.');
         }
@@ -195,13 +203,16 @@ class TopicController extends Controller
         try {
             $topicId = Crypt::decrypt($encryptedId);
             $student = Auth::user();
+            $studentId = $student->id;
             
-            // Get topic
-            $topic = Topic::findOrFail($topicId);
+            // Get topic and its course
+            $topic = Topic::with('courses')->findOrFail($topicId);
+            $course = $topic->courses->first();
+            $courseId = $course ? $course->id : null;
             
             // Mark as complete
             Progress::updateOrCreate([
-                'student_id' => $student->id,
+                'student_id' => $studentId,
                 'topic_id' => $topicId
             ], [
                 'status' => 'completed',
@@ -209,12 +220,20 @@ class TopicController extends Controller
                 'notes' => $request->input('notes', '')
             ]);
             
+            // Clear ALL caches
+            $this->clearTopicCaches($studentId, $topicId, $courseId);
+            
+            // Clear course index caches
+            for ($page = 1; $page <= 5; $page++) {
+                Cache::forget('student_courses_index_' . $studentId . '_page_' . $page);
+            }
+            
             // Get updated stats
-            $completedTopics = Progress::where('student_id', $student->id)
+            $completedTopics = Progress::where('student_id', $studentId)
                 ->where('status', 'completed')
                 ->count();
                 
-            $totalTopics = $this->getTotalTopicsCount($student->id);
+            $totalTopics = $this->getTotalTopicsCount($studentId);
             $progressPercentage = $totalTopics > 0 ? round(($completedTopics / $totalTopics) * 100) : 0;
             
             return response()->json([
@@ -228,7 +247,11 @@ class TopicController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Error in TopicController@markComplete: ' . $e->getMessage());
+            \Log::error('Error in TopicController@markComplete: ' . $e->getMessage(), [
+                'encryptedId' => $encryptedId,
+                'student_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -242,21 +265,24 @@ class TopicController extends Controller
      */
     private function getTotalTopicsCount($studentId)
     {
-        // Get enrolled course IDs
-        $enrolledCourseIds = Enrollment::where('student_id', $studentId)
-            ->pluck('course_id')
-            ->toArray();
+        // Cache total topics count for 1 minute
+        $cacheKey = 'student_total_topics_' . $studentId;
         
-        // Check if topics table has course_id column
-        $hasCourseIdColumn = \Schema::hasColumn('topics', 'course_id');
-        
-        if ($hasCourseIdColumn) {
-            return Topic::whereIn('course_id', $enrolledCourseIds)->count();
-        } else {
+        return Cache::remember($cacheKey, 60, function() use ($studentId) {
+            // Get enrolled course IDs
+            $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+                ->where('status', 'active')
+                ->pluck('course_id')
+                ->toArray();
+            
+            if (empty($enrolledCourseIds)) {
+                return 0;
+            }
+            
             return Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
                 $query->whereIn('courses.id', $enrolledCourseIds);
             })->count();
-        }
+        });
     }
     
     /**
@@ -267,21 +293,35 @@ class TopicController extends Controller
         try {
             $topicId = Crypt::decrypt($encryptedId);
             $student = Auth::user();
+            $studentId = $student->id;
+            
+            // Get topic and its course
+            $topic = Topic::with('courses')->findOrFail($topicId);
+            $course = $topic->courses->first();
+            $courseId = $course ? $course->id : null;
             
             // Update status to incomplete
-            Progress::where('student_id', $student->id)
+            Progress::where('student_id', $studentId)
                 ->where('topic_id', $topicId)
                 ->update([
-                    'status' => 'incomplete', 
+                    'status' => 'incomplete',
                     'completed_at' => null
                 ]);
             
+            // Clear ALL caches
+            $this->clearTopicCaches($studentId, $topicId, $courseId);
+            
+            // Clear course index caches
+            for ($page = 1; $page <= 5; $page++) {
+                Cache::forget('student_courses_index_' . $studentId . '_page_' . $page);
+            }
+            
             // Get updated stats
-            $completedTopics = Progress::where('student_id', $student->id)
+            $completedTopics = Progress::where('student_id', $studentId)
                 ->where('status', 'completed')
                 ->count();
                 
-            $totalTopics = $this->getTotalTopicsCount($student->id);
+            $totalTopics = $this->getTotalTopicsCount($studentId);
             $progressPercentage = $totalTopics > 0 ? round(($completedTopics / $totalTopics) * 100) : 0;
             
             return response()->json([
@@ -295,7 +335,11 @@ class TopicController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Error in TopicController@markIncomplete: ' . $e->getMessage());
+            \Log::error('Error in TopicController@markIncomplete: ' . $e->getMessage(), [
+                'encryptedId' => $encryptedId,
+                'student_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -312,17 +356,25 @@ class TopicController extends Controller
         try {
             $topicId = Crypt::decrypt($encryptedId);
             $student = Auth::user();
+            $studentId = $student->id;
+            
+            // Get current progress
+            $progress = Progress::where('student_id', $studentId)
+                ->where('topic_id', $topicId)
+                ->first();
             
             // Save notes
             Progress::updateOrCreate([
-                'student_id' => $student->id,
+                'student_id' => $studentId,
                 'topic_id' => $topicId
             ], [
                 'notes' => $request->input('notes'),
-                'status' => Progress::where('student_id', $student->id)
-                    ->where('topic_id', $topicId)
-                    ->value('status') ?? 'in_progress'
+                'status' => $progress->status ?? 'in_progress',
+                'completed_at' => $progress->completed_at ?? null
             ]);
+            
+            // Clear topic show cache
+            Cache::forget('student_topic_show_' . $topicId . '_student_' . $studentId);
             
             return response()->json([
                 'success' => true,
@@ -330,11 +382,74 @@ class TopicController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Error in TopicController@saveNotes: ' . $e->getMessage());
+            \Log::error('Error in TopicController@saveNotes: ' . $e->getMessage(), [
+                'encryptedId' => $encryptedId,
+                'student_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save notes.'
             ], 500);
         }
+    }
+    
+    /**
+     * Clear all topic-related caches for a student
+     */
+    private function clearTopicCaches($studentId, $topicId = null, $courseId = null)
+    {
+        // Clear index pages (assuming up to 5 pages)
+        for ($page = 1; $page <= 5; $page++) {
+            Cache::forget('student_topics_index_' . $studentId . '_page_' . $page);
+            Cache::forget('student_courses_index_' . $studentId . '_page_' . $page);
+        }
+        
+        // Clear total topics count
+        Cache::forget('student_total_topics_' . $studentId);
+        
+        // Clear specific topic cache if provided
+        if ($topicId) {
+            Cache::forget('student_topic_show_' . $topicId . '_student_' . $studentId);
+        }
+        
+        // Clear course-specific caches
+        if ($courseId) {
+            Cache::forget('student_course_show_' . $courseId);
+            Cache::forget('student_course_progress_' . $studentId . '_' . $courseId);
+        } else {
+            // Clear all enrolled courses caches
+            $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+                ->where('status', 'active')
+                ->pluck('course_id')
+                ->toArray();
+            
+            foreach ($enrolledCourseIds as $cid) {
+                Cache::forget('student_course_show_' . $cid);
+                Cache::forget('student_course_progress_' . $studentId . '_' . $cid);
+            }
+        }
+        
+        // Clear overall stats
+        Cache::forget('student_overall_stats_' . $studentId);
+        
+        // Clear recent activities
+        Cache::forget('student_recent_activities_' . $studentId);
+        
+        // Clear dashboard
+        Cache::forget('student_dashboard_' . $studentId);
+    }
+    
+    /**
+     * Manual cache clearing endpoint
+     */
+    public function clearCache()
+    {
+        $studentId = Auth::id();
+        $this->clearTopicCaches($studentId);
+        
+        return redirect()->route('student.topics.index')
+            ->with('success', 'All topic caches cleared successfully.');
     }
 }

@@ -1,0 +1,965 @@
+/* ============================================
+   TOPIC SHOW - Topic Details Page
+   Consistent with Course Show & Form Design Patterns
+   For Admin & Teacher Topic Detail Pages
+   Version: 1.0
+   ============================================ */
+
+/* ==========================================================================
+   1. Form Container - Consistent with Course Show/Form
+   ========================================================================== */
+.form-container {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: all var(--transition-slow);
+    max-width: 1200px;
+    width: 95%;
+    margin: var(--space-6) auto;
+}
+
+.form-container:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   2. Card Header - Consistent with Course Show/Form
+   ========================================================================== */
+.card-header {
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.card-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    position: relative;
+    z-index: 1;
+}
+
+.card-icon {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: var(--font-size-lg);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.card-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-bold);
+    color: var(--white);
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ==========================================================================
+   3. Top Actions - Consistent with Course Show/Form
+   ========================================================================== */
+.top-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    position: relative;
+    z-index: 1;
+}
+
+.top-action-btn {
+    color: var(--white);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-semibold);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all var(--transition-base);
+    cursor: pointer;
+}
+
+.top-action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    gap: var(--space-3);
+}
+
+.top-action-btn.delete-btn {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.top-action-btn.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.5);
+}
+
+.top-action-btn i {
+    font-size: var(--font-size-sm);
+}
+
+/* ==========================================================================
+   4. Card Body - Consistent with Course Show/Form
+   ========================================================================== */
+.card-body {
+    padding: var(--space-6);
+    background: var(--white);
+}
+
+/* ==========================================================================
+   5. Topic Preview Section - Topic specific
+   ========================================================================== */
+.topic-preview {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.topic-preview-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: var(--font-bold);
+    margin: 0 auto var(--space-4);
+    border: 4px solid var(--white);
+    box-shadow: var(--shadow-lg);
+}
+
+.topic-preview-title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-extrabold);
+    color: var(--gray-900);
+    margin-bottom: var(--space-2);
+    letter-spacing: -0.5px;
+}
+
+.topic-preview-meta {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+}
+
+.topic-preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-semibold);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all var(--transition-base);
+}
+
+.topic-preview-badge.published {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.topic-preview-badge.draft {
+    background: linear-gradient(135deg, var(--warning) 0%, var(--warning-dark) 100%);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+}
+
+.topic-preview-id {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    background: rgba(255, 255, 255, 0.8);
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-full);
+    display: inline-block;
+}
+
+/* ==========================================================================
+   6. Two Column Layout - Consistent with Course Show/Form
+   ========================================================================== */
+.two-column-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: var(--space-6);
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .two-column-layout {
+        grid-template-columns: 1fr;
+        gap: var(--space-4);
+    }
+}
+
+.form-column {
+    min-width: 0;
+}
+
+.sidebar-column {
+    min-width: 0;
+}
+
+/* ==========================================================================
+   7. Detail Sections - Consistent with Course Show
+   ========================================================================== */
+.detail-section {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.detail-section:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.detail-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 3px 3px 0 0;
+}
+
+.detail-section-title {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.detail-section-title i {
+    color: var(--primary);
+    font-size: var(--font-size-lg);
+    width: 20px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   8. Info Rows - Consistent with Course Show
+   ========================================================================== */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-2);
+}
+
+.info-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+    font-weight: var(--font-medium);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.info-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.info-subvalue {
+    font-size: var(--font-size-xs);
+    color: var(--gray-500);
+    margin-top: var(--space-1);
+}
+
+.detail-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-1);
+}
+
+.detail-value {
+    font-size: var(--font-size-base);
+    color: var(--gray-900);
+    font-weight: var(--font-semibold);
+    line-height: 1.5;
+    margin-bottom: var(--space-4);
+}
+
+.detail-subvalue {
+    font-size: var(--font-size-xs);
+    color: var(--gray-500);
+    margin-top: -var(--space-3);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* ==========================================================================
+   9. Description Box - Consistent with Course Show
+   ========================================================================== */
+.description-box {
+    padding: var(--space-4) var(--space-5);
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    color: var(--gray-700);
+}
+
+/* ==========================================================================
+   10. Resource Cards - Topic specific
+   ========================================================================== */
+.resource-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.resource-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: var(--gray-400);
+}
+
+.resource-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+    background: var(--gray-50);
+}
+
+.resource-content {
+    padding: var(--space-4) var(--space-5);
+}
+
+.resource-title {
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-1);
+}
+
+.resource-description {
+    color: var(--gray-600);
+    font-size: var(--font-size-xs);
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   11. File Icons - Topic specific
+   ========================================================================== */
+.file-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.file-pdf {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.file-video {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+.file-word {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+.file-excel {
+    background: rgba(5, 150, 105, 0.1);
+    color: var(--success-dark);
+}
+
+.file-powerpoint {
+    background: rgba(217, 119, 6, 0.1);
+    color: var(--warning-dark);
+}
+
+.file-image {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+}
+
+.file-zip {
+    background: rgba(75, 85, 99, 0.1);
+    color: var(--gray-600);
+}
+
+.file-generic {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary);
+}
+
+/* ==========================================================================
+   12. Resource Action Buttons - Topic specific
+   ========================================================================== */
+.resource-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius);
+    font-weight: var(--font-semibold);
+    font-size: var(--font-size-xs);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    border: none;
+}
+
+.resource-action-btn.primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.resource-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.resource-action-btn.secondary {
+    background: var(--white);
+    color: var(--gray-700);
+    border: 1.5px solid var(--border);
+}
+
+.resource-action-btn.secondary:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-500);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   13. Course Tags - Topic specific
+   ========================================================================== */
+.course-tag {
+    display: inline-block;
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-semibold);
+    margin-right: var(--space-2);
+    margin-top: var(--space-1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.course-tag:hover {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+/* ==========================================================================
+   14. Empty State - Consistent with Course Index
+   ========================================================================== */
+.empty-state {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+    color: var(--gray-500);
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    color: var(--gray-400);
+    margin-bottom: var(--space-3);
+}
+
+.empty-state h3 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-600);
+    margin-bottom: var(--space-1);
+}
+
+.empty-state p {
+    font-size: var(--font-size-xs);
+    color: var(--gray-500);
+}
+
+/* ==========================================================================
+   15. Alerts - Consistent with Course Index
+   ========================================================================== */
+.alert {
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius);
+    font-size: var(--font-size-xs);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    border-left-width: 4px;
+    border-left-style: solid;
+    animation: slideIn 0.3s ease;
+}
+
+.alert i {
+    font-size: var(--font-size-base);
+    flex-shrink: 0;
+    margin-top: var(--space-1);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, var(--success-light) 0%, #c6f6d5 100%);
+    color: var(--success-dark);
+    border-left-color: var(--success);
+}
+
+.alert-error {
+    background: linear-gradient(135deg, var(--danger-light) 0%, #fed7d7 100%);
+    color: var(--danger-dark);
+    border-left-color: var(--danger);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   16. Publish Button Section
+   ========================================================================== */
+.publish-section {
+    margin-top: var(--space-6);
+    text-align: center;
+}
+
+.publish-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-8);
+    border-radius: var(--radius);
+    font-weight: var(--font-semibold);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    border: none;
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.publish-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(72, 187, 120, 0.4);
+}
+
+/* ==========================================================================
+   17. Modal Styles - PDF & Video Modals
+   ========================================================================== */
+.pdf-modal-overlay,
+.video-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.pdf-modal-overlay.active,
+.video-modal-overlay.active {
+    display: flex;
+}
+
+.pdf-modal-container,
+.video-modal-container {
+    width: 90%;
+    max-width: 1000px;
+    height: 90%;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-2xl);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.video-modal-container {
+    background: #000;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: var(--space-4) var(--space-6);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-weight: var(--font-semibold);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--white);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    transition: all var(--transition-base);
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.video-player-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.video-player {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.video-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--white);
+}
+
+.video-loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--space-4);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.video-url-display {
+    padding: var(--space-4);
+    background: var(--gray-900);
+    color: var(--white);
+    font-size: var(--font-size-xs);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+    word-break: break-all;
+    opacity: 0.8;
+}
+
+/* ==========================================================================
+   18. Loading Spinner
+   ========================================================================== */
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   19. Responsive Design - Consistent with Course Index
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .form-container {
+        width: 98%;
+        margin: var(--space-4) auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        width: 100%;
+        margin: var(--space-3) auto;
+        border-radius: var(--radius);
+    }
+    
+    .card-header {
+        padding: var(--space-4);
+        flex-direction: column;
+        gap: var(--space-3);
+        align-items: flex-start;
+    }
+    
+    .top-actions {
+        align-self: stretch;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    
+    .top-action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .card-body {
+        padding: var(--space-4);
+    }
+    
+    .two-column-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-section {
+        padding: var(--space-4);
+    }
+    
+    .resource-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-4);
+    }
+    
+    .topic-preview-avatar {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+    
+    .topic-preview-title {
+        font-size: var(--font-size-xl);
+    }
+    
+    .pdf-modal-container,
+    .video-modal-container {
+        width: 95%;
+        height: 80%;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-container {
+        margin: var(--space-2) auto;
+        border-radius: var(--radius-sm);
+    }
+    
+    .card-header {
+        padding: var(--space-3);
+    }
+    
+    .card-body {
+        padding: var(--space-3);
+    }
+    
+    .card-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .card-icon {
+        width: 36px;
+        height: 36px;
+        font-size: var(--font-size-base);
+    }
+    
+    .detail-section {
+        padding: var(--space-3);
+    }
+    
+    .detail-section-title {
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-3);
+    }
+    
+    .topic-preview {
+        padding: var(--space-4);
+    }
+    
+    .topic-preview-avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 1.75rem;
+    }
+    
+    .topic-preview-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .topic-preview-meta {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-1);
+    }
+    
+    .resource-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .empty-state {
+        padding: var(--space-6) var(--space-3);
+    }
+}
+
+/* ==========================================================================
+   20. Print Styles
+   ========================================================================== */
+@media print {
+    .no-print,
+    .top-actions,
+    .publish-section,
+    .resource-action-btn,
+    .modal-close {
+        display: none !important;
+    }
+    
+    .form-container {
+        box-shadow: none;
+        border: 1px solid #000;
+        margin: 0;
+        width: 100%;
+    }
+    
+    .card-header {
+        background: #f3f4f6;
+        color: #000;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .card-header::before {
+        display: none;
+    }
+    
+    .topic-preview-avatar,
+    .topic-preview-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .detail-section,
+    .resource-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

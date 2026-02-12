@@ -3,26 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\Topic;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
+use App\Traits\CacheManager;
 
 class CourseController extends Controller
 {
+    use CacheManager;
+    
     public function index()
     {
         // Cache key based on URL and filters
-        $cacheKey = 'courses_index_' . md5(json_encode([
+        $cacheKey = 'admin_courses_index_page_' . md5(json_encode([
             'search' => request('search'),
             'status' => request('status'),
             'has_teacher' => request('has_teacher'),
             'sort' => request('sort'),
             'page' => request('page', 1),
-            'user_id' => auth()->id() // Include user ID in cache key
+            'user_id' => auth()->id()
         ]));
         
         // Cache for 5 minutes (300 seconds)
@@ -114,7 +117,7 @@ class CourseController extends Controller
         ]);
         
         // Clear all course-related caches
-        $this->clearCourseCaches();
+        $this->clearAdminCourseCaches();
         
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course created successfully!');
@@ -189,9 +192,7 @@ class CourseController extends Controller
     public function update(Request $request, $encryptedId)
     {
         try {
-            // ADD THIS LINE - decode URL encoding first
             $encryptedId = urldecode($encryptedId);
-            
             $id = Crypt::decrypt($encryptedId);
             $course = Course::findOrFail($id);
             
@@ -216,9 +217,12 @@ class CourseController extends Controller
             ]);
             
             // Clear all course-related caches
-            $this->clearCourseCaches();
+            $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
+            
+            // Clear student caches for this course
+            $this->clearStudentCachesForCourse($id);
             
             return redirect()->route('admin.courses.show', urlencode(Crypt::encrypt($course->id)))
                 ->with('success', 'Course updated successfully!');
@@ -250,7 +254,7 @@ class CourseController extends Controller
             $course->delete();
             
             // Clear all course-related caches
-            $this->clearCourseCaches();
+            $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
             
@@ -268,45 +272,12 @@ class CourseController extends Controller
         }
     }
     
-    /**
-     * Clear all course-related caches
-     * Called when courses are created, updated, or deleted
-     */
-    private function clearCourseCaches()
-    {
-        // Clear main caches
-        Cache::forget('draft_courses_count');
-        Cache::forget('avg_students_per_course');
-        Cache::forget('total_students_count');
-        
-        // Clear dashboard cache since it contains course stats
-        Cache::forget('admin_dashboard_' . auth()->id());
-        
-        // Note: We can't easily clear pattern-based caches without Redis
-        // In production with Redis, you'd use:
-        // Cache::tags(['courses'])->flush();
-    }
-    
-    /**
-     * Manual cache clearing endpoint
-     * Useful for development or when data gets out of sync
-     */
-    public function clearCache()
-    {
-        $this->clearCourseCaches();
-        
-        return redirect()->route('admin.courses.index')
-            ->with('success', 'Course caches cleared successfully.');
-    }
-    
     // ============ OPTIMIZED TOPIC MANAGEMENT METHODS ============
     
     public function availableTopics($encryptedId)
     {
         try {
-            // ADD THIS LINE - decode URL encoding first
             $encryptedId = urldecode($encryptedId);
-            
             $id = Crypt::decrypt($encryptedId);
             
             // Cache available topics for 5 minutes
@@ -345,9 +316,7 @@ class CourseController extends Controller
     public function addTopic(Request $request, $encryptedId)
     {
         try {
-            // ADD THIS LINE - decode URL encoding first
             $encryptedId = urldecode($encryptedId);
-            
             $id = Crypt::decrypt($encryptedId);
             $course = Course::findOrFail($id);
             
@@ -375,6 +344,9 @@ class CourseController extends Controller
             Cache::forget('available_topics_' . $id);
             Cache::forget('course_show_' . $id);
             
+            // 🔥 IMPORTANT: Clear student caches for this course
+            $this->clearStudentCachesForCourse($id);
+            
             return response()->json([
                 'success' => true,
                 'topic' => $topic
@@ -391,8 +363,6 @@ class CourseController extends Controller
             ], 500);
         }
     }
-
-    // Add these missing methods that are referenced in your routes
 
     public function addTopics(Request $request, $encryptedId)
     {
@@ -428,6 +398,9 @@ class CourseController extends Controller
             // Clear relevant caches
             Cache::forget('available_topics_' . $id);
             Cache::forget('course_show_' . $id);
+            
+            // 🔥 IMPORTANT: Clear student caches for this course
+            $this->clearStudentCachesForCourse($id);
             
             return response()->json([
                 'success' => true,
@@ -478,6 +451,9 @@ class CourseController extends Controller
             Cache::forget('available_topics_' . $id);
             Cache::forget('course_show_' . $id);
             
+            // 🔥 IMPORTANT: Clear student caches for this course
+            $this->clearStudentCachesForCourse($id);
+            
             return response()->json([
                 'success' => true,
                 'topic' => $topic,
@@ -494,5 +470,16 @@ class CourseController extends Controller
                 'message' => 'Failed to remove topic: ' . $e->getMessage()
             ], 500);
         }
+    }
+    
+    /**
+     * Manual cache clearing endpoint
+     */
+    public function clearCache()
+    {
+        $this->clearAdminCourseCaches();
+        
+        return redirect()->route('admin.courses.index')
+            ->with('success', 'Course caches cleared successfully.');
     }
 }

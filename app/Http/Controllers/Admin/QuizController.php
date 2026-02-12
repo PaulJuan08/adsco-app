@@ -7,6 +7,7 @@ use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\QuizOption;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,17 @@ class QuizController extends Controller
 {
     public function index()
     {
-        $quizzes = Quiz::latest()->paginate(10);
+        // Cache key based on page
+        $cacheKey = 'admin_quizzes_index_page_' . request('page', 1);
+        
+        // Cache for 5 minutes (300 seconds)
+        $quizzes = Cache::remember($cacheKey, 300, function() {
+            return Quiz::select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_at', 'updated_at'])
+                ->withCount('questions')
+                ->latest()
+                ->paginate(10);
+        });
+        
         return view('admin.quizzes.index', compact('quizzes'));
     }
 
@@ -25,7 +36,6 @@ class QuizController extends Controller
 
     public function store(Request $request)
     {
-
         // Debug form submission
         \Log::info('========== FORM SUBMISSION DEBUG ==========');
         \Log::info('Request method: ' . $request->method());
@@ -144,48 +154,93 @@ class QuizController extends Controller
             'total_questions' => $validQuestionCount
         ]);
 
+        // Clear all quiz-related caches
+        $this->clearQuizCaches();
+
         return redirect()->route('admin.quizzes.index')
             ->with('success', 'Quiz created successfully.');
     }
 
     public function show($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $quiz = Quiz::with(['questions.options'])->findOrFail($id);
-        
-        // Debug: Check what data we're getting
-        \Log::info('Quiz show method called for quiz ID: ' . $id);
-        
-        foreach ($quiz->questions as $index => $question) {
-            \Log::info('Question ' . ($index + 1) . ' ID: ' . $question->id);
-            \Log::info('Options count: ' . $question->options->count());
-            \Log::info('Options details: ' . json_encode($question->options->map(function($option) {
-                return [
-                    'id' => $option->id,
-                    'option_text' => $option->option_text,
-                    'is_correct' => $option->is_correct,
-                    'order' => $option->order
-                ];
-            })));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $cacheKey = 'admin_quiz_show_' . $id;
+            
+            $quiz = Cache::remember($cacheKey, 600, function() use ($id) {
+                return Quiz::with(['questions.options' => function($query) {
+                        $query->select(['id', 'quiz_question_id', 'option_text', 'is_correct', 'order']);
+                    }])
+                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at', 'updated_at'])
+                    ->withCount('questions')
+                    ->findOrFail($id);
+            });
+            
+            // Debug: Check what data we're getting
+            \Log::info('Quiz show method called for quiz ID: ' . $id);
+            
+            foreach ($quiz->questions as $index => $question) {
+                \Log::info('Question ' . ($index + 1) . ' ID: ' . $question->id);
+                \Log::info('Options count: ' . $question->options->count());
+                \Log::info('Options details: ' . json_encode($question->options->map(function($option) {
+                    return [
+                        'id' => $option->id,
+                        'option_text' => $option->option_text,
+                        'is_correct' => $option->is_correct,
+                        'order' => $option->order
+                    ];
+                })));
+            }
+            
+            // If there are results in session, pass them to view
+            if (session('results')) {
+                return view('admin.quizzes.show', compact('quiz'))
+                    ->with('results', session('results'))
+                    ->with('score', session('score'))
+                    ->with('totalPoints', session('totalPoints'))
+                    ->with('percentage', session('percentage'))
+                    ->with('passed', session('passed'));
+            }
+            
+            return view('admin.quizzes.show', compact('quiz'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error showing quiz', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.quizzes.index')
+                ->with('error', 'Quiz not found or invalid link.');
         }
-        
-        // If there are results in session, pass them to view
-        if (session('results')) {
-            return view('admin.quizzes.show', compact('quiz'))
-                ->with('results', session('results'))
-                ->with('score', session('score'))
-                ->with('totalPoints', session('totalPoints'))
-                ->with('percentage', session('percentage'))
-                ->with('passed', session('passed'));
-        }
-        
-        return view('admin.quizzes.show', compact('quiz'));
     }
+    
     public function edit($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $quiz = Quiz::with(['questions.options'])->findOrFail($id);
-        return view('admin.quizzes.edit', compact('quiz'));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $cacheKey = 'admin_quiz_edit_' . $id;
+            
+            $quiz = Cache::remember($cacheKey, 300, function() use ($id) {
+                return Quiz::with(['questions.options' => function($query) {
+                        $query->orderBy('order');
+                    }])
+                    ->findOrFail($id);
+            });
+            
+            return view('admin.quizzes.edit', compact('quiz'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error editing quiz', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.quizzes.index')
+                ->with('error', 'Quiz not found or invalid link.');
+        }
     }
 
     public function update(Request $request, $id)
@@ -210,15 +265,17 @@ class QuizController extends Controller
             $quiz->update([
                 'title' => $request->title,
                 'description' => $request->description,
-                'duration' => $request->duration,
-                'total_questions' => $request->total_questions,
-                'passing_score' => $request->passing_score,
+                'duration' => $request->duration ?? $quiz->duration,
+                'total_questions' => $request->total_questions ?? $quiz->total_questions,
+                'passing_score' => $request->passing_score ?? $quiz->passing_score,
                 'available_from' => $request->available_from,
                 'available_until' => $request->available_until,
             ]);
             
             // Process questions
             if ($request->has('questions')) {
+                $processedQuestionIds = [];
+                
                 foreach ($request->questions as $questionIndex => $questionData) {
                     // Skip if question text is empty
                     if (empty($questionData['question'])) {
@@ -236,22 +293,38 @@ class QuizController extends Controller
                             $question->update([
                                 'question' => $questionData['question'],
                                 'explanation' => $questionData['explanation'] ?? null,
+                                'order' => $questionIndex + 1,
                             ]);
                             
                             // Process options for this question
                             $this->processQuestionOptions($question, $questionData);
+                            $processedQuestionIds[] = $question->id;
                         }
                     } else {
                         // Create new question
                         $question = QuizQuestion::create([
                             'quiz_id' => $quiz->id,
                             'question' => $questionData['question'],
+                            'points' => 1,
+                            'order' => $questionIndex + 1,
                             'explanation' => $questionData['explanation'] ?? null,
                         ]);
                         
                         // Process options for new question
                         $this->processQuestionOptions($question, $questionData);
+                        $processedQuestionIds[] = $question->id;
                     }
+                }
+                
+                // Delete questions that were removed from the form
+                $existingQuestionIds = $quiz->questions->pluck('id')->toArray();
+                $questionsToDelete = array_diff($existingQuestionIds, $processedQuestionIds);
+                
+                if (!empty($questionsToDelete)) {
+                    // Delete options first
+                    QuizOption::whereIn('quiz_question_id', $questionsToDelete)->delete();
+                    // Then delete questions
+                    QuizQuestion::whereIn('id', $questionsToDelete)->delete();
                 }
                 
                 // Update total questions count
@@ -262,11 +335,22 @@ class QuizController extends Controller
             
             DB::commit();
             
+            // Clear all quiz-related caches
+            $this->clearQuizCaches();
+            Cache::forget('admin_quiz_show_' . $quiz->id);
+            Cache::forget('admin_quiz_edit_' . $quiz->id);
+            
             return redirect()->route('admin.quizzes.show', Crypt::encrypt($quiz->id))
                 ->with('success', 'Quiz updated successfully!');
                 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            \Log::error('Error updating quiz', [
+                'quiz_id' => $quizId ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return redirect()->back()
                 ->with('error', 'Error updating quiz: ' . $e->getMessage())
@@ -282,6 +366,8 @@ class QuizController extends Controller
         
         // Process each submitted option
         if (isset($questionData['options']) && is_array($questionData['options'])) {
+            $optionOrder = 1;
+            
             foreach ($questionData['options'] as $optionIndex => $optionData) {
                 // Skip if option text is empty
                 if (empty($optionData['option_text'])) {
@@ -295,20 +381,25 @@ class QuizController extends Controller
                 // Check if this is an existing option
                 if (!empty($optionData['id'])) {
                     // Update existing option
-                    $option = QuizOption::find($optionData['id']);
-                    if ($option && $option->quiz_question_id == $question->id) {
+                    $option = QuizOption::where('id', $optionData['id'])
+                        ->where('quiz_question_id', $question->id)
+                        ->first();
+                        
+                    if ($option) {
                         $option->update([
                             'option_text' => $optionData['option_text'],
-                            'is_correct' => $isCorrect ? 1 : 0
+                            'is_correct' => $isCorrect ? 1 : 0,
+                            'order' => $optionOrder++,
                         ]);
                         $processedOptionIds[] = $option->id;
                     }
                 } else {
                     // Create new option
                     $option = QuizOption::create([
-                        'question_id' => $question->id,
+                        'quiz_question_id' => $question->id,
                         'option_text' => $optionData['option_text'],
-                        'is_correct' => $isCorrect ? 1 : 0
+                        'is_correct' => $isCorrect ? 1 : 0,
+                        'order' => $optionOrder++,
                     ]);
                     $processedOptionIds[] = $option->id;
                 }
@@ -327,6 +418,7 @@ class QuizController extends Controller
         // First, get all existing option IDs
         $existingOptionIds = $question->options->pluck('id')->toArray();
         $submittedOptionIds = [];
+        $optionOrder = 1;
         
         // Process each option
         foreach ($options as $optionIndex => $optionData) {
@@ -337,20 +429,25 @@ class QuizController extends Controller
             
             if (isset($optionData['id']) && !empty($optionData['id'])) {
                 // Update existing option
-                $option = QuizOption::find($optionData['id']);
+                $option = QuizOption::where('id', $optionData['id'])
+                    ->where('quiz_question_id', $question->id)
+                    ->first();
+                    
                 if ($option) {
                     $option->update([
                         'option_text' => $optionData['option_text'],
-                        'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0
+                        'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0,
+                        'order' => $optionOrder++,
                     ]);
                     $submittedOptionIds[] = $option->id;
                 }
             } else {
                 // Create new option
                 $option = QuizOption::create([
-                    'question_id' => $question->id,
+                    'quiz_question_id' => $question->id,
                     'option_text' => $optionData['option_text'],
-                    'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0
+                    'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0,
+                    'order' => $optionOrder++,
                 ]);
                 $submittedOptionIds[] = $option->id;
             }
@@ -365,6 +462,8 @@ class QuizController extends Controller
 
     private function createQuestionOptions(QuizQuestion $question, array $options, $correctAnswerIndex)
     {
+        $optionOrder = 1;
+        
         foreach ($options as $optionIndex => $optionData) {
             // Skip if option text is empty
             if (empty($optionData['option_text'])) {
@@ -372,21 +471,40 @@ class QuizController extends Controller
             }
             
             QuizOption::create([
-                'question_id' => $question->id,
+                'quiz_question_id' => $question->id,
                 'option_text' => $optionData['option_text'],
-                'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0
+                'is_correct' => ($correctAnswerIndex == $optionIndex) ? 1 : 0,
+                'order' => $optionOrder++,
             ]);
         }
     }
 
     public function destroy($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $quiz = Quiz::findOrFail($id);
-        $quiz->delete();
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $quiz = Quiz::findOrFail($id);
+            
+            // Delete quiz (cascade will delete questions and options)
+            $quiz->delete();
+            
+            // Clear all quiz-related caches
+            $this->clearQuizCaches();
+            Cache::forget('admin_quiz_show_' . $id);
+            Cache::forget('admin_quiz_edit_' . $id);
 
-        return redirect()->route('admin.quizzes.index')
-            ->with('success', 'Quiz deleted successfully.');
+            return redirect()->route('admin.quizzes.index')
+                ->with('success', 'Quiz deleted successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error deleting quiz', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.quizzes.index')
+                ->with('error', 'Quiz not found or invalid link.');
+        }
     }
 
     /**
@@ -396,10 +514,25 @@ class QuizController extends Controller
     {
         try {
             $quizId = Crypt::decrypt($encryptedId);
-            $quiz = Quiz::with(['questions.options'])->findOrFail($quizId);
+            
+            $cacheKey = 'admin_quiz_take_' . $quizId;
+            
+            $quiz = Cache::remember($cacheKey, 300, function() use ($quizId) {
+                return Quiz::with(['questions.options' => function($query) {
+                        $query->select(['id', 'quiz_question_id', 'option_text', 'order']);
+                    }])
+                    ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score'])
+                    ->findOrFail($quizId);
+            });
             
             return view('admin.quizzes.take', compact('quiz'));
+            
         } catch (\Exception $e) {
+            \Log::error('Error taking quiz', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
             return redirect()->route('admin.quizzes.index')
                 ->with('error', 'Invalid quiz or quiz not found.');
         }
@@ -409,7 +542,12 @@ class QuizController extends Controller
     {
         try {
             $quizId = Crypt::decrypt($encryptedId);
-            $quiz = Quiz::with(['questions.options'])->findOrFail($quizId);
+            
+            // Don't cache this - we need fresh data
+            $quiz = Quiz::with(['questions.options' => function($query) {
+                    $query->where('is_correct', true);
+                }])
+                ->findOrFail($quizId);
             
             $results = [];
             $score = 0;
@@ -440,6 +578,9 @@ class QuizController extends Controller
             $percentage = $totalPoints > 0 ? round(($score / $totalPoints) * 100, 2) : 0;
             $passed = $percentage >= $quiz->passing_score;
             
+            // Clear quiz take cache after submission
+            Cache::forget('admin_quiz_take_' . $quizId);
+            
             // Store results in session and redirect back to show page
             return redirect()->route('admin.quizzes.show', Crypt::encrypt($quiz->id))
                 ->with('results', $results)
@@ -450,6 +591,11 @@ class QuizController extends Controller
                 ->with('success', 'Quiz submitted successfully!');
                 
         } catch (\Exception $e) {
+            \Log::error('Error submitting quiz', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
             return redirect()->route('admin.quizzes.index')
                 ->with('error', 'Error submitting quiz: ' . $e->getMessage());
         }
@@ -463,5 +609,33 @@ class QuizController extends Controller
         // This method might be called to show results separately
         // You can redirect to the take method or show results differently
         return redirect()->route('admin.quizzes.take', $encryptedId);
+    }
+
+    /**
+     * Clear all quiz-related caches
+     */
+    private function clearQuizCaches()
+    {
+        // Clear index cache pages (assuming up to 5 pages)
+        for ($page = 1; $page <= 5; $page++) {
+            Cache::forget('admin_quizzes_index_page_' . $page);
+        }
+        
+        // Clear dashboard cache if it contains quiz stats
+        Cache::forget('admin_dashboard_' . auth()->id());
+        
+        // Clear any aggregated statistics caches
+        Cache::forget('admin_quizzes_stats');
+    }
+
+    /**
+     * Manual cache clearing endpoint
+     */
+    public function clearCache()
+    {
+        $this->clearQuizCaches();
+        
+        return redirect()->route('admin.quizzes.index')
+            ->with('success', 'Quiz caches cleared successfully.');
     }
 }

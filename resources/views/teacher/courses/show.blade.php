@@ -1,749 +1,370 @@
 @extends('layouts.teacher')
 
-@section('title', 'Course Details - ' . $course->title)
-
-@section('content')
-<div class="top-header">
-    <div class="greeting">
-        <h1>{{ $course->title }}</h1>
-        <p>View course details and manage topics</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-        </div>
-    </div>
-</div>
-
-<!-- Stats Cards -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-header">
-            <div>
-                <div class="stat-number">{{ $course->students_count ?? 0 }}</div>
-                <div class="stat-label">Enrolled Students</div>
-            </div>
-            <div class="stat-icon icon-users">
-                <i class="fas fa-users"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-header">
-            <div>
-                <div class="stat-number">{{ $course->topics_count ?? 0 }}</div>
-                <div class="stat-label">Topics</div>
-            </div>
-            <div class="stat-icon icon-files">
-                <i class="fas fa-file-alt"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-header">
-            <div>
-                <div class="stat-number">{{ $course->credits ?? 3 }}</div>
-                <div class="stat-label">Credits</div>
-            </div>
-            <div class="stat-icon icon-credits">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-header">
-            <div>
-                <div class="stat-number">{{ $course->created_at->diffInDays(now()) }}</div>
-                <div class="stat-label">Days Active</div>
-            </div>
-            <div class="stat-icon icon-calendar">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="content-grid">
-    <!-- Left Column - Course Information -->
-    <div>
-        <!-- Course Header -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title">Course Information</div>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    @if($course->is_published)
-                    <span style="padding: 0.375rem 1rem; background: #10b98110; color: #10b981; border-radius: 20px; font-size: 0.875rem; font-weight: 500; border: 1px solid #10b98130;">
-                        <i class="fas fa-check-circle" style="margin-right: 0.375rem;"></i>Published
-                    </span>
-                    @else
-                    <span style="padding: 0.375rem 1rem; background: #f59e0b10; color: #f59e0b; border-radius: 20px; font-size: 0.875rem; font-weight: 500; border: 1px solid #f59e0b30;">
-                        <i class="fas fa-clock" style="margin-right: 0.375rem;"></i>Draft
-                    </span>
-                    @endif
-                    
-                    <div style="display: flex; gap: 0.5rem;">
-                        <a href="{{ route('teacher.courses.edit', Crypt::encrypt($course->id)) }}" 
-                           style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-                            <i class="fas fa-edit"></i>
-                            Edit
-                        </a>
-                        <a href="{{ route('teacher.courses.index') }}" 
-                           style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #f3f4f6; color: #4b5563; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-                            <i class="fas fa-arrow-left"></i>
-                            Back
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                @if(session('success'))
-                <div style="margin-bottom: 1.5rem; padding: 0.75rem; background: #dcfce7; color: #065f46; border-radius: 6px; font-size: 0.875rem; border-left: 4px solid #10b981;">
-                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
-                    {{ session('success') }}
-                </div>
-                @endif
-                
-                @if(session('error'))
-                <div style="margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 0.875rem; border-left: 4px solid #dc2626;">
-                    <i class="fas fa-exclamation-circle" style="margin-right: 0.5rem;"></i>
-                    {{ session('error') }}
-                </div>
-                @endif
-                
-                <!-- Course Information Grid -->
-                <div class="course-info-grid">
-                    <div class="info-card">
-                        <div class="info-label">Course Code</div>
-                        <div class="info-value">{{ $course->course_code }}</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Credits</div>
-                        <div class="info-value">{{ $course->credits ?? 3 }}</div>
-                        <div class="info-subvalue">Academic Units</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Course ID</div>
-                        <div class="info-value">#{{ $course->id }}</div>
-                        <div class="info-subvalue">Unique Identifier</div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-label">Enrolled Students</div>
-                        <div class="info-value">
-                            {{ $course->students_count ?? 0 }}
-                        </div>
-                        <div class="info-subvalue">Active Enrollments</div>
-                    </div>
-                </div>
-                
-                <!-- Description Section -->
-                <div style="margin-bottom: 2rem;">
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Description</div>
-                    <div style="padding: 1.5rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; color: #374151; line-height: 1.6;">
-                        {{ $course->description ?: 'No description provided for this course.' }}
-                    </div>
-                </div>
-                
-                <!-- Learning Outcomes -->
-                @if($course->learning_outcomes)
-                <div style="margin-bottom: 2rem;">
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Learning Outcomes</div>
-                    <div style="padding: 1.5rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd; color: #075985; line-height: 1.6;">
-                        {{ $course->learning_outcomes }}
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
-        
-        <!-- Topics Section -->
-        <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title">Topics ({{ $course->topics_count ?? 0 }})</div>
-                <button onclick="openAddTopicModal()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
-                    <i class="fas fa-plus"></i>Add Topics
-                </button>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                <!-- Search Bar -->
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Search topics..." id="topicSearch">
-                </div>
-                
-                <!-- Topics List -->
-                <div class="topics-section" id="topicsList">
-                    @if($course->topics && $course->topics->count() > 0)
-                        @foreach($course->topics as $topic)
-                        <div class="topic-card" id="topic-{{ $topic->id }}">
-                            <div class="topic-header">
-                                <div>
-                                    <div class="topic-title">{{ $topic->title }}</div>
-                                    <div style="font-size: 0.75rem; color: #9ca3af;">
-                                        <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
-                                        Added {{ $topic->created_at->diffForHumans() }}
-                                    </div>
-                                </div>
-                                <div class="action-dropdown">
-                                    <button class="action-btn" onclick="removeTopic({{ $topic->id }}, '{{ $topic->title }}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="topic-content">
-                                <div class="topic-description">
-                                    {{ $topic->description ?? 'No description provided for this topic.' }}
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    @else
-                    <div class="empty-state">
-                        <i class="fas fa-folder-open"></i>
-                        <div style="font-size: 1rem; font-weight: 500; color: #6b7280; margin-bottom: 0.5rem;">No Topics Yet</div>
-                        <div style="font-size: 0.875rem; color: #9ca3af;">Start by adding topics to this course</div>
-                        <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
-                            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Add First Topic
-                        </button>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Right Column - Sidebar -->
-    <div>
-        <!-- Course Actions -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header">
-                <div class="card-title">Course Actions</div>
-            </div>
-            <div style="padding: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <a href="{{ route('teacher.courses.edit', Crypt::encrypt($course->id)) }}" 
-                       style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; text-decoration: none; color: #374151; transition: all 0.2s;">
-                        <div style="width: 32px; height: 32px; background: #4f46e5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
-                            <i class="fas fa-edit"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 500; font-size: 0.875rem;">Edit Course</div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">Modify course information</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="margin-left: auto; color: #9ca3af;"></i>
-                    </a>
-
-                    <button onclick="if(confirm('Are you sure you want to delete this course? This action cannot be undone.')) { document.getElementById('delete-form').submit(); }"
-                            style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; cursor: pointer; width: 100%;">
-                        <div style="width: 32px; height: 32px; background: #dc2626; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white;">
-                            <i class="fas fa-trash"></i>
-                        </div>
-                        <div style="text-align: left;">
-                            <div style="font-weight: 500; font-size: 0.875rem;">Delete Course</div>
-                            <div style="font-size: 0.75rem; color: #f87171;">Permanently remove course</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="margin-left: auto; color: #f87171;"></i>
-                    </button>
-                    
-                    <form id="delete-form" action="{{ route('teacher.courses.destroy', Crypt::encrypt($course->id)) }}" method="POST" style="display: none;">
-                        @csrf
-                        @method('DELETE')
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Course Metadata -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header">
-                <div class="card-title">Course Metadata</div>
-            </div>
-            <div style="padding: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Created</div>
-                        <div style="font-weight: 500; color: #1f2937;">{{ $course->created_at->format('F d, Y') }}</div>
-                        <div style="font-size: 0.75rem; color: #9ca3af;">{{ $course->created_at->format('h:i A') }} • {{ $course->created_at->diffForHumans() }}</div>
-                    </div>
-                    
-                    <div>
-                        <div style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Last Updated</div>
-                        <div style="font-weight: 500; color: #1f2937;">{{ $course->updated_at->format('F d, Y') }}</div>
-                        <div style="font-size: 0.75rem; color: #9ca3af;">{{ $course->updated_at->format('h:i A') }} • {{ $course->updated_at->diffForHumans() }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Links -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Quick Links</div>
-            </div>
-            <div style="padding: 1rem;">
-                <a href="{{ route('teacher.topics.index') }}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
-                    <div style="width: 36px; height: 36px; background: #e0e7ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div>
-                        <div style="font-weight: 500;">All Topics</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">View all topics</div>
-                    </div>
-                </a>
-                <a href="{{ route('teacher.topics.create') }}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; text-decoration: none; color: var(--dark); transition: background 0.3s;">
-                    <div style="width: 36px; height: 36px; background: #dcfce7; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #10b981;">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div>
-                        <div style="font-weight: 500;">Create Topic</div>
-                        <div style="font-size: 0.75rem; color: var(--secondary);">Add new topic</div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Topic Modal -->
-<div class="modal-overlay" id="addTopicModal">
-    <div class="modal-container">
-        <div class="modal-header">
-            <div class="modal-title">Add Topics to Course</div>
-            <button class="modal-close" onclick="closeAddTopicModal()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search available topics..." id="modalTopicSearch" onkeyup="searchTopics()">
-            </div>
-            
-            <div id="availableTopicsList" class="topics-list">
-                <!-- Topics will be loaded here via AJAX -->
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <div>Loading topics...</div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeAddTopicModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="addSelectedTopics()">Add Selected Topics</button>
-        </div>
-    </div>
-</div>
+@section('title', 'Course Details - Teacher Dashboard')
 
 @push('styles')
-<style>
-    /* Same styles as admin course show, but with teacher colors */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 8px;
-        padding: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .stat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .stat-number {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--primary);
-        margin-bottom: 0.25rem;
-    }
-    
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--secondary);
-    }
-    
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-    }
-    
-    .icon-users {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-    }
-    
-    .icon-files {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        color: white;
-    }
-    
-    .icon-credits {
-        background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
-        color: white;
-    }
-    
-    .icon-calendar {
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        color: white;
-    }
-    
-    /* Rest of the styles from admin course show */
-    .course-info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .info-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
-    }
-    
-    .info-label {
-        color: #6b7280;
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .info-value {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.25rem;
-    }
-    
-    .info-subvalue {
-        color: #6b7280;
-        font-size: 0.875rem;
-    }
-    
-    /* Topics Section */
-    .topics-section {
-        margin-top: 1rem;
-    }
-    
-    .topic-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        transition: all 0.2s;
-    }
-    
-    .topic-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .topic-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #f3f4f6;
-    }
-    
-    .topic-content {
-        padding: 1rem 1.5rem;
-    }
-    
-    .topic-title {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: 1.125rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .topic-description {
-        color: #6b7280;
-        font-size: 0.875rem;
-        line-height: 1.5;
-    }
-    
-    .action-dropdown {
-        position: relative;
-    }
-    
-    .action-btn {
-        padding: 0.5rem;
-        color: #6b7280;
-        border: none;
-        background: none;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-    
-    .action-btn:hover {
-        background: #f3f4f6;
-    }
-    
-    /* Search Bar */
-    .search-container {
-        position: relative;
-        margin-bottom: 1.5rem;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 0.75rem 1rem 0.75rem 3rem;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        color: #1f2937;
-    }
-    
-    .search-input:focus {
-        outline: none;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-    
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #9ca3af;
-    }
-    
-    /* Modal Styles - Same as admin */
-    .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-    
-    .modal-overlay.active {
-        display: flex;
-    }
-    
-    .modal-container {
-        background: white;
-        border-radius: 12px;
-        width: 100%;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow: hidden;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        animation: modalSlideIn 0.3s ease;
-    }
-    
-    @keyframes modalSlideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .modal-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .modal-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #1f2937;
-    }
-    
-    .modal-close {
-        background: none;
-        border: none;
-        color: #6b7280;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 6px;
-    }
-    
-    .modal-close:hover {
-        background: #f3f4f6;
-    }
-    
-    .modal-body {
-        padding: 1.5rem;
-        max-height: calc(80vh - 120px);
-        overflow-y: auto;
-    }
-    
-    .modal-footer {
-        padding: 1.5rem;
-        border-top: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-    }
-    
-    .btn {
-        padding: 0.625rem 1.25rem;
-        border-radius: 6px;
-        font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-    }
-    
-    .btn-primary {
-        background: #4f46e5;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background: #4338ca;
-    }
-    
-    .btn-secondary {
-        background: #f3f4f6;
-        color: #374151;
-        border: 1px solid #e5e7eb;
-    }
-    
-    .btn-secondary:hover {
-        background: #e5e7eb;
-    }
-    
-    /* Topic List in Modal */
-    .topics-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .topic-item {
-        padding: 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .topic-item:hover {
-        border-color: #4f46e5;
-        background: #f8fafc;
-    }
-    
-    .topic-item.selected {
-        border-color: #4f46e5;
-        background: #f0f9ff;
-        border-width: 2px;
-    }
-    
-    .topic-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.5rem;
-    }
-    
-    .topic-item-title {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: 1rem;
-    }
-    
-    .topic-item-description {
-        color: #6b7280;
-        font-size: 0.875rem;
-        line-height: 1.5;
-    }
-    
-    .add-btn {
-        padding: 0.25rem 0.75rem;
-        background: #10b981;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        cursor: pointer;
-        opacity: 0;
-        transition: all 0.2s;
-    }
-    
-    .topic-item:hover .add-btn,
-    .topic-item.selected .add-btn {
-        opacity: 1;
-    }
-    
-    .add-btn:hover {
-        background: #059669;
-    }
-    
-    .no-topics {
-        text-align: center;
-        padding: 2rem;
-        color: #6b7280;
-    }
-    
-    .no-topics i {
-        font-size: 2rem;
-        color: #d1d5db;
-        margin-bottom: 0.75rem;
-    }
-    
-    /* Loading State */
-    .loading {
-        text-align: center;
-        padding: 2rem;
-    }
-    
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #e5e7eb;
-        border-top-color: #4f46e5;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 1rem;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-</style>
+<link rel="stylesheet" href="{{ asset('css/course-show.css') }}">
 @endpush
 
+@section('content')
+    <!-- Course Profile Card -->
+    <div class="form-container">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-book card-icon"></i>
+                <h2 class="card-title">Course Details</h2>
+            </div>
+            <div class="top-actions">
+                <!-- Edit Button -->
+                <a href="{{ route('teacher.courses.edit', Crypt::encrypt($course->id)) }}" class="top-action-btn">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                
+                <!-- Delete Button -->
+                <form action="{{ route('teacher.courses.destroy', Crypt::encrypt($course->id)) }}" method="POST" id="deleteForm" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="top-action-btn delete-btn" id="deleteButton">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </form>
+                
+                <!-- Back Button -->
+                <a href="{{ route('teacher.courses.index') }}" class="top-action-btn">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Course Avatar & Basic Info -->
+            <div class="course-avatar-section">
+                <div class="course-details-avatar">
+                    {{ strtoupper(substr($course->course_code, 0, 1)) }}
+                </div>
+                <h3 class="course-title">{{ $course->title }}</h3>
+                <p class="course-code">{{ $course->course_code }}</p>
+                
+                <div class="course-status-container">
+                    <div class="status-badge {{ $course->is_published ? 'status-published' : 'status-draft' }}">
+                        <i class="fas {{ $course->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                        {{ $course->is_published ? 'Published' : 'Draft' }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Information -->
+            <div class="details-grid">
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Course Information
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Title</div>
+                        <div class="detail-value">{{ $course->title }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Code</div>
+                        <div class="detail-value">{{ $course->course_code }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Credits</div>
+                        <div class="detail-value">{{ $course->credits ?? 3 }} units</div>
+                    </div>
+                    
+                    @if($course->department)
+                    <div class="detail-row">
+                        <div class="detail-label">Department</div>
+                        <div class="detail-value">{{ $course->department }}</div>
+                    </div>
+                    @endif
+                    
+                    @if($course->semester)
+                    <div class="detail-row">
+                        <div class="detail-label">Semester</div>
+                        <div class="detail-value">{{ ucfirst($course->semester) }}</div>
+                    </div>
+                    @endif
+
+                    <div class="detail-row">
+                        <div class="detail-label">Students Enrolled</div>
+                        <div class="detail-value">
+                            <span style="font-weight: 600; color: var(--primary);">{{ $course->students_count ?? 0 }}</span>
+                            <span style="font-size: 0.875rem; color: var(--gray-500); margin-left: 0.5rem;">students</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        <i class="fas fa-clock"></i>
+                        Course Timeline
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Course ID</div>
+                        <div class="detail-value">#{{ $course->id }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Created</div>
+                        <div class="detail-value">
+                            {{ $course->created_at->format('M d, Y') }}
+                            <div class="detail-subvalue">
+                                <i class="fas fa-clock"></i> {{ $course->created_at->diffForHumans() }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Last Updated</div>
+                        <div class="detail-value">
+                            {{ $course->updated_at->format('M d, Y') }}
+                            <div class="detail-subvalue">
+                                <i class="fas fa-clock"></i> {{ $course->updated_at->diffForHumans() }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Topics Count</div>
+                        <div class="detail-value">
+                            <span style="font-weight: 600; color: var(--warning);">{{ $course->topics_count ?? 0 }}</span>
+                            <span style="font-size: 0.875rem; color: var(--gray-500); margin-left: 0.5rem;">topics</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Course Description -->
+            <div class="detail-section">
+                <div class="detail-section-title">
+                    <i class="fas fa-align-left"></i>
+                    Course Description
+                </div>
+                
+                <div class="description-box">
+                    {{ $course->description ?: 'No description provided for this course.' }}
+                </div>
+            </div>
+
+            <!-- Learning Outcomes (if exists) -->
+            @if($course->learning_outcomes)
+            <div class="detail-section">
+                <div class="detail-section-title">
+                    <i class="fas fa-tasks"></i>
+                    Learning Outcomes
+                </div>
+                
+                <div class="description-box" style="background: var(--info-light); border-left-color: var(--info);">
+                    {{ $course->learning_outcomes }}
+                </div>
+            </div>
+            @endif
+
+            <!-- Publish Button for Draft Courses -->
+            @if(!$course->is_published)
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <form action="{{ route('teacher.courses.publish', Crypt::encrypt($course->id)) }}" method="POST" id="publishForm" style="display: inline-block;">
+                    @csrf
+                    <button type="submit" class="top-action-btn" id="publishButton" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border: none; padding: 0.75rem 2rem;">
+                        <i class="fas fa-upload"></i> Publish Course
+                    </button>
+                </form>
+            </div>
+            @endif
+            
+            <!-- Success/Error Messages -->
+            @if(session('success'))
+            <div class="message-success">
+                <i class="fas fa-check-circle"></i>
+                {{ session('success') }}
+            </div>
+            @endif
+            
+            @if(session('error'))
+            <div class="message-error">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ session('error') }}
+            </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Topics Card -->
+    <div class="form-container">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-list card-icon"></i>
+                <h2 class="card-title">Course Topics</h2>
+                <span class="topics-count-badge">{{ $course->topics_count ?? 0 }}</span>
+            </div>
+            <div class="top-actions">
+                <button onclick="openAddTopicModal()" class="top-action-btn" style="background: rgba(79, 70, 229, 0.15); border: none;">
+                    <i class="fas fa-plus"></i> Add Topics
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Search Bar -->
+            @if($course->topics && $course->topics->count() > 0)
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search topics..." id="topicSearch">
+            </div>
+            @endif
+            
+            <!-- Topics List -->
+            <div class="topics-section" id="topicsList">
+                @if($course->topics && $course->topics->count() > 0)
+                    @foreach($course->topics as $topic)
+                    <div class="topic-card" id="topic-{{ $topic->id }}">
+                        <div class="topic-header">
+                            <div>
+                                <div class="topic-title">{{ $topic->title }}</div>
+                                <div style="font-size: 0.6875rem; color: #a0aec0;">
+                                    <i class="fas fa-clock"></i>
+                                    Added {{ $topic->created_at->diffForHumans() }}
+                                </div>
+                            </div>
+                            <div class="action-dropdown">
+                                <button class="action-btn-small" onclick="removeTopic({{ $topic->id }}, '{{ addslashes($topic->title) }}')">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                        <div class="topic-content">
+                            <div class="topic-description">
+                                {{ $topic->description ?? 'No description provided.' }}
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                @else
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>No Topics Yet</h3>
+                    <p>Start by adding topics to this course</p>
+                    <button onclick="openAddTopicModal()" style="margin-top: 1rem; padding: 0.5rem 1.25rem; background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer;">
+                        <i class="fas fa-plus" style="margin-right: 0.375rem;"></i>Add First Topic
+                    </button>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Topic Modal -->
+    <div class="modal-overlay" id="addTopicModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-plus-circle" style="margin-right: 0.5rem; color: var(--primary);"></i>
+                    Add Topics to Course
+                </div>
+                <button class="modal-close" onclick="closeAddTopicModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-container" style="margin-bottom: 1rem;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search available topics..." id="modalTopicSearch" onkeyup="searchTopics()">
+                </div>
+                
+                <div id="availableTopicsList" class="topics-list">
+                    <div class="loading" style="text-align: center; padding: 2rem;">
+                        <div class="spinner" style="width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 0.75rem;"></div>
+                        <div style="color: #718096; font-size: 0.875rem;">Loading topics...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddTopicModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addSelectedTopics()">
+                    <i class="fas fa-check" style="margin-right: 0.375rem;"></i>
+                    Add Selected
+                </button>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Same JavaScript as admin course show, but with teacher routes
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle publish button click
+        const publishButton = document.getElementById('publishButton');
+        if (publishButton) {
+            publishButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                Swal.fire({
+                    title: 'Publish Course?',
+                    text: 'This course will be visible to enrolled students.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#48bb78',
+                    cancelButtonColor: '#a0aec0',
+                    confirmButtonText: 'Yes, Publish',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        publishButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+                        publishButton.disabled = true;
+                        document.getElementById('publishForm').submit();
+                    }
+                });
+            });
+        }
+        
+        // Handle delete button click
+        const deleteButton = document.getElementById('deleteButton');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                Swal.fire({
+                    title: 'Delete Course?',
+                    text: 'This action cannot be undone. All course data will be permanently removed.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f56565',
+                    cancelButtonColor: '#a0aec0',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                        deleteButton.disabled = true;
+                        document.getElementById('deleteForm').submit();
+                    }
+                });
+            });
+        }
+        
+        // Show notifications from session
+        @if(session('success'))
+            showNotification('{{ session('success') }}', 'success');
+        @endif
+        
+        @if(session('error'))
+            showNotification('{{ session('error') }}', 'error');
+        @endif
+        
+        @if(session('warning'))
+            showNotification('{{ session('warning') }}', 'warning');
+        @endif
+    });
+
+    // Topics management
     let selectedTopics = [];
     let allAvailableTopics = [];
     let currentCourseTopics = {!! $course->topics->pluck('id')->toJson() !!};
@@ -770,7 +391,6 @@
     }
 
     function loadAvailableTopics() {
-        // Use the teacher route
         const routeUrl = `/teacher/courses/${encryptedCourseId}/available-topics`;
         
         fetch(routeUrl, {
@@ -782,37 +402,28 @@
             credentials: 'same-origin'
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                throw new Error(data.message || data.error);
-            }
+            if (data.error) throw new Error(data.message || data.error);
             
-            if (Array.isArray(data)) {
-                allAvailableTopics = data;
-                renderAvailableTopics(data);
-            } else {
-                allAvailableTopics = [];
-                renderAvailableTopics([]);
-            }
+            allAvailableTopics = Array.isArray(data) ? data : [];
+            renderAvailableTopics(allAvailableTopics);
         })
         .catch(error => {
             console.error('Error loading topics:', error);
             
             document.getElementById('availableTopicsList').innerHTML = `
-                <div class="no-topics">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <div style="color: #dc2626; font-weight: 500;">Error Loading Topics</div>
-                    <div style="font-size: 0.875rem; color: #9ca3af; margin-top: 0.5rem;">
+                <div class="no-topics" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; color: #f56565; margin-bottom: 0.75rem;"></i>
+                    <div style="color: #c53030; font-weight: 600;">Error Loading Topics</div>
+                    <div style="font-size: 0.8125rem; color: #718096; margin-top: 0.5rem;">
                         ${error.message}
                     </div>
                     <button onclick="loadAvailableTopics()" 
-                            style="margin-top: 1rem; padding: 0.5rem 1rem; background: #4f46e5; color: white; border-radius: 6px; border: none; cursor: pointer;">
-                        <i class="fas fa-redo"></i> Retry Loading Topics
+                            style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-redo"></i> Retry
                     </button>
                 </div>
             `;
@@ -824,32 +435,25 @@
         
         if (!Array.isArray(topics) || topics.length === 0) {
             container.innerHTML = `
-                <div class="no-topics">
-                    <i class="fas fa-folder-open"></i>
-                    <div>No available topics to add.</div>
-                    <div style="font-size: 0.875rem; color: #9ca3af; margin-top: 0.5rem;">
-                        All topics are already added to this course or no topics exist.
-                    </div>
-                    <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">
-                        <a href="{{ route('teacher.topics.create') }}" style="color: #4f46e5; text-decoration: underline;">
-                            Click here to create new topics
-                        </a>
-                    </div>
+                <div class="empty-state" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-folder-open" style="font-size: 2.5rem; color: #cbd5e0;"></i>
+                    <h3 style="font-size: 1rem; color: #718096; margin-top: 0.75rem;">No Topics Available</h3>
+                    <p style="font-size: 0.8125rem; color: #a0aec0; margin-top: 0.25rem;">
+                        All topics are already added to this course.
+                    </p>
+                    <a href="{{ route('teacher.topics.create') }}" 
+                       style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.25rem; background: var(--primary); color: white; border-radius: 8px; text-decoration: none; font-size: 0.8125rem;">
+                        <i class="fas fa-plus" style="margin-right: 0.375rem;"></i>Create New Topic
+                    </a>
                 </div>
             `;
             return;
         }
 
         container.innerHTML = topics.map(topic => {
-            let description = 'No description provided.';
-            if (topic.description) {
-                description = topic.description;
-            } else if (topic.content) {
-                description = topic.content;
-            }
-            
-            const truncatedDesc = description.length > 150 ? 
-                description.substring(0, 150) + '...' : 
+            const description = topic.description || topic.content || 'No description provided.';
+            const truncatedDesc = description.length > 120 ? 
+                description.substring(0, 120) + '...' : 
                 description;
             
             const isSelected = selectedTopics.includes(topic.id);
@@ -878,24 +482,18 @@
             selectedTopics.push(topicId);
         }
         
-        // Update UI
-        const item = document.querySelector(`.topic-item .topic-item-title`);
-        if (item && item.textContent.includes('Untitled Topic')) {
-            // Find the parent topic-item
-            const topicItem = item.closest('.topic-item');
-            if (topicItem) {
-                topicItem.classList.toggle('selected', selectedTopics.includes(topicId));
-            }
+        const topicItem = document.querySelector(`.topic-item[onclick*="toggleTopic(${topicId})"]`);
+        if (topicItem) {
+            topicItem.classList.toggle('selected');
         }
     }
 
     function addSingleTopic(topicId) {
         if (currentCourseTopics.includes(topicId)) {
-            alert('This topic is already added to the course.');
+            showNotification('This topic is already added to the course.', 'warning');
             return;
         }
 
-        // Use teacher route
         fetch(`/teacher/courses/${encryptedCourseId}/add-topic`, {
             method: 'POST',
             headers: {
@@ -903,9 +501,7 @@
                 'X-CSRF-TOKEN': getCsrfToken(),
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({
-                topic_id: topicId
-            })
+            body: JSON.stringify({ topic_id: topicId })
         })
         .then(response => response.json())
         .then(data => {
@@ -927,11 +523,10 @@
 
     function addSelectedTopics() {
         if (selectedTopics.length === 0) {
-            alert('Please select at least one topic to add.');
+            showNotification('Please select at least one topic to add.', 'warning');
             return;
         }
 
-        // Use teacher route
         fetch(`/teacher/courses/${encryptedCourseId}/add-topics`, {
             method: 'POST',
             headers: {
@@ -939,9 +534,7 @@
                 'X-CSRF-TOKEN': getCsrfToken(),
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({
-                topic_ids: selectedTopics
-            })
+            body: JSON.stringify({ topic_ids: selectedTopics })
         })
         .then(response => response.json())
         .then(data => {
@@ -953,9 +546,7 @@
                 renderAvailableTopics(allAvailableTopics);
                 
                 if (data.topics && Array.isArray(data.topics)) {
-                    data.topics.forEach(topic => {
-                        addTopicToDisplay(topic);
-                    });
+                    data.topics.forEach(topic => addTopicToDisplay(topic));
                 }
                 
                 selectedTopics = [];
@@ -990,82 +581,104 @@
             <div class="topic-header">
                 <div>
                     <div class="topic-title">${topic.title || 'Untitled Topic'}</div>
-                    <div style="font-size: 0.75rem; color: #9ca3af;">
-                        <i class="fas fa-clock" style="margin-right: 0.25rem;"></i>
+                    <div style="font-size: 0.6875rem; color: #a0aec0;">
+                        <i class="fas fa-clock"></i>
                         Just added
                     </div>
                 </div>
                 <div class="action-dropdown">
-                    <button class="action-btn" onclick="removeTopic(${topic.id}, '${(topic.title || 'Untitled Topic').replace(/'/g, "\\'")}')">
-                        <i class="fas fa-times"></i>
+                    <button class="action-btn-small" onclick="removeTopic(${topic.id}, '${(topic.title || 'Untitled Topic').replace(/'/g, "\\'")}')">
+                        <i class="fas fa-times"></i> Remove
                     </button>
                 </div>
             </div>
             <div class="topic-content">
                 <div class="topic-description">
-                    ${topic.description || topic.content || 'No description provided for this topic.'}
+                    ${topic.description || topic.content || 'No description provided.'}
                 </div>
             </div>
         `;
         
         topicsList.appendChild(topicElement);
+        
+        // Update topics count
+        updateTopicsCount();
     }
 
     function removeTopic(topicId, topicTitle) {
-        if (!confirm(`Are you sure you want to remove "${topicTitle}" from this course?`)) {
-            return;
-        }
-
-        // Use teacher route
-        fetch(`/teacher/courses/${encryptedCourseId}/remove-topic`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                topic_id: topicId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                currentCourseTopics = currentCourseTopics.filter(id => id !== topicId);
-                
-                const topicElement = document.getElementById(`topic-${topicId}`);
-                if (topicElement) {
-                    topicElement.remove();
-                }
-                
-                if (data.topic) {
-                    allAvailableTopics.push(data.topic);
-                    renderAvailableTopics(allAvailableTopics);
-                }
-                
-                const topicsList = document.getElementById('topicsList');
-                if (topicsList.children.length === 0) {
-                    topicsList.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-folder-open"></i>
-                            <div style="font-size: 1rem; font-weight: 500; color: #6b7280; margin-bottom: 0.5rem;">No Topics Yet</div>
-                            <div style="font-size: 0.875rem; color: #9ca3af;">Start by adding topics to this course</div>
-                            <button onclick="openAddTopicModal()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1.5rem; background: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer;">
-                                <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Add First Topic
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                showNotification('Topic removed successfully!', 'success');
-            } else {
-                showNotification(data.message || 'Failed to remove topic.', 'error');
+        Swal.fire({
+            title: 'Remove Topic?',
+            text: `Are you sure you want to remove "${topicTitle}" from this course?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f56565',
+            cancelButtonColor: '#a0aec0',
+            confirmButtonText: 'Yes, Remove',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/teacher/courses/${encryptedCourseId}/remove-topic`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ topic_id: topicId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentCourseTopics = currentCourseTopics.filter(id => id !== topicId);
+                        
+                        const topicElement = document.getElementById(`topic-${topicId}`);
+                        if (topicElement) topicElement.remove();
+                        
+                        if (data.topic) {
+                            allAvailableTopics.push(data.topic);
+                            renderAvailableTopics(allAvailableTopics);
+                        }
+                        
+                        const topicsList = document.getElementById('topicsList');
+                        if (topicsList.children.length === 0) {
+                            topicsList.innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-folder-open"></i>
+                                    <h3>No Topics Yet</h3>
+                                    <p>Start by adding topics to this course</p>
+                                    <button onclick="openAddTopicModal()" style="margin-top: 1rem; padding: 0.5rem 1.25rem; background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer;">
+                                        <i class="fas fa-plus" style="margin-right: 0.375rem;"></i>Add First Topic
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        
+                        updateTopicsCount();
+                        showNotification('Topic removed successfully!', 'success');
+                    } else {
+                        showNotification(data.message || 'Failed to remove topic.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred. Please try again.', 'error');
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('An error occurred. Please try again.', 'error');
         });
+    }
+
+    function updateTopicsCount() {
+        const topicsCount = document.querySelectorAll('.topic-card').length;
+        const countBadge = document.querySelector('.topics-count-badge');
+        if (countBadge) {
+            countBadge.textContent = topicsCount;
+        }
+        
+        // Update stats card if it exists
+        const topicsStat = document.querySelector('.stat-number[data-stat="topics"]');
+        if (topicsStat) {
+            topicsStat.textContent = topicsCount;
+        }
     }
 
     function searchTopics() {
@@ -1082,36 +695,20 @@
         renderAvailableTopics(filteredTopics);
     }
 
-    function showNotification(message, type) {
-        const existingNotifications = document.querySelectorAll('.notification');
-        existingNotifications.forEach(notification => notification.remove());
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            background: ${type === 'success' ? '#10b981' : '#ef4444'};
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 1001;
-            animation: slideIn 0.3s ease;
-        `;
-        
-        notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}" style="margin-right: 0.5rem;"></i>
-            ${message}
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+    // Search functionality for main topics list
+    const topicSearch = document.getElementById('topicSearch');
+    if (topicSearch) {
+        topicSearch.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const topicCards = document.querySelectorAll('.topic-card');
+            
+            topicCards.forEach(card => {
+                const title = card.querySelector('.topic-title').textContent.toLowerCase();
+                const description = card.querySelector('.topic-description').textContent.toLowerCase();
+                
+                card.style.display = title.includes(searchTerm) || description.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
     }
 
     // Close modal on escape key
@@ -1128,22 +725,20 @@
         }
     });
 
-    // Search functionality for main topics list
-    document.getElementById('topicSearch').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const topicCards = document.querySelectorAll('.topic-card');
-        
-        topicCards.forEach(card => {
-            const title = card.querySelector('.topic-title').textContent.toLowerCase();
-            const description = card.querySelector('.topic-description').textContent.toLowerCase();
-            
-            if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
+    function showNotification(message, type = 'info') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            icon: type,
+            title: message,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
             }
         });
-    });
+    }
 </script>
 @endpush
-@endsection

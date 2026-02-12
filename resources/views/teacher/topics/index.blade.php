@@ -1,601 +1,692 @@
 @extends('layouts.teacher')
 
-@section('title', 'Topics')
+@section('title', 'Topics - Teacher Dashboard')
 
 @section('content')
-<div class="top-header">
-    <div class="greeting">
-        <h1>Topics</h1>
-        <p>Manage learning materials for your courses</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="user-greeting">
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
+                </div>
+                <div class="greeting-text">
+                    <h1 class="welcome-title">My Topics</h1>
+                    <p class="welcome-subtitle">
+                        <i class="fas fa-chalkboard"></i> Manage learning materials for your courses
+                        @if(($draftTopics ?? 0) > 0)
+                            <span class="separator">•</span>
+                            <span class="pending-notice">{{ $draftTopics ?? 0 }} draft{{ ($draftTopics ?? 0) > 1 ? 's' : '' }} pending</span>
+                        @endif
+                    </p>
+                </div>
+            </div>
+            @if(($draftTopics ?? 0) > 0)
+            <div class="header-alert">
+                <div class="alert-badge">
+                    <i class="fas fa-edit"></i>
+                    <span class="badge-count">{{ $draftTopics ?? 0 }}</span>
+                </div>
+                <div class="alert-text">
+                    <div class="alert-title">Draft Topics</div>
+                    <div class="alert-subtitle">{{ $draftTopics ?? 0 }} topic{{ ($draftTopics ?? 0) > 1 ? 's' : '' }} in draft status</div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
-</div>
 
-<div class="content-grid">
-    <!-- Left Column - Topics List -->
-    <div class="content-grid-left">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-header-content">
-                    <h2 class="card-title">All Topics</h2>
-                    <a href="{{ route('teacher.topics.create') }}" class="btn-primary">
-                        <i class="fas fa-plus"></i> Create Topic
-                    </a>
+    <!-- Stats Cards -->
+    <div class="stats-grid stats-grid-compact">
+        <a href="{{ route('teacher.topics.index') }}" class="stat-card stat-card-primary clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Topics</div>
+                    <div class="stat-number">{{ number_format($topics->total() ?? $topics->count()) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-chalkboard"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View all topics <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ route('teacher.topics.index') }}?status=published" class="stat-card stat-card-success clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Published</div>
+                    <div class="stat-number">{{ number_format($publishedTopics ?? 0) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View published <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ route('teacher.topics.index') }}?has_video=true" class="stat-card stat-card-info clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">With Video</div>
+                    <div class="stat-number">{{ number_format($topicsWithVideo ?? 0) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View with video <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ route('teacher.topics.index') }}?status=draft" class="stat-card stat-card-warning clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Drafts</div>
+                    <div class="stat-number">{{ number_format($draftTopics ?? 0) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View drafts <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Topics List Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chalkboard" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        My Topics
+                    </h2>
+                    <div class="header-actions">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="search-input" placeholder="Search topics..." id="search-topics">
+                        </div>
+                        <a href="{{ route('teacher.topics.create') }}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Create Topic
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    @if(session('success'))
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        {{ session('success') }}
+                    </div>
+                    @endif
+
+                    @if(session('error'))
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ session('error') }}
+                    </div>
+                    @endif
+
+                    @if($topics->isEmpty())
+                        <!-- Empty State -->
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h3 class="empty-title">No topics yet</h3>
+                            <p class="empty-text">You haven't created any topics. Start building your content by adding the first topic.</p>
+                            <a href="{{ route('teacher.topics.create') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i>
+                                Create Your First Topic
+                            </a>
+                            <div class="empty-hint">
+                                <i class="fas fa-lightbulb"></i>
+                                Topics organize content and can contain videos and learning materials
+                            </div>
+                        </div>
+                    @else
+                        <!-- Topics List -->
+                        <div class="table-responsive">
+                            <table class="topics-table" id="topics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Topic Title</th>
+                                        <th class="hide-on-mobile">Status</th>
+                                        <th class="hide-on-tablet">Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($topics as $topic)
+                                    <tr class="clickable-row" 
+                                        data-href="{{ route('teacher.topics.show', Crypt::encrypt($topic->id)) }}"
+                                        data-title="{{ strtolower($topic->title) }}">
+                                        <td>
+                                            <div class="topic-info-cell">
+                                                <div class="topic-icon topic-{{ ($loop->index % 3) + 1 }}">
+                                                    <i class="fas fa-file-alt"></i>
+                                                </div>
+                                                <div class="topic-details">
+                                                    <div class="topic-name">{{ $topic->title }}</div>
+                                                    @if($topic->course)
+                                                    <div class="topic-course-indicator">
+                                                        <i class="fas fa-book"></i>
+                                                        {{ $topic->course->title }}
+                                                    </div>
+                                                    @endif
+                                                    @if($topic->video_link)
+                                                    <div class="topic-video-indicator">
+                                                        <i class="fas fa-video"></i>
+                                                        Has video content
+                                                    </div>
+                                                    @endif
+                                                    <div class="topic-mobile-info">
+                                                        <div class="status-mobile">
+                                                            @if($topic->is_published)
+                                                            <span class="item-badge badge-success">
+                                                                <i class="fas fa-check-circle"></i>
+                                                                Published
+                                                            </span>
+                                                            @else
+                                                            <span class="item-badge badge-warning">
+                                                                <i class="fas fa-clock"></i>
+                                                                Draft
+                                                            </span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="date-mobile">
+                                                            {{ $topic->created_at->format('M d, Y') }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="hide-on-mobile">
+                                            @if($topic->is_published)
+                                                <span class="item-badge badge-success">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    Published
+                                                </span>
+                                            @else
+                                                <span class="item-badge badge-warning">
+                                                    <i class="fas fa-clock"></i>
+                                                    Draft
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="hide-on-tablet">
+                                            <div class="created-date">{{ $topic->created_at->format('M d, Y') }}</div>
+                                            <div class="created-ago">{{ $topic->created_at->diffForHumans() }}</div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Pagination -->
+                @if($topics instanceof \Illuminate\Pagination\AbstractPaginator && $topics->hasPages())
+                <div class="card-footer">
+                    <div class="pagination-info">
+                        Showing {{ $topics->firstItem() }} to {{ $topics->lastItem() }} of {{ $topics->total() }} entries
+                    </div>
+                    <div class="pagination-links">
+                        @if($topics->onFirstPage())
+                        <span class="pagination-btn disabled">Previous</span>
+                        @else
+                        <a href="{{ $topics->previousPageUrl() }}" class="pagination-btn">Previous</a>
+                        @endif
+                        
+                        @foreach(range(1, min(5, $topics->lastPage())) as $page)
+                            @if($page == $topics->currentPage())
+                            <span class="pagination-btn active">{{ $page }}</span>
+                            @else
+                            <a href="{{ $topics->url($page) }}" class="pagination-btn">{{ $page }}</a>
+                            @endif
+                        @endforeach
+                        
+                        @if($topics->hasMorePages())
+                        <a href="{{ $topics->nextPageUrl() }}" class="pagination-btn">Next</a>
+                        @else
+                        <span class="pagination-btn disabled">Next</span>
+                        @endif
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Quick Actions Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-bolt" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quick Actions
+                    </h2>
+                </div>
+                
+                <div class="card-body">
+                    <div class="quick-actions-grid">
+                        <a href="{{ route('teacher.topics.create') }}" class="action-card action-primary">
+                            <div class="action-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Create New Topic</div>
+                                <div class="action-subtitle">Add learning material</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ route('teacher.courses.index') }}" class="action-card action-success">
+                            <div class="action-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">My Courses</div>
+                                <div class="action-subtitle">Manage your courses</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                        
+                        <button id="export-csv" class="action-card action-info">
+                            <div class="action-icon">
+                                <i class="fas fa-file-export"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Export Topics</div>
+                                <div class="action-subtitle">Download as CSV</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Statistics Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Topic Statistics
+                    </h2>
+                </div>
+                
+                <div class="card-body">
+                    <div class="items-list">
+                        <a href="{{ route('teacher.topics.index') }}?month={{ now()->format('Y-m') }}" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--primary-light), var(--primary));">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Topics This Month</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $topicsThisMonth ?? 0 }}</div>
+                        </a>
+                        
+                        <a href="{{ route('teacher.topics.index') }}?status=published" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--success-light), var(--success));">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Published Topics</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $publishedTopics ?? 0 }}</div>
+                        </a>
+                        
+                        <a href="{{ route('teacher.topics.index') }}?status=draft" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--warning-light), var(--warning));">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Draft Topics</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $draftTopics ?? 0 }}</div>
+                        </a>
+                        
+                        <a href="{{ route('teacher.topics.index') }}?has_video=true" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--info-light), var(--info));">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Topics with Video</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $topicsWithVideo ?? 0 }}</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
+        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
+            My Topics • Updated {{ now()->format('M d, Y') }}
+        </p>
+    </footer>
+
+    <!-- Hidden Print Content -->
+    <div id="print-content" style="display: none;">
+        <div style="padding: 20px; font-family: Arial, sans-serif;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #4f46e5; margin-bottom: 5px;">My Topics Report</h1>
+                <p style="color: #666; margin-bottom: 10px;">Generated on {{ now()->format('F d, Y h:i A') }}</p>
+                <hr style="border: 1px solid #e5e7eb; margin: 20px 0;">
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <h2 style="color: #333; margin-bottom: 10px;">Topic Statistics Summary</h2>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #eef2ff; padding: 15px; border-radius: 8px; border: 1px solid #c7d2fe;">
+                        <div style="font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px;">{{ $topics->total() ?? $topics->count() }}</div>
+                        <div style="font-size: 14px; color: #4f46e5;">Total Topics</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border: 1px solid #fde68a;">
+                        <div style="font-size: 24px; font-weight: bold; color: #d97706; margin-bottom: 5px;">{{ $publishedTopics ?? 0 }}</div>
+                        <div style="font-size: 14px; color: #d97706;">Published Topics</div>
+                    </div>
+                    <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca;">
+                        <div style="font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 5px;">{{ $draftTopics ?? 0 }}</div>
+                        <div style="font-size: 14px; color: #dc2626;">Draft Topics</div>
+                    </div>
+                    <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; border: 1px solid #bae6fd;">
+                        <div style="font-size: 24px; font-weight: bold; color: #0284c7; margin-bottom: 5px;">{{ $topicsWithVideo ?? 0 }}</div>
+                        <div style="font-size: 14px; color: #0284c7;">Topics with Video</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="card-body">
-                @if(session('success'))
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    {{ session('success') }}
-                </div>
-                @endif
-                
-                @if($topics->count() > 0)
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th class="table-header">Title</th>
-                                <th class="table-header">Status</th>
-                                <th class="table-header">Video</th>
-                                <th class="table-header">Attachment</th>
-                                <th class="table-header">Created</th>
-                                <th class="table-header">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($topics as $topic)
-                            <tr class="table-row">
-                                <td class="table-cell">
-                                    <div class="table-cell-title">{{ $topic->title }}</div>
-                                    @if($topic->learning_outcomes)
-                                    <div class="table-cell-subtitle">
-                                        {{ Str::limit($topic->learning_outcomes, 60) }}
-                                    </div>
-                                    @endif
-                                </td>
-                                <td class="table-cell">
-                                    @if($topic->is_published)
-                                    <span class="status-badge status-published">
-                                        Published
-                                    </span>
-                                    @else
-                                    <span class="status-badge status-draft">
-                                        Draft
-                                    </span>
-                                    @endif
-                                </td>
-                                <td class="table-cell">
-                                    @if($topic->video_link)
-                                    <span class="status-icon status-yes">
-                                        <i class="fas fa-video"></i> Yes
-                                    </span>
-                                    @else
-                                    <span class="status-icon status-no">
-                                        <i class="fas fa-video-slash"></i> No
-                                    </span>
-                                    @endif
-                                </td>
-                                <td class="table-cell">
-                                    @if($topic->attachment)
-                                    <span class="status-icon status-yes">
-                                        <i class="fas fa-paperclip"></i> Yes
-                                    </span>
-                                    @else
-                                    <span class="status-icon status-no">
-                                        <i class="fas fa-times"></i> No
-                                    </span>
-                                    @endif
-                                </td>
-                                <td class="table-cell table-cell-date">
-                                    {{ $topic->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="table-cell">
-                                    <div class="action-buttons">
-                                        <a href="{{ route('teacher.topics.show', Crypt::encrypt($topic->id)) }}" 
-                                           class="action-btn action-view">
-                                            <i class="fas fa-eye"></i> View
-                                        </a>
-                                        <a href="{{ route('teacher.topics.edit', Crypt::encrypt($topic->id)) }}" 
-                                           class="action-btn action-edit">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination -->
-                <div class="pagination-container">
-                    {{ $topics->links() }}
-                </div>
-                @else
-                <div class="empty-state">
-                    <i class="fas fa-folder-open empty-state-icon"></i>
-                    <div class="empty-state-title">No Topics Yet</div>
-                    <div class="empty-state-description">Start by creating your first topic</div>
-                    <a href="{{ route('teacher.topics.create') }}" class="btn-primary">
-                        <i class="fas fa-plus"></i> Create First Topic
-                    </a>
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
-    
-    <!-- Right Column - Statistics -->
-    <div class="content-grid-right">
-        <!-- Stats Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Topic Statistics</h2>
-            </div>
-            <div class="card-body">
-                <div class="stats-grid">
-                    <div class="stat-card stat-primary">
-                        <div class="stat-value">{{ $publishedTopics }}</div>
-                        <div class="stat-label">Published</div>
-                    </div>
-                    
-                    <div class="stat-card stat-warning">
-                        <div class="stat-value">{{ $draftTopics }}</div>
-                        <div class="stat-label">Draft</div>
-                    </div>
-                    
-                    <div class="stat-card stat-success">
-                        <div class="stat-value">{{ $topicsThisMonth }}</div>
-                        <div class="stat-label">This Month</div>
-                    </div>
-                    
-                    <div class="stat-card stat-info">
-                        <div class="stat-value">{{ $topicsWithVideo }}</div>
-                        <div class="stat-label">With Video</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Quick Actions</h2>
-            </div>
-            <div class="card-body">
-                <div class="quick-actions">
-                    <a href="{{ route('teacher.topics.create') }}" class="quick-action-link">
-                        <div class="quick-action-icon bg-primary">
-                            <i class="fas fa-plus"></i>
-                        </div>
-                        <div class="quick-action-content">
-                            <div class="quick-action-title">Create Topic</div>
-                            <div class="quick-action-subtitle">Add new learning material</div>
-                        </div>
-                        <i class="fas fa-chevron-right quick-action-arrow"></i>
-                    </a>
-                    
-                    <a href="{{ route('teacher.courses.index') }}" class="quick-action-link">
-                        <div class="quick-action-icon bg-success">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div class="quick-action-content">
-                            <div class="quick-action-title">My Courses</div>
-                            <div class="quick-action-subtitle">Manage your courses</div>
-                        </div>
-                        <i class="fas fa-chevron-right quick-action-arrow"></i>
-                    </a>
-                </div>
+            <h2 style="color: #333; margin-bottom: 15px;">Topic List</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Topic Title</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Course</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Status</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Has Video</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left; font-weight: bold; color: #374151;">Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($topics as $topic)
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $topic->title }}</td>
+                        <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $topic->course->title ?? 'Not assigned' }}</td>
+                        <td style="padding: 12px; border: 1px solid #e5e7eb;">
+                            @if($topic->is_published)
+                                <span style="color: #059669; font-weight: 500;">Published</span>
+                            @else
+                                <span style="color: #d97706; font-weight: 500;">Draft</span>
+                            @endif
+                        </td>
+                        <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">
+                            @if($topic->video_link)
+                                <span style="color: #059669;">Yes</span>
+                            @else
+                                <span style="color: #6b7280;">No</span>
+                            @endif
+                        </td>
+                        <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $topic->created_at->format('M d, Y') }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+                <p style="color: #6b7280; font-size: 14px;">
+                    Total Topics: {{ $topics->total() ?? $topics->count() }} | 
+                    Generated by: {{ Auth::user()->f_name }} {{ Auth::user()->l_name }} | 
+                    Page 1 of 1
+                </p>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-/* Responsive Grid */
-.content-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-}
-
-@media (min-width: 1024px) {
-    .content-grid {
-        grid-template-columns: 2fr 1fr;
-    }
-}
-
-.content-grid-left {
-    min-width: 0; /* Prevent overflow */
-}
-
-.content-grid-right {
-    min-width: 0;
-}
-
-/* Card Header Alignment */
-.card-header-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-}
-
-@media (min-width: 640px) {
-    .card-header-content {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-}
-
-/* Table Responsiveness */
-.table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px; /* Minimum width for small screens */
-}
-
-@media (max-width: 1024px) {
-    .data-table {
-        min-width: 100%;
-    }
-}
-
-.table-header {
-    padding: 0.75rem;
-    text-align: left;
-    font-weight: 500;
-    color: var(--secondary);
-    font-size: 0.875rem;
-    background: #f9fafb;
-    border-bottom: 1px solid var(--border);
-}
-
-.table-row {
-    border-bottom: 1px solid var(--border);
-    transition: background-color 0.2s;
-}
-
-.table-row:hover {
-    background-color: #f9fafb;
-}
-
-.table-cell {
-    padding: 0.75rem;
-    vertical-align: top;
-}
-
-.table-cell-title {
-    font-weight: 500;
-    color: var(--dark);
-    word-wrap: break-word;
-}
-
-.table-cell-subtitle {
-    font-size: 0.75rem;
-    color: var(--secondary);
-    margin-top: 0.25rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    word-wrap: break-word;
-}
-
-.table-cell-date {
-    font-size: 0.875rem;
-    color: var(--secondary);
-    white-space: nowrap;
-}
-
-/* Status Badges */
-.status-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.status-published {
-    background: #dcfce7;
-    color: #065f46;
-}
-
-.status-draft {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.status-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.status-yes {
-    color: var(--success);
-}
-
-.status-no {
-    color: var(--secondary);
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.action-btn {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-
-.action-view {
-    background: #f3f4f6;
-    color: var(--secondary);
-}
-
-.action-view:hover {
-    background: #e5e7eb;
-}
-
-.action-edit {
-    background: #e0e7ff;
-    color: var(--primary);
-}
-
-.action-edit:hover {
-    background: #c7d2fe;
-}
-
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-}
-
-@media (max-width: 640px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.stat-card {
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.stat-primary {
-    background: #f0f9ff;
-}
-.stat-primary .stat-value { color: #0369a1; }
-.stat-primary .stat-label { color: #0c4a6e; }
-
-.stat-warning {
-    background: #fef3c7;
-}
-.stat-warning .stat-value { color: #b45309; }
-.stat-warning .stat-label { color: #92400e; }
-
-.stat-success {
-    background: #f0fdf4;
-}
-.stat-success .stat-value { color: #15803d; }
-.stat-success .stat-label { color: #166534; }
-
-.stat-info {
-    background: #e0e7ff;
-}
-.stat-info .stat-value { color: #4f46e5; }
-.stat-info .stat-label { color: #3730a3; }
-
-/* Quick Actions */
-.quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.quick-action-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    text-decoration: none;
-    color: #374151;
-    transition: all 0.2s;
-}
-
-.quick-action-link:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-}
-
-.quick-action-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    flex-shrink: 0;
-}
-
-.quick-action-content {
-    flex: 1;
-    min-width: 0; /* Prevent overflow */
-}
-
-.quick-action-title {
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-.quick-action-subtitle {
-    font-size: 0.75rem;
-    color: #6b7280;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.quick-action-arrow {
-    color: #9ca3af;
-    margin-left: auto;
-    flex-shrink: 0;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--secondary);
-}
-
-.empty-state-icon {
-    font-size: 3rem;
-    color: #d1d5db;
-    margin-bottom: 1rem;
-}
-
-.empty-state-title {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--secondary);
-    margin-bottom: 0.5rem;
-}
-
-.empty-state-description {
-    font-size: 0.875rem;
-    color: #9ca3af;
-    margin-bottom: 1.5rem;
-}
-
-/* Buttons */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--primary);
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background 0.2s;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.btn-primary:hover {
-    background: var(--primary-dark);
-}
-
-/* Alerts */
-.alert {
-    margin-bottom: 1.5rem;
-    padding: 0.75rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    border-left: 4px solid transparent;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-}
-
-.alert-success {
-    background: #dcfce7;
-    color: #065f46;
-    border-left-color: #10b981;
-}
-
-.alert i {
-    flex-shrink: 0;
-}
-
-/* Pagination */
-.pagination-container {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: center;
-}
-
-/* Ensure pagination is responsive */
-.pagination-container ul {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.25rem;
-}
-
-/* Mobile Optimization */
-@media (max-width: 640px) {
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .table-cell {
-        padding: 0.5rem;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .btn-primary {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .card-header-content .btn-primary {
-        width: auto;
-    }
-}
-</style>
 @endsection
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/topic-index.css') }}">
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make rows clickable
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        
+        clickableRows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Don't redirect if user clicked on a link or button
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                    return;
+                }
+                
+                const href = this.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+            
+            // Add hover effect
+            row.style.cursor = 'pointer';
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('search-topics');
+        const topicRows = document.querySelectorAll('.clickable-row');
+        
+        if (searchInput && topicRows.length > 0) {
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                
+                topicRows.forEach(row => {
+                    const topicTitle = row.dataset.title || '';
+                    
+                    if (searchTerm === '' || topicTitle.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Print functionality
+        document.getElementById('print-report')?.addEventListener('click', function() {
+            const printContent = document.getElementById('print-content').innerHTML;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>My Topics Report</title>
+                    <style>
+                        @media print {
+                            @page {
+                                size: landscape;
+                                margin: 0.5in;
+                            }
+                            body {
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            table {
+                                page-break-inside: auto;
+                            }
+                            tr {
+                                page-break-inside: avoid;
+                                page-break-after: auto;
+                            }
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        h1, h2, h3 {
+                            margin-top: 0;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th {
+                            background-color: #f3f4f6 !important;
+                            -webkit-print-color-adjust: exact;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printContent}
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.close();
+                            }, 100);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        });
+
+        // Export to CSV functionality
+        document.getElementById('export-csv')?.addEventListener('click', function() {
+            const table = document.getElementById('topics-table');
+            const rows = table.querySelectorAll('tr');
+            const csv = [];
+            
+            // Add headers
+            const headers = ['Topic Title', 'Status', 'Created Date'];
+            csv.push(headers.join(','));
+            
+            // Add data rows
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const cells = [];
+                const columns = row.querySelectorAll('td');
+                
+                // Topic Title
+                const topicNameDiv = columns[0].querySelector('.topic-name');
+                cells.push(`"${topicNameDiv ? topicNameDiv.textContent.trim() : ''}"`);
+                
+                // Status
+                let status = 'Unknown';
+                const statusBadge = columns[1]?.querySelector('.item-badge');
+                if (statusBadge) {
+                    status = statusBadge.textContent.trim();
+                } else {
+                    const mobileStatus = columns[0].querySelector('.status-mobile .item-badge');
+                    if (mobileStatus) {
+                        status = mobileStatus.textContent.trim();
+                    }
+                }
+                cells.push(`"${status}"`);
+                
+                // Created Date
+                let createdDate = 'Data not available';
+                if (columns[2]) {
+                    const createdDateDiv = columns[2].querySelector('.created-date');
+                    if (createdDateDiv) {
+                        createdDate = createdDateDiv.textContent.trim();
+                    }
+                } else {
+                    const mobileDate = columns[0].querySelector('.date-mobile');
+                    if (mobileDate) {
+                        createdDate = mobileDate.textContent.trim();
+                    }
+                }
+                cells.push(`"${createdDate}"`);
+                
+                csv.push(cells.join(','));
+            });
+            
+            // Create and download CSV file
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `my_topics_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show success message
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                icon: 'success',
+                title: 'Topics exported successfully!',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        });
+
+        // Show notifications from session
+        @if(session('success'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                icon: 'success',
+                title: '{{ session('success') }}',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        @endif
+        
+        @if(session('error'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                icon: 'error',
+                title: '{{ session('error') }}',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        @endif
+    });
+</script>
+@endpush
