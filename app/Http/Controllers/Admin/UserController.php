@@ -523,12 +523,18 @@ class UserController extends Controller
                 'approved_by' => auth()->id()
             ]);
             
-            // Clear user-related caches
+            // 🔥 FIXED: Clear user-related caches
             $this->clearUserCaches($id);
             
-            // Clear specific caches
+            // Also clear the specific user cache
             Cache::forget('user_show_detail_' . $id);
             Cache::forget('user_edit_detail_' . $id);
+            
+            // 🔥 FIXED: Clear admin dashboard cache for ALL admins
+            $admins = User::where('role', 1)->pluck('id')->toArray();
+            foreach ($admins as $adminId) {
+                Cache::forget('admin_dashboard_' . $adminId);
+            }
             
             // Send approval email (optional - comment out if not needed)
             try {
@@ -586,9 +592,18 @@ class UserController extends Controller
             Cache::forget('approver_user_' . $userId);
         }
         
-        // Clear dashboard caches
-        Cache::forget('admin_dashboard_' . auth()->id());
-        Cache::forget('registrar_dashboard_' . auth()->id());
+        // 🔥 FIXED: Clear dashboard caches for ALL admins
+        // Get all admin users and clear their dashboard caches
+        $admins = User::where('role', 1)->pluck('id')->toArray();
+        foreach ($admins as $adminId) {
+            Cache::forget('admin_dashboard_' . $adminId);
+        }
+        
+        // Also clear registrar dashboard caches (they can also approve users)
+        $registrars = User::where('role', 2)->pluck('id')->toArray();
+        foreach ($registrars as $registrarId) {
+            Cache::forget('registrar_dashboard_' . $registrarId);
+        }
         
         // Clear user stats caches
         Cache::forget('user_stats');

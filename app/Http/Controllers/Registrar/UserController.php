@@ -11,9 +11,15 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use App\Mail\UserApprovedMail;
 use Illuminate\Validation\Rule;
+use App\Traits\CacheManager;
 
 class UserController extends Controller
 {
+    use CacheManager;
+    
+    /**
+     * Display a listing of users (teachers and students only)
+     */
     public function index()
     {
         // Get filters
@@ -30,16 +36,8 @@ class UserController extends Controller
         // Get user statistics using cached method
         $stats = $this->getStats();
         
-        // Create cache key based on filters
-        $cacheKey = 'registrar_users_index_' . md5(json_encode([
-            'search' => $search,
-            'role' => $role,
-            'status' => $status,
-            'page' => request()->get('page', 1)
-        ]));
-        
-        // Cache for 2 minutes for paginated results
-        $users = Cache::remember($cacheKey, 120, function() use ($search, $role, $status) {
+        // 🔥 FIXED: Don't cache pending views - always show fresh data
+        if ($status === 'pending' || $search) {
             $query = User::whereIn('role', [3, 4])
                 ->select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'employee_id', 'student_id', 'created_at']);
             
@@ -64,28 +62,52 @@ class UserController extends Controller
                 $query->where('is_approved', false);
             }
             
-            return $query->orderBy('created_at', 'desc')->paginate(20);
-        });
-        
-        // Clear this specific cache if there's a search (for real-time results)
-        if ($search) {
-            Cache::forget($cacheKey);
-            $users = User::whereIn('role', [3, 4])
-                ->select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'employee_id', 'student_id', 'created_at'])
-                ->where(function($q) use ($search) {
-                    $q->where('f_name', 'like', "%{$search}%")
-                      ->orWhere('l_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('employee_id', 'like', "%{$search}%")
-                      ->orWhere('student_id', 'like', "%{$search}%");
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(20);
+            $users = $query->orderBy('created_at', 'desc')->paginate(20);
+        } else {
+            // Only cache non-pending, non-search views for better performance
+            $cacheKey = 'registrar_users_index_' . md5(json_encode([
+                'search' => $search,
+                'role' => $role,
+                'status' => $status,
+                'page' => request()->get('page', 1)
+            ]));
+            
+            // Cache for 2 minutes
+            $users = Cache::remember($cacheKey, 120, function() use ($search, $role, $status) {
+                $query = User::whereIn('role', [3, 4])
+                    ->select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'employee_id', 'student_id', 'created_at']);
+                
+                // Apply search filter
+                if ($search) {
+                    $query->where(function($q) use ($search) {
+                        $q->where('f_name', 'like', "%{$search}%")
+                          ->orWhere('l_name', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%")
+                          ->orWhere('employee_id', 'like', "%{$search}%")
+                          ->orWhere('student_id', 'like', "%{$search}%");
+                    });
+                }
+                
+                // Apply role filter
+                if ($role && in_array($role, [3, 4])) {
+                    $query->where('role', $role);
+                }
+                
+                // Apply status filter
+                if ($status === 'pending') {
+                    $query->where('is_approved', false);
+                }
+                
+                return $query->orderBy('created_at', 'desc')->paginate(20);
+            });
         }
         
         return view('registrar.users.index', compact('users', 'stats', 'roleNames'));
     }
     
+    /**
+     * Show the form for creating a new user
+     */
     public function create()
     {
         // Get user stats for the header (cached)
@@ -128,6 +150,9 @@ class UserController extends Controller
         return view('registrar.users.create', compact('roleOptions', 'stats', 'suggestions'));
     }
     
+    /**
+     * Store a newly created user in storage
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -143,7 +168,7 @@ class UserController extends Controller
             'contact' => 'nullable|string|max:20',
         ]);
         
-        // Create user with encrypted data (if using Encryptable trait)
+        // Create user
         $user = User::create([
             'f_name' => $request->f_name,
             'l_name' => $request->l_name,
@@ -161,8 +186,11 @@ class UserController extends Controller
             'created_by' => auth()->id()
         ]);
         
-        // Clear all user-related caches
-        $this->clearUserCaches();
+        // 🔥 CRITICAL: Clear ALL registrar caches
+        $this->clearAllRegistrarCaches();
+        
+        // Also clear admin caches since admin might see these users
+        $this->clearAllAdminCaches();
         
         // Clear specific caches
         Cache::forget('registrar_user_role_options');
@@ -183,6 +211,9 @@ class UserController extends Controller
             ->with('user_id', $user->id);
     }
     
+    /**
+     * Display the specified user
+     */
     public function show($encryptedId)
     {
         try {
@@ -243,6 +274,9 @@ class UserController extends Controller
         }
     }
     
+    /**
+     * Show the form for editing the specified user
+     */
     public function edit($encryptedId)
     {
         try {
@@ -303,6 +337,9 @@ class UserController extends Controller
         }
     }
     
+    /**
+     * Update the specified user in storage
+     */
     public function update(Request $request, $encryptedId)
     {
         try {
@@ -364,8 +401,9 @@ class UserController extends Controller
             
             $user->update($updateData);
             
-            // Clear user-related caches
-            $this->clearUserCaches($id);
+            // 🔥 Clear all caches
+            $this->clearAllRegistrarCaches($id);
+            $this->clearAllAdminCaches($id);
             
             // Clear specific caches
             Cache::forget('registrar_user_show_detail_' . $id);
@@ -387,6 +425,9 @@ class UserController extends Controller
         }
     }
     
+    /**
+     * Remove the specified user from storage
+     */
     public function destroy($encryptedId)
     {
         try {
@@ -403,8 +444,9 @@ class UserController extends Controller
             
             $user->delete();
             
-            // Clear user-related caches
-            $this->clearUserCaches($id);
+            // 🔥 Clear all caches
+            $this->clearAllRegistrarCaches($id);
+            $this->clearAllAdminCaches($id);
             
             // Clear specific caches
             Cache::forget('registrar_user_show_detail_' . $id);
@@ -423,6 +465,9 @@ class UserController extends Controller
         }
     }
     
+    /**
+     * Approve a pending user
+     */
     public function approve($encryptedId)
     {
         try {
@@ -449,20 +494,15 @@ class UserController extends Controller
                 'approved_by' => auth()->id()
             ]);
             
-            // Clear user-related caches
-            $this->clearUserCaches($id);
+            // 🔥 Clear ALL caches - this is critical for pending users to disappear
+            $this->clearUserApprovalCaches($user);
             
-            // Clear specific caches
-            Cache::forget('registrar_user_show_detail_' . $id);
-            Cache::forget('registrar_user_edit_detail_' . $id);
-            
-            // Send approval email (optional - comment out if not needed)
+            // Send approval email
             try {
                 if (class_exists(\App\Mail\UserApprovedMail::class)) {
                     Mail::to($user->email)->queue(new \App\Mail\UserApprovedMail($user));
                 }
             } catch (\Exception $e) {
-                // Log error but continue
                 \Log::error('Failed to send approval email: ' . $e->getMessage());
             }
             
@@ -494,13 +534,36 @@ class UserController extends Controller
      */
     private function clearUserCaches($userId = null)
     {
-        // Clear all user index caches using pattern matching
-        $cache = Cache::getStore();
-        if (method_exists($cache, 'tags')) {
-            Cache::tags(['registrar_users_index'])->flush();
-        } else {
-            // Fallback for cache drivers without tags
-            Cache::flush('registrar_users_index_*');
+        // 🔥 FIXED: Properly clear ALL registrar user index caches
+        for ($page = 1; $page <= 10; $page++) {
+            // All possible filter combinations
+            $filterCombinations = [
+                ['role' => null, 'status' => null],
+                ['role' => null, 'status' => 'pending'],
+                ['role' => 3, 'status' => null],
+                ['role' => 3, 'status' => 'pending'],
+                ['role' => 4, 'status' => null],
+                ['role' => 4, 'status' => 'pending'],
+            ];
+            
+            foreach ($filterCombinations as $filters) {
+                $cacheKey = 'registrar_users_index_' . md5(json_encode([
+                    'search' => null,
+                    'role' => $filters['role'],
+                    'status' => $filters['status'],
+                    'page' => $page
+                ]));
+                Cache::forget($cacheKey);
+                
+                // Also clear with search parameter
+                $cacheKeyWithSearch = 'registrar_users_index_' . md5(json_encode([
+                    'search' => '*',
+                    'role' => $filters['role'],
+                    'status' => $filters['status'],
+                    'page' => $page
+                ]));
+                Cache::forget($cacheKeyWithSearch);
+            }
         }
         
         // Clear specific user caches
@@ -510,10 +573,14 @@ class UserController extends Controller
             Cache::forget('registrar_user_activities_' . $userId);
             Cache::forget('registrar_user_detailed_stats_' . $userId);
             Cache::forget('approver_user_' . $userId);
+            Cache::forget('registrar_user_show_' . $userId);
         }
         
-        // Clear dashboard caches
-        Cache::forget('registrar_dashboard_' . auth()->id());
+        // Clear dashboard caches for ALL registrars, not just current user
+        $registrars = User::where('role', 2)->pluck('id')->toArray();
+        foreach ($registrars as $registrarId) {
+            Cache::forget('registrar_dashboard_' . $registrarId);
+        }
         
         // Clear user stats caches
         Cache::forget('registrar_user_stats');
@@ -529,11 +596,6 @@ class UserController extends Controller
         Cache::forget('registrar_user_role_options');
         Cache::forget('registrar_user_form_suggestions');
         Cache::forget('registrar_user_role_names');
-        
-        // Clear Blade cache if exists
-        if (Cache::getStore() instanceof \Illuminate\Cache\TaggableStore) {
-            Cache::tags(['registrar_users'])->flush();
-        }
     }
     
     /**
@@ -635,5 +697,17 @@ class UserController extends Controller
             
             return $stats;
         });
+    }
+    
+    /**
+     * Manual cache clearing endpoint
+     */
+    public function clearCache()
+    {
+        $this->clearAllRegistrarCaches();
+        $this->clearAllAdminCaches();
+        
+        return redirect()->route('registrar.users.index')
+            ->with('success', 'All registrar caches cleared successfully.');
     }
 }

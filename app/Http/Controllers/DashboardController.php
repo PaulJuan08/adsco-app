@@ -12,6 +12,7 @@ use App\Models\Topic;
 use App\Models\Assignment;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -36,11 +37,11 @@ class DashboardController extends Controller
     
     private function adminDashboard()
     {
-        // Cache key specific to admin dashboard
+        // Cache key specific to admin dashboard - include user ID
         $cacheKey = 'admin_dashboard_' . auth()->id();
         
-        // Cache for 5 minutes (300 seconds)
-        $data = Cache::remember($cacheKey, 300, function() {
+        // Cache for 2 minutes only (reduced from 5 minutes for more real-time data)
+        $data = Cache::remember($cacheKey, 120, function() {
             // Get all counts in optimized queries
             $userCounts = User::selectRaw('
                 COUNT(*) as total,
@@ -51,7 +52,8 @@ class DashboardController extends Controller
                 SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students
             ')->first();
             
-            // Get pending users (limited to 5)
+            // 🔥 FIXED: Get pending users directly WITHOUT caching
+            // This ensures fresh data is always displayed
             $pendingUsers = User::where('is_approved', false)
                 ->select(['id', 'f_name', 'l_name', 'email', 'role', 'created_at'])
                 ->latest()
@@ -94,7 +96,7 @@ class DashboardController extends Controller
             
             return [
                 'totalUsers' => $userCounts->total ?? 0,
-                'pendingUsers' => $pendingUsers,
+                'pendingUsers' => $pendingUsers, // Now this is fresh data
                 'pendingApprovals' => $userCounts->pending ?? 0,
                 'totalCourses' => $totalCourses,
                 'activeEnrollments' => $activeEnrollments,
@@ -162,74 +164,58 @@ class DashboardController extends Controller
     private function teacherDashboard()
     {
         $teacherId = Auth::id();
-        $cacheKey = 'teacher_dashboard_' . $teacherId;
         
-        $data = Cache::remember($cacheKey, 300, function() use ($teacherId) {
-            // Get teacher's courses with counts
-            $myCourses = Course::where('teacher_id', $teacherId)
-                ->withCount(['enrollments as active_enrollments' => function($query) {
-                    $query->where('status', 'active');
-                }])
-                ->get();
-            
-            // Get total students across all courses
-            $totalStudents = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
-                    $query->select('id')->from('courses')->where('teacher_id', $teacherId);
-                })
-                ->where('status', 'active')
-                ->distinct('student_id')
-                ->count();
-            
-            // Get upcoming assignments
-            $upcomingAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
-                    $query->where('teacher_id', $teacherId);
-                })
-                ->where('due_date', '>', now())
-                ->where('is_published', 1)
-                ->with('course')
-                ->orderBy('due_date', 'asc')
-                ->take(3)
-                ->get(['id', 'title', 'course_id', 'due_date', 'created_at']);
-            
-            // Get upcoming quizzes
-            $upcomingQuizzes = Quiz::where('available_until', '>', now())
-                ->where('is_published', 1)
-                ->orderBy('available_until', 'asc')
-                ->take(3)
-                ->get(['id', 'title', 'available_until', 'created_at']);
-            
-            // Get total counts
-            $totalAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
+        // NO CACHING - Get fresh data every time
+        
+        // Get teacher's courses with counts
+        $myCourses = Course::where('teacher_id', $teacherId)
+            ->withCount(['enrollments as enrollments_count' => function($query) {
+                $query->where('status', 'active');
+            }])
+            ->get();
+        
+        // Get total students across all courses
+        $totalStudents = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
+                $query->select('id')->from('courses')->where('teacher_id', $teacherId);
+            })
+            ->where('status', 'active')
+            ->distinct('student_id')
+            ->count();
+        
+        // Get upcoming assignments
+        $upcomingAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
                 $query->where('teacher_id', $teacherId);
-            })->count();
-            
-            $totalTopics = Topic::count();
-            $totalQuizzes = Quiz::count();
-            
-            // Get recent enrollments
-            $recentEnrollments = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
-                    $query->select('id')->from('courses')->where('teacher_id', $teacherId);
-                })
-                ->with(['student:id,f_name,l_name', 'course:id,title'])
-                ->select(['id', 'student_id', 'course_id', 'created_at'])
-                ->latest()
-                ->take(5)
-                ->get();
-            
-            return [
-                'myCourses' => $myCourses,
-                'totalStudents' => $totalStudents,
-                'totalTopics' => $totalTopics,
-                'totalAssignments' => $totalAssignments,
-                'totalQuizzes' => $totalQuizzes,
-                'recentEnrollments' => $recentEnrollments,
-                'pendingGrading' => 0, // You can implement this later
-                'upcomingAssignments' => $upcomingAssignments,
-                'upcomingQuizzes' => $upcomingQuizzes,
-            ];
-        });
+            })
+            ->where('due_date', '>', now())
+            ->where('is_published', 1)
+            ->with('course')
+            ->orderBy('due_date', 'asc')
+            ->take(5)
+            ->get();
         
-        return view('teacher.dashboard', $data);
+        // Get upcoming quizzes
+        $upcomingQuizzes = Quiz::where('available_until', '>', now())
+            ->where('is_published', 1)
+            ->orderBy('available_until', 'asc')
+            ->take(5)
+            ->get();
+        
+        // Get recent enrollments
+        $recentEnrollments = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
+                $query->select('id')->from('courses')->where('teacher_id', $teacherId);
+            })
+            ->with(['student:id,f_name,l_name', 'course:id,title'])
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        return view('teacher.dashboard', [
+            'myCourses' => $myCourses,
+            'totalStudents' => $totalStudents,
+            'recentEnrollments' => $recentEnrollments,
+            'upcomingAssignments' => $upcomingAssignments,
+            'upcomingQuizzes' => $upcomingQuizzes,
+        ]);
     }
     
     private function studentDashboard()
@@ -238,48 +224,78 @@ class DashboardController extends Controller
         $cacheKey = 'student_dashboard_' . $studentId;
         
         $data = Cache::remember($cacheKey, 180, function() use ($studentId) {
-            // Get enrolled courses with progress - REMOVE quizzes relationship
+            // Get enrolled courses IDs first
+            $enrolledCourseIds = Enrollment::where('student_id', $studentId)
+                ->where('status', 'active')
+                ->pluck('course_id')
+                ->toArray();
+            
+            // Get enrolled courses with topics count
             $enrolledCourses = Enrollment::where('student_id', $studentId)
                 ->where('status', 'active')
                 ->with([
                     'course.teacher:id,f_name,l_name',
                     'course' => function($query) {
-                        // Only count topics since quizzes might not be related to courses
-                        $query->withCount(['topics']);
+                        $query->withCount('topics');
                     }
                 ])
-                ->take(4)
                 ->get();
             
-            // Calculate progress for each course
+            // Get all completed topic IDs for this student
+            $completedTopicIds = DB::table('progress')
+                ->where('student_id', $studentId)
+                ->where('status', 'completed')
+                ->pluck('topic_id')
+                ->toArray();
+            
+            // Get completed topics per course using course_topics pivot table
+            $completedTopicsMap = [];
+            if (!empty($completedTopicIds) && !empty($enrolledCourseIds)) {
+                $topicCourses = DB::table('course_topics')
+                    ->whereIn('topic_id', $completedTopicIds)
+                    ->whereIn('course_id', $enrolledCourseIds)
+                    ->select('course_id', 'topic_id')
+                    ->get();
+                
+                foreach ($topicCourses as $tc) {
+                    if (!isset($completedTopicsMap[$tc->course_id])) {
+                        $completedTopicsMap[$tc->course_id] = 0;
+                    }
+                    $completedTopicsMap[$tc->course_id]++;
+                }
+            }
+            
+            // Calculate progress for each course using ACTUAL data
             $totalProgress = 0;
             $completedCourses = 0;
+            $totalTopicsCount = 0;
+            $completedTopicsCount = 0;
             
             foreach ($enrolledCourses as $enrollment) {
-                // Check if course exists and has topics_count
-                if ($enrollment->course && isset($enrollment->course->topics_count)) {
-                    // Simple progress calculation - adjust based on your logic
-                    $topicsCompleted = $enrollment->course->topics_count > 0 
-                        ? rand(0, $enrollment->course->topics_count) // Replace with actual logic
+                if ($enrollment->course) {
+                    $courseId = $enrollment->course->id;
+                    $courseTotalTopics = $enrollment->course->topics_count ?? 0;
+                    $courseCompletedTopics = $completedTopicsMap[$courseId] ?? 0;
+                    
+                    // Calculate progress percentage
+                    $progress = $courseTotalTopics > 0 
+                        ? round(($courseCompletedTopics / $courseTotalTopics) * 100, 1) 
                         : 0;
                     
-                    $progress = $enrollment->course->topics_count > 0 
-                        ? ($topicsCompleted / $enrollment->course->topics_count) * 100 
-                        : 0;
+                    // Store progress on enrollment and course objects
+                    $enrollment->progress = $progress;
+                    $enrollment->course->progress = $progress;
+                    $enrollment->course->completed_topics = $courseCompletedTopics;
+                    $enrollment->course->total_topics = $courseTotalTopics;
                     
-                    $enrollment->progress = min(100, $progress);
-                    $enrollment->course->progress = $enrollment->progress;
+                    // Add to totals
+                    $totalProgress += $progress;
+                    $totalTopicsCount += $courseTotalTopics;
+                    $completedTopicsCount += $courseCompletedTopics;
                     
-                    if ($enrollment->progress >= 100) {
+                    // Check if course is completed (progress 100%)
+                    if ($progress >= 100) {
                         $completedCourses++;
-                    }
-                    
-                    $totalProgress += $enrollment->progress;
-                } else {
-                    // Default values if course not found
-                    $enrollment->progress = 0;
-                    if ($enrollment->course) {
-                        $enrollment->course->progress = 0;
                     }
                 }
             }
@@ -288,14 +304,14 @@ class DashboardController extends Controller
                 ? round($totalProgress / count($enrolledCourses), 1) 
                 : 0;
             
-            // Get available courses
-            $enrolledCourseIds = $enrolledCourses->pluck('course_id')->toArray();
+            // Get available courses (published and not enrolled)
             $availableCourses = Course::where('is_published', true)
                 ->whereNotIn('id', $enrolledCourseIds)
                 ->with('teacher:id,f_name,l_name')
+                ->withCount('topics')
                 ->orderBy('title')
                 ->limit(3)
-                ->get(['id', 'title', 'description', 'teacher_id']);
+                ->get(['id', 'title', 'description', 'teacher_id', 'course_code', 'credits']);
             
             // Get available quizzes
             $availableQuizzes = Quiz::where('is_published', true)
@@ -327,8 +343,11 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get(['id', 'title', 'description', 'course_id', 'due_date']);
             
-            // Get recent topics
-            $recentTopics = Topic::where('is_published', 1)
+            // Get recent topics from enrolled courses
+            $recentTopics = Topic::whereHas('courses', function($query) use ($enrolledCourseIds) {
+                    $query->whereIn('courses.id', $enrolledCourseIds);
+                })
+                ->where('is_published', 1)
                 ->latest()
                 ->take(5)
                 ->get(['id', 'title', 'description', 'created_at']);
@@ -339,12 +358,13 @@ class DashboardController extends Controller
                 ->count();
             
             return [
-                // Progress stats
+                // Progress stats - WITHOUT average_grade
                 'stats' => [
-                    'completed_courses' => $completedCourses,
                     'total_courses' => count($enrolledCourses),
-                    'average_grade' => $averageProgress,
-                    'total_topics' => Topic::count(),
+                    'completed_courses' => $completedCourses,
+                    'in_progress_courses' => count($enrolledCourses) - $completedCourses,
+                    'total_topics' => $totalTopicsCount,
+                    'completed_topics' => $completedTopicsCount,
                     'average_progress' => $averageProgress,
                 ],
                 
@@ -352,7 +372,6 @@ class DashboardController extends Controller
                 'enrolledCourses' => $enrolledCourses,
                 'availableCourses' => $availableCourses,
                 'completedCourses' => $completedCourses,
-                'averageGrade' => $averageProgress,
                 'totalEnrolled' => count($enrolledCourses),
                 
                 // Quizzes
@@ -365,8 +384,7 @@ class DashboardController extends Controller
                 'studentTopics' => $recentTopics,
                 'studentAssignments' => $studentAssignments,
                 'studentQuizzes' => $availableQuizzes,
-                'totalTopics' => $recentTopics->count(),
-                'totalAssignments' => $totalAssignments,
+                'totalTopics' => $totalTopicsCount,
                 'totalQuizzes' => Quiz::where('is_published', 1)->count(),
             ];
         });

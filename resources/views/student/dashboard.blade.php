@@ -59,21 +59,6 @@
                 <i class="fas fa-graduation-cap"></i> {{ $stats['completed_courses'] ?? 0 }}/{{ $stats['total_courses'] ?? 0 }} courses
             </span>
         </div>
-        
-        <div class="stat-card stat-card-warning">
-            <div class="stat-header">
-                <div>
-                    <div class="stat-label">Avg. Grade</div>
-                    <div class="stat-number">{{ number_format($stats['average_grade'] ?? 0, 1) }}%</div>
-                </div>
-                <div class="stat-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-            </div>
-            <span class="stat-link" style="cursor: default;">
-                <i class="fas fa-chart-line"></i> Overall performance
-            </span>
-        </div>
 
         <div class="stat-card stat-card-info">
             <div class="stat-header">
@@ -118,13 +103,16 @@
                         </div>
                     @else
                         <div class="items-list">
-                            @foreach($enrolledCourses->take(5) as $enrollment)
+                            @foreach($enrolledCourses as $enrollment)
                             @php
                                 $course = $enrollment->course;
                                 $encryptedId = Crypt::encrypt($course->id);
-                                $courseProgress = $course->getStudentProgress(auth()->id());
-                                $progressPercentage = $courseProgress['percentage'];
+                                // Use the progress data we calculated in the controller
+                                $progressPercentage = $enrollment->progress ?? 0;
+                                $completedTopics = $course->completed_topics ?? 0;
+                                $totalTopics = $course->total_topics ?? $course->topics_count ?? 0;
                             @endphp
+                            
                             <div class="list-item">
                                 <div class="item-avatar" style="border-radius: var(--radius);">
                                     <i class="fas fa-book-open"></i>
@@ -134,10 +122,10 @@
                                     <div class="item-details">{{ $course->course_code }} • {{ $course->teacher->f_name ?? 'Instructor' }}</div>
                                     <div class="item-meta">
                                         <span class="item-badge badge-primary">
-                                            {{ $course->topics_count ?? 0 }} topics
+                                            {{ $totalTopics }} topics
                                         </span>
                                         <span class="item-badge badge-secondary">
-                                            {{ $courseProgress['completed'] }}/{{ $courseProgress['total'] }} completed
+                                            {{ $completedTopics }}/{{ $totalTopics }} completed
                                         </span>
                                     </div>
                                     <!-- Progress Bar -->
@@ -148,12 +136,12 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <a href="{{ route('student.courses.show', $encryptedId) }}" class="btn btn-primary btn-sm">
+                                    <a href="{{ route('student.courses.show', Crypt::encrypt($course->id)) }}" class="btn btn-primary btn-sm">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                 </div>
                             </div>
-                            @endforeach
+                        @endforeach
                         </div>
                     @endif
                 </div>

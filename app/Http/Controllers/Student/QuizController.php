@@ -22,56 +22,43 @@ class QuizController extends Controller
         $userId = $user->id;
         $now = now();
         
-        // Debug: Check if user is authenticated
-        if (!$user) {
-            \Log::error('No authenticated user in quiz index');
-            abort(401, 'Not authenticated');
-        }
+        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
+        \Log::info('Student quiz index accessed by user: ' . $user->id . ' - ' . $user->email);
         
-        \Log::info('Quiz index accessed by user: ' . $user->id . ' - ' . $user->email);
+        // Get all published and available quizzes
+        $quizzes = Quiz::where('is_published', 1)
+            ->where(function($query) use ($now) {
+                $query->whereNull('available_from')
+                    ->orWhere('available_from', '<=', $now);
+            })
+            ->where(function($query) use ($now) {
+                $query->whereNull('available_until')
+                    ->orWhere('available_until', '>=', $now);
+            })
+            ->withCount('questions')
+            ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at'])
+            ->orderBy('created_at', 'desc')
+            ->get();
         
-        // Cache key based on user ID
-        $cacheKey = 'student_quizzes_index_' . $userId;
+        \Log::info('Found ' . $quizzes->count() . ' quizzes');
         
-        // Cache for 5 minutes (300 seconds)
-        $data = Cache::remember($cacheKey, 300, function() use ($userId, $now) {
-            // Get all published and available quizzes
-            $quizzes = Quiz::where('is_published', 1)
-                ->where(function($query) use ($now) {
-                    $query->whereNull('available_from')
-                        ->orWhere('available_from', '<=', $now);
-                })
-                ->where(function($query) use ($now) {
-                    $query->whereNull('available_until')
-                        ->orWhere('available_until', '>=', $now);
-                })
-                ->withCount('questions')
-                ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-            
-            \Log::info('Found ' . $quizzes->count() . ' quizzes');
-            
-            // Get all attempts by this student
-            $attempts = QuizAttempt::where('user_id', $userId)
-                ->whereNotNull('completed_at')
-                ->select(['id', 'quiz_id', 'score', 'percentage', 'passed', 'completed_at'])
-                ->orderBy('completed_at', 'desc')
-                ->get()
-                ->groupBy('quiz_id')
-                ->map(function($attempts) {
-                    return $attempts->first(); // Get most recent attempt
-                });
-            
-            \Log::info('Found ' . $attempts->count() . ' attempts');
-            
-            return [
-                'quizzes' => $quizzes,
-                'attempts' => $attempts
-            ];
-        });
+        // Get all attempts by this student
+        $attempts = QuizAttempt::where('user_id', $userId)
+            ->whereNotNull('completed_at')
+            ->select(['id', 'quiz_id', 'score', 'percentage', 'passed', 'completed_at'])
+            ->orderBy('completed_at', 'desc')
+            ->get()
+            ->groupBy('quiz_id')
+            ->map(function($attempts) {
+                return $attempts->first(); // Get most recent attempt
+            });
         
-        return view('student.quizzes.index', $data);
+        \Log::info('Found ' . $attempts->count() . ' attempts');
+        
+        return view('student.quizzes.index', [
+            'quizzes' => $quizzes,
+            'attempts' => $attempts
+        ]);
     }
     
     /**
@@ -99,9 +86,7 @@ class QuizController extends Controller
                     ->findOrFail($quizId);
             });
             
-            \Log::info('Quiz loaded: ' . $quiz->title . ' with ' . $quiz->questions->count() . ' questions');
-            
-            // Check if quiz is available (don't cache this check)
+            // Check if quiz is available
             $now = now();
             $isAvailable = true;
             
@@ -118,16 +103,13 @@ class QuizController extends Controller
                     ->with('error', 'This quiz is not currently available.');
             }
             
-            // Don't cache attempt - we need fresh data
+            // Get incomplete attempt or create new one
             $attempt = QuizAttempt::where('quiz_id', $quizId)
                 ->where('user_id', $userId)
                 ->whereNull('completed_at')
-                ->select(['id', 'quiz_id', 'user_id', 'answers', 'started_at'])
                 ->first();
             
-            // If no incomplete attempt, create new one (UNLIMITED ATTEMPTS)
             if (!$attempt) {
-                // Create new attempt - NO MAX ATTEMPTS CHECK
                 $attempt = new QuizAttempt();
                 $attempt->quiz_id = $quizId;
                 $attempt->user_id = $userId;
@@ -142,17 +124,13 @@ class QuizController extends Controller
             // Get user's answers
             $userAnswers = $attempt->answers ?? [];
             
-            // Get completed attempt if exists (cache this)
-            $completedAttemptCacheKey = 'student_quiz_completed_' . $quizId . '_user_' . $userId;
-            
-            $completedAttempt = Cache::remember($completedAttemptCacheKey, 300, function() use ($quizId, $userId) {
-                return QuizAttempt::where('quiz_id', $quizId)
-                    ->where('user_id', $userId)
-                    ->whereNotNull('completed_at')
-                    ->select(['id', 'score', 'total_points', 'percentage', 'passed', 'completed_at'])
-                    ->latest()
-                    ->first();
-            });
+            // Get completed attempt if exists
+            $completedAttempt = QuizAttempt::where('quiz_id', $quizId)
+                ->where('user_id', $userId)
+                ->whereNotNull('completed_at')
+                ->select(['id', 'score', 'total_points', 'percentage', 'passed', 'completed_at', 'started_at', 'time_taken'])
+                ->latest()
+                ->first();
             
             return view('student.quizzes.show', compact('quiz', 'attempt', 'userAnswers', 'completedAttempt'));
             
@@ -178,7 +156,7 @@ class QuizController extends Controller
             $quizId = Crypt::decrypt($encryptedId);
             $userId = Auth::id();
             
-            // Don't cache - need fresh data
+            // Get quiz with correct answers
             $quiz = Quiz::with(['questions.options' => function($query) {
                     $query->where('is_correct', 1);
                 }])
@@ -206,7 +184,7 @@ class QuizController extends Controller
             }
             
             // Calculate results
-            $totalPoints = $quiz->questions->sum('points') ?? $quiz->questions->count();
+            $totalPoints = $quiz->questions->sum('points') ?: $quiz->questions->count();
             $percentage = $totalPoints > 0 ? round(($score / $totalPoints) * 100, 2) : 0;
             $passed = $percentage >= $quiz->passing_score;
             
@@ -226,50 +204,11 @@ class QuizController extends Controller
             
             DB::commit();
             
-            // Clear all quiz-related caches for this student
-            $this->clearQuizCaches($userId, $quizId);
+            // Clear student quiz caches
+            $this->clearStudentQuizCaches($userId, $quizId);
             
             // Prepare results for modal
-            $results = [
-                'score' => $score,
-                'total_points' => $totalPoints,
-                'percentage' => $percentage,
-                'passed' => $passed,
-                'passing_score' => $quiz->passing_score,
-                'questions' => []
-            ];
-            
-            // Store detailed question results
-            foreach ($quiz->questions as $question) {
-                $userAnswer = $answers[$question->id] ?? null;
-                $correctOption = $question->options->where('is_correct', 1)->first();
-                $isCorrect = false;
-                
-                if ($userAnswer && $correctOption) {
-                    $isCorrect = ($userAnswer == $correctOption->id);
-                }
-                
-                // Get all options with status (don't cache for results)
-                $optionsData = [];
-                foreach ($question->options as $option) {
-                    $optionsData[] = [
-                        'id' => $option->id,
-                        'text' => $option->option_text,
-                        'is_correct' => $option->is_correct,
-                        'is_user_selected' => ($option->id == $userAnswer)
-                    ];
-                }
-                
-                $results['questions'][] = [
-                    'question' => $question->question,
-                    'question_id' => $question->id,
-                    'user_answer' => $userAnswer,
-                    'correct_answer' => $correctOption ? $correctOption->id : null,
-                    'correct_text' => $correctOption ? $correctOption->option_text : null,
-                    'is_correct' => $isCorrect,
-                    'options' => $optionsData
-                ];
-            }
+            $results = $this->prepareResults($quiz, $answers, $score, $totalPoints, $percentage, $passed);
             
             // Store results in session for modal
             session()->flash('quiz_results', $results);
@@ -292,6 +231,55 @@ class QuizController extends Controller
     }
     
     /**
+     * Prepare detailed results for the modal
+     */
+    private function prepareResults($quiz, $answers, $score, $totalPoints, $percentage, $passed)
+    {
+        $results = [
+            'score' => $score,
+            'total_points' => $totalPoints,
+            'percentage' => $percentage,
+            'passed' => $passed,
+            'passing_score' => $quiz->passing_score,
+            'questions' => []
+        ];
+        
+        foreach ($quiz->questions as $question) {
+            $userAnswer = $answers[$question->id] ?? null;
+            $correctOption = $question->options->where('is_correct', 1)->first();
+            $isCorrect = false;
+            
+            if ($userAnswer && $correctOption) {
+                $isCorrect = ($userAnswer == $correctOption->id);
+            }
+            
+            // Get all options with status
+            $optionsData = [];
+            foreach ($question->options as $option) {
+                $optionsData[] = [
+                    'id' => $option->id,
+                    'text' => $option->option_text,
+                    'is_correct' => $option->is_correct,
+                    'is_user_selected' => ($option->id == $userAnswer)
+                ];
+            }
+            
+            $results['questions'][] = [
+                'question' => $question->question,
+                'question_id' => $question->id,
+                'user_answer' => $userAnswer,
+                'correct_answer' => $correctOption ? $correctOption->id : null,
+                'correct_text' => $correctOption ? $correctOption->option_text : null,
+                'is_correct' => $isCorrect,
+                'options' => $optionsData,
+                'explanation' => $question->explanation
+            ];
+        }
+        
+        return $results;
+    }
+    
+    /**
      * Clear quiz attempt and start over - UNLIMITED ATTEMPTS
      */
     public function retake($encryptedId)
@@ -310,10 +298,11 @@ class QuizController extends Controller
                 ->whereNull('completed_at')
                 ->delete();
             
-            // Clear quiz caches for this student
-            $this->clearQuizCaches($userId, $quizId);
+            // Clear student quiz caches
+            $this->clearStudentQuizCaches($userId, $quizId);
             
-            return redirect()->route('student.quizzes.show', $encryptedId);
+            return redirect()->route('student.quizzes.show', $encryptedId)
+                ->with('success', 'You can now retake the quiz.');
             
         } catch (\Exception $e) {
             \Log::error('Error retaking quiz: ' . $e->getMessage(), [
@@ -330,7 +319,7 @@ class QuizController extends Controller
     /**
      * Clear all quiz-related caches for a student
      */
-    private function clearQuizCaches($userId, $quizId = null)
+    private function clearStudentQuizCaches($userId, $quizId = null)
     {
         // Clear quiz index cache
         Cache::forget('student_quizzes_index_' . $userId);
@@ -346,6 +335,8 @@ class QuizController extends Controller
         
         // Clear any aggregated statistics caches
         Cache::forget('student_quiz_stats_' . $userId);
+        
+        \Log::info('Student quiz caches cleared for user: ' . $userId);
     }
     
     /**
@@ -354,7 +345,7 @@ class QuizController extends Controller
     public function clearCache()
     {
         $userId = Auth::id();
-        $this->clearQuizCaches($userId);
+        $this->clearStudentQuizCaches($userId);
         
         return redirect()->route('student.quizzes.index')
             ->with('success', 'Student quiz caches cleared successfully.');

@@ -223,25 +223,7 @@
                         <div class="detail-value">{{ $user->student_id }}</div>
                     </div>
                     @endif
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">Email Verified</div>
-                        <div class="detail-value">
-                            @if($user->email_verified_at)
-                                <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #48bb78;">
-                                    <i class="fas fa-check-circle"></i> Verified
-                                    <span style="font-size: 0.75rem; color: #718096; margin-left: 0.25rem;">
-                                        ({{ $user->email_verified_at->format('M d, Y') }})
-                                    </span>
-                                </span>
-                            @else
-                                <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #f56565;">
-                                    <i class="fas fa-times-circle"></i> Not Verified
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                    
+
                     <div class="detail-row">
                         <div class="detail-label">Last Login</div>
                         <div class="detail-value">
@@ -251,22 +233,6 @@
                             @else
                                 Never logged in
                             @endif
-                        </div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">Account Created</div>
-                        <div class="detail-value">
-                            {{ $user->created_at->format('M d, Y') }}
-                            <div class="detail-subvalue">{{ $user->created_at->diffForHumans() }}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">Last Updated</div>
-                        <div class="detail-value">
-                            {{ $user->updated_at->format('M d, Y') }}
-                            <div class="detail-subvalue">{{ $user->updated_at->diffForHumans() }}</div>
                         </div>
                     </div>
                 </div>

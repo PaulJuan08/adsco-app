@@ -115,6 +115,7 @@
                         </div>
                     @else
                         <div class="items-list">
+                            <!-- Fix for Pending Teachers -->
                             @foreach($pendingTeachers as $teacher)
                             <div class="list-item">
                                 <div class="item-avatar">
@@ -136,7 +137,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <form action="{{ route('registrar.users.approve', $teacher->id) }}" method="POST">
+                                    <form action="{{ route('registrar.users.approve', Crypt::encrypt($teacher->id)) }}" method="POST">
                                         @csrf
                                         <button type="submit" class="btn btn-success btn-sm" 
                                                 onclick="return confirm('Are you sure you want to approve this teacher?')">
@@ -146,7 +147,8 @@
                                 </div>
                             </div>
                             @endforeach
-                            
+
+                            <!-- Fix for Pending Students -->
                             @foreach($pendingStudents as $student)
                             <div class="list-item">
                                 <div class="item-avatar">
@@ -168,7 +170,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <form action="{{ route('registrar.users.approve', $student->id) }}" method="POST">
+                                    <form action="{{ route('registrar.users.approve', Crypt::encrypt($student->id)) }}" method="POST">
                                         @csrf
                                         <button type="submit" class="btn btn-success btn-sm" 
                                                 onclick="return confirm('Are you sure you want to approve this student?')">

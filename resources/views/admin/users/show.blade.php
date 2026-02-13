@@ -187,6 +187,19 @@
                         <div class="detail-value">{{ $user->student_id }}</div>
                     </div>
                     @endif
+
+                    <div class="detail-row">
+                        <div class="detail-label">Last Login</div>
+                        <div class="detail-value">
+                            @if($user->last_login_at)
+                                {{ $user->last_login_at->format('M d, Y h:i A') }}
+                                <div class="detail-subvalue">{{ $user->last_login_at->diffForHumans() }}</div>
+                            @else
+                                Never logged in
+                            @endif
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
 

@@ -159,7 +159,7 @@
                         <div class="items-list">
                             @foreach($users as $user)
                             <div class="user-list-item" data-name="{{ strtolower($user->f_name . ' ' . $user->l_name) }}" data-email="{{ strtolower($user->email) }}" data-user-id="{{ $user->id }}">
-                                <a href="{{ route('registrar.users.show', Crypt::encrypt($user->id)) }}" class="item-clickable-area">
+                                <a href="{{ route('registrar.users.show', Crypt::encrypt($user->id)) }}" class="item-clickable-area" style="flex: 1;">
                                     <div class="item-avatar">
                                         {{ strtoupper(substr($user->f_name, 0, 1)) }}
                                     </div>
@@ -193,6 +193,19 @@
                                         </div>
                                     </div>
                                 </a>
+                                
+                                <!-- 🔥 ADD THIS: Approve Button for Pending Users -->
+                                @if(!$user->is_approved && in_array($user->role, [3,4]))
+                                <div style="display: flex; align-items: center; margin-left: 1rem;">
+                                    <form action="{{ route('registrar.users.approve', Crypt::encrypt($user->id)) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="btn btn-success btn-sm" 
+                                                onclick="return confirm('Are you sure you want to approve this {{ $user->role == 3 ? 'teacher' : 'student' }}?')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                    </form>
+                                </div>
+                                @endif
                             </div>
                             @endforeach
                         </div>

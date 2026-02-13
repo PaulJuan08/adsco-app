@@ -21,52 +21,68 @@ class CourseController extends Controller
     {
         $teacherId = Auth::id();
         
-        // Cache key based on teacher ID and pagination
-        $cacheKey = 'teacher_courses_index_' . $teacherId . '_page_' . request('page', 1);
+        // Get courses with student count and topics count
+        $courses = Course::where('teacher_id', $teacherId)
+            ->select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at', 'updated_at'])
+            ->withCount(['students', 'topics']) // 🔥 FIX: Add topics_count here
+            ->with(['teacher' => function($query) {
+                $query->select(['id', 'f_name', 'l_name']);
+            }])
+            ->latest()
+            ->paginate(10);
         
-        // Cache for 5 minutes (300 seconds)
-        $data = Cache::remember($cacheKey, 300, function() use ($teacherId) {
-            // Get courses with student count (using students relationship)
-            $courses = Course::where('teacher_id', $teacherId)
-                ->select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at', 'updated_at'])
-                ->withCount('students')
-                ->with(['teacher' => function($query) {
-                    $query->select(['id', 'f_name', 'l_name']);
-                }])
-                ->latest()
-                ->paginate(10);
+        // Calculate total students across all courses
+        $totalStudents = 0;
+        $publishedCourses = 0;
+        $draftCourses = 0;
+        
+        foreach ($courses as $course) {
+            $totalStudents += $course->students_count;
             
-            // Calculate total students across all courses
-            $totalStudents = 0;
-            foreach ($courses as $course) {
-                $totalStudents += $course->students_count;
+            if ($course->is_published) {
+                $publishedCourses++;
+            } else {
+                $draftCourses++;
             }
-            
-            // Get statistics in ONE optimized query
-            $stats = Course::where('teacher_id', $teacherId)
-                ->selectRaw('
-                    COUNT(*) as total_courses,
-                    SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
-                    SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as courses_this_month
-                ', [now()->month, now()->year])
-                ->first();
-            
-            // Calculate average students per course
-            $avgStudents = $courses->isNotEmpty() 
-                ? round($totalStudents / $courses->count(), 1)
-                : 0;
-            
-            return [
-                'courses' => $courses,
-                'activeCourses' => $stats->active_courses ?? 0,
-                'coursesThisMonth' => $stats->courses_this_month ?? 0,
-                'totalStudents' => $totalStudents,
-                'avgStudents' => $avgStudents,
-                'totalCourses' => $stats->total_courses ?? 0
-            ];
-        });
+        }
         
-        return view('teacher.courses.index', $data);
+        // Get statistics in ONE optimized query
+        $stats = Course::where('teacher_id', $teacherId)
+            ->selectRaw('
+                COUNT(*) as total_courses,
+                SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
+                SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as courses_this_month
+            ', [now()->month, now()->year])
+            ->first();
+        
+        // Calculate average students per course
+        $avgStudents = $courses->isNotEmpty() 
+            ? round($totalStudents / $courses->count(), 1)
+            : 0;
+        
+        // 🔥 FIX: Get total topics count for the teacher
+        $totalTopics = \App\Models\Topic::whereHas('courses', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->count();
+        
+        // 🔥 FIX: Get draft count for teacher's courses
+        $draftCount = Course::where('teacher_id', $teacherId)
+            ->where('is_published', false)
+            ->count();
+        
+        return view('teacher.courses.index', [
+            'courses' => $courses,
+            'activeCourses' => $stats->active_courses ?? 0,
+            'coursesThisMonth' => $stats->courses_this_month ?? 0,
+            'totalStudents' => $totalStudents,
+            'avgStudents' => $avgStudents,
+            'totalCourses' => $stats->total_courses ?? 0,
+            'publishedCourses' => $publishedCourses,
+            'draftCourses' => $draftCourses,
+            'draftCount' => $draftCount, // For the header alert
+            'totalTopics' => $totalTopics, // 🔥 FIX: This is what's missing!
+        ]);
     }
 
     public function create()
@@ -91,8 +107,11 @@ class CourseController extends Controller
         
         $course = Course::create($validated);
         
-        // Clear teacher course list caches
+        // 🔥 FIX: Clear teacher course list caches
         $this->clearTeacherCourseCaches(Auth::id());
+        
+        // Also clear admin caches so admin sees the new course
+        $this->clearAdminCourseCaches();
         
         return redirect()->route('teacher.courses.show', Crypt::encrypt($course->id))
             ->with('success', 'Course "' . $course->title . '" created successfully!');

@@ -10,21 +10,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use App\Traits\CacheManager; // 🔥 ADD THIS
 
 class QuizController extends Controller
 {
+    use CacheManager; // 🔥 ADD THIS
+    
     public function index()
     {
-        // Cache key based on page
-        $cacheKey = 'admin_quizzes_index_page_' . request('page', 1);
-        
-        // Cache for 5 minutes (300 seconds)
-        $quizzes = Cache::remember($cacheKey, 300, function() {
-            return Quiz::select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_at', 'updated_at'])
-                ->withCount('questions')
-                ->latest()
-                ->paginate(10);
-        });
+        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
+        $quizzes = Quiz::select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_at', 'updated_at'])
+            ->withCount('questions')
+            ->latest()
+            ->paginate(10);
         
         return view('admin.quizzes.index', compact('quizzes'));
     }
@@ -40,39 +38,6 @@ class QuizController extends Controller
         \Log::info('========== FORM SUBMISSION DEBUG ==========');
         \Log::info('Request method: ' . $request->method());
         \Log::info('All request data:', $request->all());
-
-        if ($request->has('questions')) {
-            \Log::info('Number of questions: ' . count($request->questions));
-            
-            foreach ($request->questions as $qIndex => $question) {
-                \Log::info("Question $qIndex text: " . ($question['question'] ?? 'empty'));
-                
-                if (isset($question['options'])) {
-                    \Log::info("Question $qIndex has " . count($question['options']) . " options:");
-                    foreach ($question['options'] as $oIndex => $option) {
-                        \Log::info("  Option $oIndex: " . print_r($option, true));
-                    }
-                }
-                
-                \Log::info("Correct answer index: " . ($question['correct_answer'] ?? 'not set'));
-            }
-        }
-
-        // Debug: Log ALL form data
-        \Log::info('=== FORM SUBMISSION DATA ===');
-        \Log::info('Full request data:', $request->all());
-        
-        // Specifically log questions and options
-        if ($request->has('questions')) {
-            foreach ($request->questions as $qIndex => $questionData) {
-                \Log::info("Question $qIndex data:", $questionData);
-                
-                if (isset($questionData['options'])) {
-                    \Log::info("Question $qIndex options count: " . count($questionData['options']));
-                    \Log::info("Question $qIndex options:", $questionData['options']);
-                }
-            }
-        }
 
         // Validate basic quiz fields
         $validated = $request->validate([
@@ -108,7 +73,7 @@ class QuizController extends Controller
                 $question = QuizQuestion::create([
                     'quiz_id' => $quiz->id,
                     'question' => $questionData['question'],
-                    'points' => 1, // Always 1 point
+                    'points' => 1,
                     'order' => $questionOrder++,
                     'explanation' => $questionData['explanation'] ?? null,
                 ]);
@@ -118,23 +83,14 @@ class QuizController extends Controller
                     $optionOrder = 1;
                     $correctAnswerIndex = $questionData['correct_answer'] ?? null;
                     
-                    \Log::info("Processing options for question. Correct answer index: $correctAnswerIndex");
-                    \Log::info("Options array:", $questionData['options']);
-                    
                     foreach ($questionData['options'] as $optionIndex => $optionData) {
-                        \Log::info("Processing option index: $optionIndex");
-                        \Log::info("Option data:", [$optionData]);
-                        
                         // Skip if option text is empty
                         if (empty($optionData['option_text'])) {
-                            \Log::info("Skipping option $optionIndex - empty text");
                             continue;
                         }
                         
                         // Determine if this option is correct
                         $isCorrect = ($optionIndex == $correctAnswerIndex);
-                        
-                        \Log::info("Creating option: text='{$optionData['option_text']}', is_correct=$isCorrect, order=$optionOrder");
                         
                         QuizOption::create([
                             'quiz_question_id' => $question->id,
@@ -154,8 +110,10 @@ class QuizController extends Controller
             'total_questions' => $validQuestionCount
         ]);
 
-        // Clear all quiz-related caches
-        $this->clearQuizCaches();
+        // 🔥 FIX: Clear ALL quiz caches across all roles
+        $this->clearAllQuizCaches();
+        
+        \Log::info('New quiz created - ID: ' . $quiz->id . ', Title: ' . $quiz->title);
 
         return redirect()->route('admin.quizzes.index')
             ->with('success', 'Quiz created successfully.');
@@ -166,6 +124,7 @@ class QuizController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             
+            // 🔥 Keep caching for show page (it's fine to cache this)
             $cacheKey = 'admin_quiz_show_' . $id;
             
             $quiz = Cache::remember($cacheKey, 600, function() use ($id) {
@@ -176,22 +135,6 @@ class QuizController extends Controller
                     ->withCount('questions')
                     ->findOrFail($id);
             });
-            
-            // Debug: Check what data we're getting
-            \Log::info('Quiz show method called for quiz ID: ' . $id);
-            
-            foreach ($quiz->questions as $index => $question) {
-                \Log::info('Question ' . ($index + 1) . ' ID: ' . $question->id);
-                \Log::info('Options count: ' . $question->options->count());
-                \Log::info('Options details: ' . json_encode($question->options->map(function($option) {
-                    return [
-                        'id' => $option->id,
-                        'option_text' => $option->option_text,
-                        'is_correct' => $option->is_correct,
-                        'order' => $option->order
-                    ];
-                })));
-            }
             
             // If there are results in session, pass them to view
             if (session('results')) {
@@ -221,6 +164,7 @@ class QuizController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             
+            // 🔥 Keep caching for edit page
             $cacheKey = 'admin_quiz_edit_' . $id;
             
             $quiz = Cache::remember($cacheKey, 300, function() use ($id) {
@@ -335,10 +279,11 @@ class QuizController extends Controller
             
             DB::commit();
             
-            // Clear all quiz-related caches
-            $this->clearQuizCaches();
+            // 🔥 FIX: Clear ALL quiz caches
+            $this->clearAllQuizCaches();
             Cache::forget('admin_quiz_show_' . $quiz->id);
             Cache::forget('admin_quiz_edit_' . $quiz->id);
+            Cache::forget('admin_quiz_take_' . $quiz->id);
             
             return redirect()->route('admin.quizzes.show', Crypt::encrypt($quiz->id))
                 ->with('success', 'Quiz updated successfully!');
@@ -488,10 +433,11 @@ class QuizController extends Controller
             // Delete quiz (cascade will delete questions and options)
             $quiz->delete();
             
-            // Clear all quiz-related caches
-            $this->clearQuizCaches();
+            // 🔥 FIX: Clear ALL quiz caches
+            $this->clearAllQuizCaches();
             Cache::forget('admin_quiz_show_' . $id);
             Cache::forget('admin_quiz_edit_' . $id);
+            Cache::forget('admin_quiz_take_' . $id);
 
             return redirect()->route('admin.quizzes.index')
                 ->with('success', 'Quiz deleted successfully.');
@@ -554,16 +500,15 @@ class QuizController extends Controller
             $totalPoints = 0;
             
             foreach ($quiz->questions as $question) {
-                $totalPoints += 1; // Always 1 point per question
+                $totalPoints += 1;
                 $userAnswer = $request->input("question_{$question->id}");
                 
                 $correctOption = $question->options->where('is_correct', true)->first();
                 $isCorrect = false;
                 
-                // Check if user selected the correct option
                 if ($correctOption && $userAnswer == $correctOption->id) {
                     $isCorrect = true;
-                    $score += 1; // Always 1 point for correct answer
+                    $score += 1;
                 }
                 
                 $results[] = [
@@ -606,26 +551,17 @@ class QuizController extends Controller
      */
     public function results($encryptedId)
     {
-        // This method might be called to show results separately
-        // You can redirect to the take method or show results differently
         return redirect()->route('admin.quizzes.take', $encryptedId);
     }
 
     /**
      * Clear all quiz-related caches
+     * 🔥 UPDATED: Now calls the CacheManager method
      */
     private function clearQuizCaches()
     {
-        // Clear index cache pages (assuming up to 5 pages)
-        for ($page = 1; $page <= 5; $page++) {
-            Cache::forget('admin_quizzes_index_page_' . $page);
-        }
-        
-        // Clear dashboard cache if it contains quiz stats
-        Cache::forget('admin_dashboard_' . auth()->id());
-        
-        // Clear any aggregated statistics caches
-        Cache::forget('admin_quizzes_stats');
+        // Call the comprehensive cache clearing method from CacheManager
+        $this->clearAllQuizCaches();
     }
 
     /**
@@ -633,9 +569,9 @@ class QuizController extends Controller
      */
     public function clearCache()
     {
-        $this->clearQuizCaches();
+        $this->clearAllQuizCaches();
         
         return redirect()->route('admin.quizzes.index')
-            ->with('success', 'Quiz caches cleared successfully.');
+            ->with('success', 'All quiz caches cleared successfully across all roles!');
     }
 }

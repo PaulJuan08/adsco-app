@@ -18,66 +18,48 @@ class CourseController extends Controller
     
     public function index()
     {
-        // Cache key based on URL and filters
-        $cacheKey = 'admin_courses_index_page_' . md5(json_encode([
-            'search' => request('search'),
-            'status' => request('status'),
-            'has_teacher' => request('has_teacher'),
-            'sort' => request('sort'),
-            'page' => request('page', 1),
-            'user_id' => auth()->id()
-        ]));
+        // OPTION 1: REMOVE CACHING COMPLETELY (RECOMMENDED FOR NOW)
+        // This will immediately solve your problem
         
-        // Cache for 5 minutes (300 seconds)
-        $data = Cache::remember($cacheKey, 300, function() {
-            // Get courses with specific columns only
-            $courses = Course::select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at'])
-                ->withCount('students')
-                ->with(['teacher' => function($query) {
-                    $query->select(['id', 'f_name', 'l_name', 'employee_id']);
-                }])
-                ->latest()
-                ->paginate(10);
-            
-            // Get all statistics in ONE optimized query instead of multiple queries
-            $stats = Course::selectRaw('
-                COUNT(*) as total_courses,
-                SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
-                SUM(CASE WHEN teacher_id IS NOT NULL THEN 1 ELSE 0 END) as assigned_teachers,
-                SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as courses_this_month
-            ', [now()->month, now()->year])
-            ->first();
-            
-            // Get average students per course
-            $avgStudents = Cache::remember('avg_students_per_course', 300, function() {
-                return Course::withCount('students')
-                    ->get()
-                    ->avg('students_count') ?? 0;
-            });
-            
-            // Get total students count (cached)
-            $totalStudents = Cache::remember('total_students_count', 600, function() {
-                return User::where('role', 4)->count();
-            });
-            
-            // Get draft count
-            $draftCount = Cache::remember('draft_courses_count', 300, function() {
-                return Course::where('is_published', false)->count();
-            });
-            
-            return [
-                'courses' => $courses,
-                'activeCourses' => $stats->active_courses ?? 0,
-                'assignedTeachers' => $stats->assigned_teachers ?? 0,
-                'totalStudents' => $totalStudents,
-                'coursesThisMonth' => $stats->courses_this_month ?? 0,
-                'avgStudents' => round($avgStudents, 1),
-                'draftCount' => $draftCount,
-                'totalCourses' => $stats->total_courses ?? 0
-            ];
-        });
+        // Get courses with specific columns only
+        $courses = Course::select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at'])
+            ->withCount('students')
+            ->with(['teacher' => function($query) {
+                $query->select(['id', 'f_name', 'l_name', 'employee_id']);
+            }])
+            ->latest()
+            ->paginate(10);
         
-        return view('admin.courses.index', $data);
+        // Get all statistics in ONE optimized query
+        $stats = Course::selectRaw('
+            COUNT(*) as total_courses,
+            SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
+            SUM(CASE WHEN teacher_id IS NOT NULL THEN 1 ELSE 0 END) as assigned_teachers,
+            SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as courses_this_month
+        ', [now()->month, now()->year])
+        ->first();
+        
+        // Get average students per course
+        $avgStudents = Course::withCount('students')
+            ->get()
+            ->avg('students_count') ?? 0;
+        
+        // Get total students count
+        $totalStudents = User::where('role', 4)->count();
+        
+        // Get draft count
+        $draftCount = Course::where('is_published', false)->count();
+        
+        return view('admin.courses.index', [
+            'courses' => $courses,
+            'activeCourses' => $stats->active_courses ?? 0,
+            'assignedTeachers' => $stats->assigned_teachers ?? 0,
+            'totalStudents' => $totalStudents,
+            'coursesThisMonth' => $stats->courses_this_month ?? 0,
+            'avgStudents' => round($avgStudents, 1),
+            'draftCount' => $draftCount,
+            'totalCourses' => $stats->total_courses ?? 0
+        ]);
     }
     
     public function create()
@@ -118,6 +100,15 @@ class CourseController extends Controller
         
         // Clear all course-related caches
         $this->clearAdminCourseCaches();
+        
+        // Also clear teacher caches if a teacher was assigned
+        if ($course->teacher_id) {
+            $this->clearTeacherCourseCaches($course->teacher_id);
+        }
+        
+        // ADD DEBUG LOGGING
+        \Log::info('New course created - ID: ' . $course->id . ', Title: ' . $course->title);
+        \Log::info('Admin course caches cleared at: ' . now());
         
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course created successfully!');

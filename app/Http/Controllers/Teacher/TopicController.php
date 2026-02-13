@@ -20,41 +20,35 @@ class TopicController extends Controller
     {
         $teacherId = Auth::id();
         
-        // Cache key based on page and filters
-        $cacheKey = 'teacher_topics_index_' . $teacherId . '_page_' . request('page', 1);
+        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
         
-        // Cache for 5 minutes (300 seconds)
-        $data = Cache::remember($cacheKey, 300, function() {
-            // Teachers can see all topics (including those created by others)
-            $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
-                ->latest()
-                ->paginate(10);
-            
-            // Get all statistics in ONE optimized query
-            $stats = Topic::selectRaw('
-                COUNT(*) as total_topics,
-                SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as published_topics,
-                SUM(CASE WHEN is_published = 0 THEN 1 ELSE 0 END) as draft_topics,
-                SUM(CASE WHEN video_link IS NOT NULL THEN 1 ELSE 0 END) as topics_with_video,
-                SUM(CASE WHEN attachment IS NOT NULL THEN 1 ELSE 0 END) as topics_with_attachment,
-                SUM(CASE WHEN learning_outcomes IS NOT NULL THEN 1 ELSE 0 END) as topics_with_learning_outcomes,
-                SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as topics_this_month
-            ', [now()->month, now()->year])
-            ->first();
-            
-            return [
-                'topics' => $topics,
-                'publishedTopics' => $stats->published_topics ?? 0,
-                'draftTopics' => $stats->draft_topics ?? 0,
-                'topicsThisMonth' => $stats->topics_this_month ?? 0,
-                'topicsWithVideo' => $stats->topics_with_video ?? 0,
-                'topicsWithAttachment' => $stats->topics_with_attachment ?? 0,
-                'topicsWithLearningOutcomes' => $stats->topics_with_learning_outcomes ?? 0,
-                'totalTopics' => $stats->total_topics ?? 0
-            ];
-        });
+        // Teachers can see all topics (including those created by others)
+        $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
+            ->latest()
+            ->paginate(10);
         
-        return view('teacher.topics.index', $data);
+        // Get all statistics in ONE optimized query
+        $stats = Topic::selectRaw('
+            COUNT(*) as total_topics,
+            SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as published_topics,
+            SUM(CASE WHEN is_published = 0 THEN 1 ELSE 0 END) as draft_topics,
+            SUM(CASE WHEN video_link IS NOT NULL THEN 1 ELSE 0 END) as topics_with_video,
+            SUM(CASE WHEN attachment IS NOT NULL THEN 1 ELSE 0 END) as topics_with_attachment,
+            SUM(CASE WHEN learning_outcomes IS NOT NULL THEN 1 ELSE 0 END) as topics_with_learning_outcomes,
+            SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as topics_this_month
+        ', [now()->month, now()->year])
+        ->first();
+        
+        return view('teacher.topics.index', [
+            'topics' => $topics,
+            'publishedTopics' => $stats->published_topics ?? 0,
+            'draftTopics' => $stats->draft_topics ?? 0,
+            'topicsThisMonth' => $stats->topics_this_month ?? 0,
+            'topicsWithVideo' => $stats->topics_with_video ?? 0,
+            'topicsWithAttachment' => $stats->topics_with_attachment ?? 0,
+            'topicsWithLearningOutcomes' => $stats->topics_with_learning_outcomes ?? 0,
+            'totalTopics' => $stats->total_topics ?? 0
+        ]);
     }
 
     public function create()
@@ -85,10 +79,21 @@ class TopicController extends Controller
             $validated['pdf_file'] = '/storage/' . $filePath;
         }
 
-        Topic::create($validated);
+        $topic = Topic::create($validated);
         
-        // Clear all topic-related caches
+        // Clear teacher topic caches
         $this->clearTeacherTopicCaches(Auth::id());
+        
+        // Clear admin topic caches
+        $this->clearAdminTopicCaches();
+        
+        // 🔥 ADD THIS: Clear admin dashboard caches
+        $this->clearAdminDashboardCaches();
+        
+        // 🔥 ADD THIS: Clear teacher dashboard cache for current teacher
+        $this->clearTeacherDashboardCaches(Auth::id());
+        
+        \Log::info('New topic created by teacher - ID: ' . $topic->id . ', Title: ' . $topic->title);
         
         return redirect()->route('teacher.topics.index')
             ->with('success', 'Topic created successfully.');
@@ -256,6 +261,8 @@ class TopicController extends Controller
     {
         $teacherId = Auth::id();
         $this->clearTeacherTopicCaches($teacherId);
+        $this->clearAdminDashboardCaches();
+        $this->clearTeacherDashboardCaches(Auth::id());
         
         return redirect()->route('teacher.topics.index')
             ->with('success', 'Topic caches cleared successfully.');
