@@ -1,331 +1,487 @@
 @extends('layouts.admin')
 
-@section('title', 'Create New Course')
+@section('title', 'Create New Course - Admin Dashboard')
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/course-form.css') }}">
+@endpush
 
 @section('content')
-<div class="top-header">
-    <div class="greeting">
-        <h1>Create New Course</h1>
-        <p>Add a new course to the system</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
+    <!-- Create Course Form Card -->
+    <div class="form-container">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-book-medical card-icon"></i>
+                <h2 class="card-title">Create New Course</h2>
+            </div>
+            <a href="{{ route('admin.courses.index') }}" class="view-all-link">
+                <i class="fas fa-arrow-left"></i> Back to Courses
+            </a>
         </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Course Information</h2>
-        <a href="{{ route('admin.courses.index') }}" style="display: flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-            <i class="fas fa-arrow-left"></i> Back to Courses
-        </a>
-    </div>
-    
-    <div style="padding: 1.5rem;">
-        <form action="{{ route('admin.courses.store') }}" method="POST">
-            @csrf
-            
-            @if($errors->any())
-            <div style="margin: 0 0 1.5rem; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 0.875rem;">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
-                    <strong>Please fix the following errors:</strong>
+        
+        <div class="card-body">
+            <!-- Course Preview - Live Preview -->
+            <div class="course-preview">
+                <div class="course-preview-avatar" id="previewAvatar">
+                    <span id="avatarLetter">📚</span>
                 </div>
-                <ul style="margin: 0; padding-left: 20px;">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+                <div class="course-preview-title" id="previewTitle">New Course</div>
+                <div class="course-preview-code" id="previewCode">---</div>
+                <div class="course-preview-status">
+                    <i class="fas fa-check-circle"></i> Published
+                </div>
+            </div>
+
+            <!-- Display validation errors -->
+            @if($errors->any())
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Please fix the following errors:</strong>
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
             @endif
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <label for="title" class="form-label">Course Title *</label>
-                    <input type="text" 
-                           id="title" 
-                           name="title" 
-                           value="{{ old('title') }}" 
-                           required
-                           placeholder="e.g., Introduction to Programming"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('title') border-color: var(--danger); @enderror">
-                    @error('title')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
+            @if(session('success'))
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                {{ session('success') }}
+            </div>
+            @endif
+            
+            <!-- Two Column Layout - Form and Sidebar Inline -->
+            <div class="two-column-layout">
+                <!-- Left Column - Form -->
+                <div class="form-column">
+                    <form action="{{ route('admin.courses.store') }}" method="POST" id="courseForm">
+                        @csrf
+                        
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i class="fas fa-info-circle"></i> Basic Course Information
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="title" class="form-label">
+                                        <i class="fas fa-heading"></i> Course Title
+                                        <span class="required">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           id="title" 
+                                           name="title" 
+                                           value="{{ old('title') }}" 
+                                           required
+                                           placeholder="e.g., Introduction to Programming"
+                                           class="form-input @error('title') error @enderror">
+                                    @error('title')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="course_code" class="form-label">
+                                        <i class="fas fa-code"></i> Course Code
+                                        <span class="required">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           id="course_code" 
+                                           name="course_code" 
+                                           value="{{ old('course_code') }}" 
+                                           required
+                                           placeholder="e.g., CS101"
+                                           class="form-input @error('course_code') error @enderror">
+                                    <div class="form-hint">
+                                        <i class="fas fa-lightbulb"></i> Will auto-generate based on title
+                                    </div>
+                                    @error('course_code')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="description" class="form-label">
+                                    <i class="fas fa-align-left"></i> Course Description
+                                </label>
+                                <textarea id="description" 
+                                          name="description" 
+                                          rows="4"
+                                          placeholder="Enter a detailed description of the course..."
+                                          class="form-textarea @error('description') error @enderror">{{ old('description') }}</textarea>
+                                <div class="form-hint">
+                                    <i class="fas fa-info-circle"></i> Describe what students will learn
+                                </div>
+                                @error('description')
+                                    <div class="form-error">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        
+                        <!-- Course Details Section -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i class="fas fa-cog"></i> Course Details
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="teacher_id" class="form-label">
+                                        <i class="fas fa-chalkboard-teacher"></i> Assign Teacher
+                                    </label>
+                                    <select id="teacher_id" 
+                                            name="teacher_id"
+                                            class="form-select @error('teacher_id') error @enderror">
+                                        <option value="">-- Select Teacher (Optional) --</option>
+                                        @foreach($teachers as $teacher)
+                                            <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
+                                                {{ $teacher->f_name }} {{ $teacher->l_name }} 
+                                                @if($teacher->employee_id)
+                                                    ({{ $teacher->employee_id }})
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-hint">
+                                        <i class="fas fa-user-tie"></i> Can be assigned later
+                                    </div>
+                                    @error('teacher_id')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="credits" class="form-label">
+                                        <i class="fas fa-cubes"></i> Credits
+                                        <span class="required">*</span>
+                                    </label>
+                                    <div class="input-with-unit">
+                                        <input type="number" 
+                                               id="credits" 
+                                               name="credits" 
+                                               value="{{ old('credits', 3) }}" 
+                                               min="0.5" 
+                                               max="10"
+                                               step="0.5"
+                                               required
+                                               class="form-input @error('credits') error @enderror">
+                                        <span class="input-unit">credits</span>
+                                    </div>
+                                    @error('credits')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Notice -->
+                        <div class="status-notice">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="status-notice-content">
+                                <div class="status-notice-title">Course Status</div>
+                                <div class="status-notice-text">
+                                    New courses are automatically created as <strong>Published</strong> and <strong>Active</strong>. 
+                                    They will be visible to enrolled students immediately.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden fields -->
+                        <input type="hidden" name="status" value="active">
+                        <input type="hidden" name="is_published" value="1">
+                    </form>
                 </div>
                 
-                <div>
-                    <label for="course_code" class="form-label">Course Code *</label>
-                    <input type="text" 
-                           id="course_code" 
-                           name="course_code" 
-                           value="{{ old('course_code') }}" 
-                           required
-                           placeholder="e.g., CS101"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('course_code') border-color: var(--danger); @enderror">
-                    @error('course_code')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label for="description" class="form-label">Description</label>
-                <textarea id="description" 
-                          name="description" 
-                          rows="3"
-                          placeholder="Enter course description..."
-                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('description') border-color: var(--danger); @enderror">{{ old('description') }}</textarea>
-                @error('description')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <label for="teacher_id" class="form-label">Assign Teacher</label>
-                    <select id="teacher_id" 
-                            name="teacher_id"
-                            style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('teacher_id') border-color: var(--danger); @enderror">
-                        <option value="">-- Select Teacher --</option>
-                        @foreach($teachers as $teacher)
-                            <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
-                                {{ $teacher->f_name }} {{ $teacher->l_name }} ({{ $teacher->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                    <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                        Leave blank to assign later
+                <!-- Right Column - Guidelines Sidebar -->
+                <div class="sidebar-column">
+                    <!-- Guidelines Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-card-title">
+                            <i class="fas fa-clipboard-check"></i> Guidelines
+                        </div>
+                        
+                        <div class="guidelines-list">
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-asterisk"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Required Fields</div>
+                                    <div class="guideline-text">Fields marked with * are mandatory</div>
+                                </div>
+                            </div>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Course Code</div>
+                                    <div class="guideline-text">Use standard format like CS101, MATH201</div>
+                                </div>
+                            </div>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Teacher Assignment</div>
+                                    <div class="guideline-text">Can be assigned now or later</div>
+                                </div>
+                            </div>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-cubes"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Credits</div>
+                                    <div class="guideline-text">Enter between 0.5 and 10 credits</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    @error('teacher_id')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                </div>
-                
-                <div>
-                    <label for="credits" class="form-label">Credits *</label>
-                    <input type="number" 
-                           id="credits" 
-                           name="credits" 
-                           value="{{ old('credits', 3) }}" 
-                           min="0" 
-                           step="0.5"
-                           required
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; @error('credits') border-color: var(--danger); @enderror">
-                    @error('credits')
-                        <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            
-            <!-- Learning Outcomes -->
-            <div style="margin-bottom: 1.5rem;">
-                <label for="learning_outcomes" class="form-label">Learning Outcomes (Optional)</label>
-                <textarea id="learning_outcomes" 
-                          name="learning_outcomes" 
-                          rows="2"
-                          placeholder="What will students learn in this course?"
-                          style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical; @error('learning_outcomes') border-color: var(--danger); @enderror">{{ old('learning_outcomes') }}</textarea>
-                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                    Optional: Describe what students will achieve
-                </div>
-                @error('learning_outcomes')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-            </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label for="thumbnail" class="form-label">Thumbnail URL (Optional)</label>
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="url" 
-                           id="thumbnail" 
-                           name="thumbnail" 
-                           value="{{ old('thumbnail') }}"
-                           placeholder="https://example.com/image.jpg"
-                           style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; @error('thumbnail') border-color: var(--danger); @enderror">
-                    <button type="button" 
-                            id="preview-thumbnail" 
-                            style="padding: 12px 20px; background: #f3f4f6; color: var(--dark); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 500;">
-                        Preview
-                    </button>
-                </div>
-                <div style="color: var(--secondary); font-size: 0.75rem; margin-top: 0.25rem;">
-                    <i class="fas fa-info-circle"></i> Optional: URL to course thumbnail image
-                </div>
-                @error('thumbnail')
-                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ $message }}</div>
-                @enderror
-                
-                <!-- Thumbnail Preview -->
-                <div id="thumbnail-preview" style="margin-top: 0.75rem; display: none;">
-                    <div style="font-size: 0.875rem; font-weight: 500; color: var(--dark); margin-bottom: 0.5rem;">Preview:</div>
-                    <div style="width: 100%; max-width: 400px; height: 225px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
-                        <img id="preview-image" src="" alt="Thumbnail preview" 
-                             style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                        <div id="no-preview" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: var(--secondary);">
-                            No preview available
+                    
+                    <!-- Quick Actions Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-card-title">
+                            <i class="fas fa-bolt"></i> Quick Actions
+                        </div>
+                        
+                        <div class="quick-actions-grid">
+                            <a href="{{ route('admin.courses.index') }}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="action-content">
+                                    <div class="action-title">View All Courses</div>
+                                    <div class="action-subtitle">Browse existing courses</div>
+                                </div>
+                                <div class="action-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </a>
+                            
+                            <button type="button" onclick="resetForm()" class="action-card" style="width: 100%; border: none; background: #f8fafc; text-align: left; cursor: pointer;">
+                                <div class="action-icon">
+                                    <i class="fas fa-eraser"></i>
+                                </div>
+                                <div class="action-content">
+                                    <div class="action-title">Clear Form</div>
+                                    <div class="action-subtitle">Reset all fields</div>
+                                </div>
+                                <div class="action-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </button>
+                            
+                            <a href="{{ route('admin.courses.create') }}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-sync-alt"></i>
+                                </div>
+                                <div class="action-content">
+                                    <div class="action-title">Refresh Data</div>
+                                    <div class="action-subtitle">Reload teacher list</div>
+                                </div>
+                                <div class="action-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Hidden fields - Status always active and published -->
-            <input type="hidden" name="status" value="active">
-            <input type="hidden" name="is_published" value="1">
-            
-            <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                <a href="{{ route('admin.courses.index') }}" 
-                   style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
-                    Cancel
+        </div>
+        
+        <div class="card-footer-modern">
+            <div class="form-actions">
+                <a href="{{ route('admin.courses.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
                 </a>
-                <button type="submit" 
-                        style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <button type="submit" form="courseForm" class="btn btn-primary" id="submitButton">
                     <i class="fas fa-save"></i> Create Course
                 </button>
             </div>
-        </form>
+        </div>
     </div>
-</div>
+@endsection
 
-<style>
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--dark);
-        font-size: 0.875rem;
-    }
-    
-    .card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--dark);
-        margin: 0;
-    }
-    
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    input:focus, textarea:focus, select:focus {
-        outline: none;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    }
-</style>
-
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const titleInput = document.getElementById('title');
         const codeInput = document.getElementById('course_code');
-        const thumbnailInput = document.getElementById('thumbnail');
-        const previewBtn = document.getElementById('preview-thumbnail');
-        const thumbnailPreview = document.getElementById('thumbnail-preview');
-        const previewImage = document.getElementById('preview-image');
-        const noPreview = document.getElementById('no-preview');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewCode = document.getElementById('previewCode');
+        const avatarLetter = document.getElementById('avatarLetter');
+        const submitButton = document.getElementById('submitButton');
+        
+        // Live preview update
+        function updatePreview() {
+            // Update title
+            const title = titleInput.value.trim();
+            previewTitle.textContent = title || 'New Course';
+            
+            // Update code
+            const code = codeInput.value.trim();
+            previewCode.textContent = code || '---';
+            
+            // Update avatar
+            if (code) {
+                avatarLetter.textContent = code.charAt(0).toUpperCase();
+            } else if (title) {
+                avatarLetter.textContent = title.charAt(0).toUpperCase();
+            } else {
+                avatarLetter.textContent = '📚';
+            }
+        }
+        
+        titleInput.addEventListener('input', updatePreview);
+        codeInput.addEventListener('input', updatePreview);
         
         // Auto-generate course code suggestion
         titleInput.addEventListener('input', function() {
-            const title = this.value;
+            const title = this.value.trim();
             
             if (title && !codeInput.value) {
                 const words = title.toUpperCase().split(' ');
+                let code = '';
+                
                 if (words.length >= 2) {
-                    let code = '';
                     if (words[0].length >= 3) {
                         code = words[0].substring(0, 3);
-                    } else if (words.length >= 2) {
+                    } else {
                         code = words[0].substring(0, 2) + words[1].charAt(0);
                     }
                     
                     if (code) {
                         const randomNum = Math.floor(Math.random() * 900) + 100;
-                        codeInput.value = code + randomNum;
+                        const suggestedCode = code + randomNum;
+                        codeInput.value = suggestedCode;
+                        updatePreview();
+                        
+                        // Show hint
+                        const hintDiv = codeInput.nextElementSibling;
+                        if (hintDiv && hintDiv.classList.contains('form-hint')) {
+                            hintDiv.innerHTML = `<i class="fas fa-check-circle"></i> Suggested: ${suggestedCode}`;
+                        }
                     }
                 }
             }
         });
         
-        // Thumbnail preview functionality
-        function updateThumbnailPreview() {
-            const url = thumbnailInput.value.trim();
-            
-            if (url) {
-                thumbnailPreview.style.display = 'block';
-                previewImage.src = url;
-                previewImage.style.display = 'block';
-                noPreview.style.display = 'none';
+        // Form validation and submission
+        const courseForm = document.getElementById('courseForm');
+        if (courseForm) {
+            courseForm.addEventListener('submit', function(e) {
+                const title = titleInput.value.trim();
+                const code = codeInput.value.trim();
+                const credits = document.getElementById('credits').value;
                 
-                // Check if image loads successfully
-                previewImage.onload = function() {
-                    previewImage.style.display = 'block';
-                    noPreview.style.display = 'none';
-                };
+                let isValid = true;
                 
-                previewImage.onerror = function() {
-                    previewImage.style.display = 'none';
-                    noPreview.style.display = 'flex';
-                    noPreview.textContent = 'Image failed to load';
-                    noPreview.style.color = '#ef4444';
-                };
-            } else {
-                thumbnailPreview.style.display = 'none';
-            }
+                if (!title) {
+                    titleInput.classList.add('error');
+                    isValid = false;
+                } else {
+                    titleInput.classList.remove('error');
+                }
+                
+                if (!code) {
+                    codeInput.classList.add('error');
+                    isValid = false;
+                } else {
+                    codeInput.classList.remove('error');
+                }
+                
+                if (!credits || parseFloat(credits) < 0.5 || parseFloat(credits) > 10) {
+                    document.getElementById('credits').classList.add('error');
+                    isValid = false;
+                } else {
+                    document.getElementById('credits').classList.remove('error');
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    showToast('Please fill in all required fields correctly.', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                if (submitButton) {
+                    const originalHTML = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+                    submitButton.disabled = true;
+                    
+                    // Revert after 5 seconds (in case submission fails)
+                    setTimeout(() => {
+                        submitButton.innerHTML = originalHTML;
+                        submitButton.disabled = false;
+                    }, 5000);
+                }
+            });
         }
         
-        previewBtn.addEventListener('click', updateThumbnailPreview);
-        thumbnailInput.addEventListener('change', updateThumbnailPreview);
-        thumbnailInput.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                updateThumbnailPreview();
+        // Toast notification function
+        window.showToast = function(message, type = 'info') {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.custom-toast');
+            if (existingToast) {
+                existingToast.remove();
             }
+            
+            const toast = document.createElement('div');
+            toast.className = `custom-toast ${type}`;
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'exclamation-circle';
+            
+            toast.innerHTML = `
+                <i class="fas fa-${icon}" style="font-size: 1.25rem;"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Show validation errors if any
+        @if($errors->any())
+            showToast('Please fix the errors in the form.', 'error');
+        @endif
+        
+        // Show success message if redirected with success
+        @if(session('success'))
+            showToast('{{ session('success') }}', 'success');
+        @endif
+    });
+    
+    // Reset form function
+    function resetForm() {
+        document.getElementById('courseForm').reset();
+        document.getElementById('previewTitle').textContent = 'New Course';
+        document.getElementById('previewCode').textContent = '---';
+        document.getElementById('avatarLetter').textContent = '📚';
+        
+        // Clear error states
+        document.querySelectorAll('.form-input, .form-textarea, .form-select').forEach(el => {
+            el.classList.remove('error');
         });
         
-        // Form validation before submit
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const title = titleInput.value.trim();
-            const code = codeInput.value.trim();
-            const credits = document.getElementById('credits').value;
-            
-            if (!title) {
-                e.preventDefault();
-                alert('Please enter a course title.');
-                titleInput.focus();
-                return;
-            }
-            
-            if (!code) {
-                e.preventDefault();
-                alert('Please enter a course code.');
-                codeInput.focus();
-                return;
-            }
-            
-            if (!credits || parseFloat(credits) <= 0) {
-                e.preventDefault();
-                alert('Please enter valid credits (greater than 0).');
-                document.getElementById('credits').focus();
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-            submitBtn.disabled = true;
-            
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 3000);
-        });
-    });
+        showToast('Form has been cleared.', 'info');
+    }
 </script>
-@endsection
+@endpush

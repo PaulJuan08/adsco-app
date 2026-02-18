@@ -1,478 +1,314 @@
 @extends('layouts.admin')
 
-@section('title', 'Quizzes')
+@section('title', 'Quizzes - Admin Dashboard')
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/quiz-index.css') }}">
+@endpush
 
 @section('content')
-<div class="top-header">
-    <div class="greeting">
-        <h1>Quizzes</h1>
-        <p>Manage and organize assessment quizzes</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-        </div>
-    </div>
-</div>
-
-<!-- Quick Stats -->
-<div class="quick-stats">
-    <div class="stat-item">
-        <div class="stat-number">{{ $quizzes->total() }}</div>
-        <div class="stat-label">Total Quizzes</div>
-    </div>
-    <div class="stat-item">
-        <div class="stat-number">{{ $quizzes->where('is_published', true)->count() }}</div>
-        <div class="stat-label">Published</div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Quiz List</h2>
-        <div class="header-actions">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search quizzes..." id="search-input">
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="user-greeting">
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
+                </div>
+                <div class="greeting-text">
+                    <h1 class="welcome-title">Quiz Management</h1>
+                    <p class="welcome-subtitle">
+                        <i class="fas fa-question-circle"></i> Manage all assessment quizzes
+                    </p>
+                </div>
             </div>
-            <a href="{{ route('admin.quizzes.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> New Quiz
-            </a>
         </div>
     </div>
 
-    @if($quizzes->isEmpty())
-    <div class="empty-state">
-        <div class="empty-icon">
-            <i class="fas fa-question-circle"></i>
-        </div>
-        <h3>No quizzes yet</h3>
-        <p>Get started by creating your first quiz</p>
-        <a href="{{ route('admin.quizzes.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus-circle"></i> Create Quiz
+    <!-- Stats Cards -->
+    <div class="stats-grid stats-grid-compact">
+        <a href="{{ route('admin.quizzes.index') }}" class="stat-card stat-card-primary clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Total Quizzes</div>
+                    <div class="stat-number">{{ number_format($quizzes->total()) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View all quizzes <i class="fas fa-arrow-right"></i>
+            </div>
+        </a>
+        
+        <a href="{{ route('admin.quizzes.index') }}?status=published" class="stat-card stat-card-success clickable-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Published Quizzes</div>
+                    <div class="stat-number">{{ number_format($quizzes->where('is_published', true)->count()) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                View published <i class="fas fa-arrow-right"></i>
+            </div>
         </a>
     </div>
-    @else
-    <div class="table-container">
-        <table class="quiz-table">
-            <thead>
-                <tr>
-                    <th>Quiz Title</th>
-                    <th>Questions</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($quizzes as $quiz)
-                <tr class="quiz-row" data-search="{{ strtolower($quiz->title . ' ' . $quiz->description) }}">
-                    <td>
-                        <div class="quiz-info">
-                            <div class="quiz-icon">
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Quiz List Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-question-circle" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quiz List
+                    </h2>
+                    <div class="header-actions">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="search-input" placeholder="Search quizzes..." id="search-input">
+                        </div>
+                        <a href="{{ route('admin.quizzes.create') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Quiz
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    @if($quizzes->isEmpty())
+                    <!-- Empty State -->
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <h3 class="empty-title">No quizzes yet</h3>
+                        <p class="empty-text">Get started by creating your first quiz</p>
+                        <a href="{{ route('admin.quizzes.create') }}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Create Quiz
+                        </a>
+                    </div>
+                    @else
+                    <!-- Quiz List -->
+                    <div class="table-responsive">
+                        <table class="quiz-table" id="quiz-table">
+                            <thead>
+                                <tr>
+                                    <th>Quiz Title</th>
+                                    <th>Questions</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($quizzes as $quiz)
+                                <tr class="clickable-row" 
+                                    data-href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}"
+                                    data-search="{{ strtolower($quiz->title . ' ' . $quiz->description) }}">
+                                    <td>
+                                        <div class="quiz-info-cell">
+                                            <div class="quiz-icon">
+                                                <i class="fas fa-question-circle"></i>
+                                            </div>
+                                            <div class="quiz-details">
+                                                <div class="quiz-title">{{ $quiz->title }}</div>
+                                                <div class="quiz-desc">{{ Str::limit($quiz->description, 60) }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="item-badge badge-info">{{ $quiz->total_questions ?? 0 }} Qs</span>
+                                    </td>
+                                    <td>
+                                        @if($quiz->is_published)
+                                            <span class="item-badge badge-success">
+                                                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 0.25rem;"></i> Public
+                                            </span>
+                                        @else
+                                            <span class="item-badge badge-warning">
+                                                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 0.25rem;"></i> Private
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="created-date">{{ $quiz->created_at->format('M d, Y') }}</div>
+                                        <div class="created-ago">{{ $quiz->created_at->diffForHumans() }}</div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+                </div>
+
+                @if($quizzes->hasPages())
+                <div class="card-footer">
+                    <div class="pagination-info">
+                        Showing {{ $quizzes->firstItem() }} to {{ $quizzes->lastItem() }} of {{ $quizzes->total() }} entries
+                    </div>
+                    <div class="pagination-links">
+                        {{ $quizzes->links() }}
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Quick Actions Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-bolt" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quick Actions
+                    </h2>
+                </div>
+                
+                <div class="card-body">
+                    <div class="quick-actions-grid">
+                        <a href="{{ route('admin.quizzes.create') }}" class="action-card action-primary">
+                            <div class="action-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Create New Quiz</div>
+                                <div class="action-subtitle">Add assessment quiz</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ route('admin.topics.index') }}" class="action-card action-success">
+                            <div class="action-icon">
+                                <i class="fas fa-chalkboard"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Manage Topics</div>
+                                <div class="action-subtitle">View learning materials</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ route('admin.assignments.index') }}" class="action-card action-warning">
+                            <div class="action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">View Assignments</div>
+                                <div class="action-subtitle">Check assignments list</div>
+                            </div>
+                            <div class="action-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Statistics Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-chart-pie" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                        Quiz Statistics
+                    </h2>
+                </div>
+                
+                <div class="card-body">
+                    <div class="items-list">
+                        <a href="{{ route('admin.quizzes.index') }}?month={{ now()->format('Y-m') }}" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--primary-light), var(--primary));">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Quizzes This Month</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">
+                                {{ $quizzes->where('created_at', '>=', now()->startOfMonth())->count() }}
+                            </div>
+                        </a>
+                        
+                        <a href="{{ route('admin.quizzes.index') }}?status=published" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--success-light), var(--success));">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Published Quizzes</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $quizzes->where('is_published', true)->count() }}</div>
+                        </a>
+                        
+                        <a href="{{ route('admin.quizzes.index') }}?status=draft" class="list-item clickable-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--warning-light), var(--warning));">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Private Quizzes</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">{{ $quizzes->where('is_published', false)->count() }}</div>
+                        </a>
+                        
+                        <div class="list-item">
+                            <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--info-light), var(--info));">
                                 <i class="fas fa-question-circle"></i>
                             </div>
-                            <div>
-                                <div class="quiz-title">{{ $quiz->title }}</div>
-                                <div class="quiz-desc">{{ Str::limit($quiz->description, 60) }}</div>
+                            <div class="item-info">
+                                <div class="item-name">Avg Questions</div>
+                            </div>
+                            <div class="stat-number" style="font-size: 1.5rem;">
+                                {{ $quizzes->count() > 0 ? round($quizzes->sum('total_questions') / $quizzes->count()) : 0 }}
                             </div>
                         </div>
-                    </td>
-                    <td>
-                        <span class="badge">{{ $quiz->total_questions ?? 0 }} Qs</span>
-                    </td>
-                    <td>
-                        @if($quiz->is_published)
-                            <span class="status published">
-                                <i class="fas fa-circle"></i> Public
-                            </span>
-                        @else
-                            <span class="status draft">
-                                <i class="fas fa-circle"></i> Private
-                            </span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="date">{{ $quiz->created_at->format('M d, Y') }}</div>
-                        <div class="time">{{ $quiz->created_at->diffForHumans() }}</div>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <a href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}" 
-                               class="btn-icon view" title="View Quiz">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
-                               class="btn-icon edit" title="Edit Quiz">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form action="{{ route('admin.quizzes.destroy', Crypt::encrypt($quiz->id)) }}" 
-                                  method="POST" class="d-inline"
-                                  onsubmit="return confirm('Are you sure?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-icon delete" title="Delete Quiz">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    @if($quizzes->hasPages())
-    <div class="pagination-container">
-        <div class="pagination-info">
-            Showing {{ $quizzes->firstItem() }}-{{ $quizzes->lastItem() }} of {{ $quizzes->total() }}
-        </div>
-        <div class="pagination-links">
-            {{ $quizzes->links() }}
-        </div>
-    </div>
-    @endif
-    @endif
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
+        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
+            Quiz Management • Updated {{ now()->format('M d, Y') }}
+        </p>
+    </footer>
 </div>
+@endsection
 
-<style>
-    /* Quick Stats */
-    .quick-stats {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .stat-item {
-        flex: 1;
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .stat-number {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--primary);
-        margin-bottom: 0.25rem;
-    }
-    
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--secondary);
-    }
-    
-    /* Card Header */
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    .card-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--dark);
-        margin: 0;
-    }
-    
-    .header-actions {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-    
-    /* Search Box */
-    .search-box {
-        position: relative;
-        min-width: 250px;
-    }
-    
-    .search-box i {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--secondary);
-    }
-    
-    .search-box input {
-        width: 100%;
-        padding: 0.5rem 1rem 0.5rem 2.5rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-size: 0.875rem;
-    }
-    
-    .search-box input:focus {
-        outline: none;
-        border-color: var(--primary);
-    }
-    
-    /* Buttons */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        text-decoration: none;
-        cursor: pointer;
-    }
-    
-    .btn:hover {
-        background: #4f46e5;
-    }
-    
-    /* Empty State */
-    .empty-state {
-        padding: 3rem 2rem;
-        text-align: center;
-    }
-    
-    .empty-icon {
-        font-size: 3rem;
-        color: var(--secondary);
-        opacity: 0.5;
-        margin-bottom: 1rem;
-    }
-    
-    .empty-state h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--dark);
-        margin-bottom: 0.5rem;
-    }
-    
-    .empty-state p {
-        color: var(--secondary);
-        margin-bottom: 1.5rem;
-    }
-    
-    /* Table */
-    .table-container {
-        overflow-x: auto;
-    }
-    
-    .quiz-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .quiz-table thead {
-        background: #f8fafc;
-        border-bottom: 2px solid var(--border);
-    }
-    
-    .quiz-table th {
-        padding: 1rem;
-        text-align: left;
-        font-weight: 600;
-        color: var(--dark);
-        font-size: 0.875rem;
-    }
-    
-    .quiz-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    .quiz-table tbody tr:hover {
-        background: #f9fafb;
-    }
-    
-    /* Quiz Info */
-    .quiz-info {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-    
-    .quiz-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.125rem;
-        flex-shrink: 0;
-    }
-    
-    .quiz-title {
-        font-weight: 500;
-        color: var(--dark);
-        margin-bottom: 0.25rem;
-    }
-    
-    .quiz-desc {
-        font-size: 0.875rem;
-        color: var(--secondary);
-    }
-    
-    /* Badges */
-    .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        background: #e0e7ff;
-        color: var(--primary);
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    
-    /* Status */
-    .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    
-    .status i {
-        font-size: 0.5rem;
-    }
-    
-    .status.published {
-        color: #059669;
-    }
-    
-    .status.draft {
-        color: #ef4444;
-    }
-    
-    /* Date */
-    .date {
-        font-weight: 500;
-        color: var(--dark);
-        font-size: 0.875rem;
-    }
-    
-    .time {
-        font-size: 0.75rem;
-        color: var(--secondary);
-        margin-top: 0.125rem;
-    }
-    
-    /* Action Buttons with Colors */
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-icon {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: transparent;
-    }
-    
-    .btn-icon.view {
-        color: #3b82f6;
-    }
-    
-    .btn-icon.edit {
-        color: #f59e0b;
-    }
-    
-    .btn-icon.delete {
-        color: #ef4444;
-    }
-    
-    .btn-icon.view:hover {
-        background: #dbeafe;
-        transform: translateY(-1px);
-    }
-    
-    .btn-icon.edit:hover {
-        background: #fef3c7;
-        transform: translateY(-1px);
-    }
-    
-    .btn-icon.delete:hover {
-        background: #fee2e2;
-        transform: translateY(-1px);
-    }
-    
-    /* Pagination */
-    .pagination-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        border-top: 1px solid var(--border);
-    }
-    
-    .pagination-info {
-        font-size: 0.875rem;
-        color: var(--secondary);
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-        .quick-stats {
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        .card-header {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 1rem;
-        }
-        
-        .header-actions {
-            flex-direction: column;
-            width: 100%;
-        }
-        
-        .search-box {
-            width: 100%;
-            min-width: unset;
-        }
-        
-        .action-buttons {
-            flex-wrap: wrap;
-        }
-        
-        .quiz-info {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-        
-        .quiz-icon {
-            width: 36px;
-            height: 36px;
-            font-size: 1rem;
-        }
-    }
-</style>
-
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Simple search functionality
+        // Make rows clickable
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        
+        clickableRows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                    return;
+                }
+                
+                const href = this.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+            
+            row.style.cursor = 'pointer';
+        });
+
+        // Search functionality
         const searchInput = document.getElementById('search-input');
-        const quizRows = document.querySelectorAll('.quiz-row');
+        const quizRows = document.querySelectorAll('.clickable-row');
         
         if (searchInput && quizRows.length > 0) {
             searchInput.addEventListener('input', function(e) {
@@ -491,4 +327,4 @@
         }
     });
 </script>
-@endsection
+@endpush

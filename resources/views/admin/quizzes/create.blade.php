@@ -2,204 +2,344 @@
 
 @section('title', 'Create New Quiz')
 
-@section('content')
-<div class="top-header">
-    <div class="greeting">
-        <h1>Create New Quiz</h1>
-        <p>Create a new quiz with questions and options</p>
-    </div>
-    <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-        </div>
-    </div>
-</div>
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/quiz-form.css') }}">
+@endpush
 
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Quiz Information</h2>
-        <a href="{{ route('admin.quizzes.index') }}" style="display: flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-size: 0.875rem; font-weight: 500;">
-            <i class="fas fa-arrow-left"></i> Back to Quizzes
-        </a>
-    </div>
-    
-    <div style="padding: 1.5rem;">
-        <form action="{{ route('admin.quizzes.store') }}" method="POST" id="quiz-form">
-            @csrf
-            
-            @if($errors->any())
-            <div style="margin: 0 0 1.5rem; padding: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 0.875rem;">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
-                    <strong>Please fix the following errors:</strong>
+@section('content')
+    <!-- Create Quiz Form Card -->
+    <div class="form-container">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i class="fas fa-plus-circle card-icon"></i>
+                <h2 class="card-title">Create New Quiz</h2>
+            </div>
+            <a href="{{ route('admin.quizzes.index') }}" class="view-all-link">
+                <i class="fas fa-arrow-left"></i> Back to Quizzes
+            </a>
+        </div>
+        
+        <div class="card-body">
+            <!-- Quiz Preview - Live Preview -->
+            <div class="quiz-preview">
+                <div class="quiz-preview-avatar" id="previewAvatar">
+                    📝
                 </div>
-                <ul style="margin: 0; padding-left: 20px;">
+                <div class="quiz-preview-title" id="previewTitle">
+                    New Quiz
+                </div>
+                <div class="quiz-preview-meta">
+                    <span class="quiz-preview-badge">
+                        <i class="fas fa-check-circle"></i> 
+                        Draft
+                    </span>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            @if($errors->any())
+            <div class="error-alert">
+                <div class="error-alert-header">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Please fix the following errors:</span>
+                </div>
+                <ul class="error-list">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
             @endif
-            
-            <!-- Basic Quiz Info - SIMPLIFIED -->
-            <div style="margin-bottom: 2rem;">
-                <h3 style="font-size: 1rem; font-weight: 600; color: var(--dark); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
-                    Basic Information
-                </h3>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="title" class="form-label">Quiz Title *</label>
-                    <input type="text" 
-                           id="title" 
-                           name="title" 
-                           value="{{ old('title') }}" 
-                           required
-                           placeholder="e.g., JavaScript Fundamentals Quiz"
-                           style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%;">
+
+            <!-- Two Column Layout -->
+            <div class="two-column-layout">
+                <!-- Left Column - Form -->
+                <div class="form-column">
+                    <form action="{{ route('admin.quizzes.store') }}" method="POST" id="quiz-form">
+                        @csrf
+                        
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i class="fas fa-info-circle"></i> Basic Information
+                            </div>
+                            
+                            <!-- Quiz Title -->
+                            <div class="form-group">
+                                <label for="title" class="form-label required">
+                                    <i class="fas fa-heading"></i> Quiz Title
+                                </label>
+                                <input type="text" 
+                                       id="title" 
+                                       name="title" 
+                                       value="{{ old('title') }}" 
+                                       required
+                                       placeholder="e.g., JavaScript Fundamentals Quiz"
+                                       class="form-input">
+                                <span class="form-help">
+                                    <i class="fas fa-info-circle"></i> Enter a descriptive title for your quiz
+                                </span>
+                            </div>
+                            
+                            <!-- Quiz Description -->
+                            <div class="form-group">
+                                <label for="description" class="form-label required">
+                                    <i class="fas fa-align-left"></i> Description
+                                </label>
+                                <textarea id="description" 
+                                          name="description" 
+                                          rows="3"
+                                          required
+                                          placeholder="Describe what this quiz covers..."
+                                          class="form-textarea">{{ old('description') }}</textarea>
+                                <span class="form-help">
+                                    <i class="fas fa-info-circle"></i> Provide a clear description of the quiz content
+                                </span>
+                            </div>
+                            
+                            <!-- Quiz Settings -->
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="passing_score" class="form-label required">
+                                        <i class="fas fa-trophy"></i> Passing Score (%)
+                                    </label>
+                                    <input type="number" 
+                                           id="passing_score" 
+                                           name="passing_score" 
+                                           value="{{ old('passing_score', 70) }}" 
+                                           min="0"
+                                           max="100"
+                                           required
+                                           class="form-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="duration" class="form-label required">
+                                        <i class="fas fa-clock"></i> Duration (minutes)
+                                    </label>
+                                    <input type="number" 
+                                           id="duration" 
+                                           name="duration" 
+                                           value="{{ old('duration', 30) }}" 
+                                           min="1"
+                                           max="180"
+                                           required
+                                           class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Questions Section -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i class="fas fa-question-circle"></i> Questions & Options
+                            </div>
+                            
+                            <div id="questions-list">
+                                <!-- Questions will be added here dynamically -->
+                            </div>
+                            
+                            <button type="button" 
+                                    id="add-question-btn"
+                                    class="btn btn-add">
+                                <i class="fas fa-plus-circle"></i> Add Question
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <label for="description" class="form-label">Description *</label>
-                    <textarea id="description" 
-                              name="description" 
+                <!-- Right Column - Sidebar -->
+                <div class="sidebar-column">
+                    <!-- Quick Tips Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-card-title">
+                            <i class="fas fa-lightbulb"></i> Quick Tips
+                        </div>
+                        
+                        <div class="tips-grid">
+                            <div class="tip-item">
+                                <div class="tip-icon">
+                                    <i class="fas fa-question"></i>
+                                </div>
+                                <div class="tip-content">
+                                    <div class="tip-title">Clear Questions</div>
+                                    <div class="tip-description">Write clear, concise questions</div>
+                                </div>
+                            </div>
+                            
+                            <div class="tip-item">
+                                <div class="tip-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="tip-content">
+                                    <div class="tip-title">One Correct Answer</div>
+                                    <div class="tip-description">Select one correct answer per question</div>
+                                </div>
+                            </div>
+                            
+                            <div class="tip-item">
+                                <div class="tip-icon">
+                                    <i class="fas fa-list-ol"></i>
+                                </div>
+                                <div class="tip-content">
+                                    <div class="tip-title">Max 4 Options</div>
+                                    <div class="tip-description">Maximum 4 options per question</div>
+                                </div>
+                            </div>
+                            
+                            <div class="tip-item">
+                                <div class="tip-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="tip-content">
+                                    <div class="tip-title">Set Passing Score</div>
+                                    <div class="tip-description">Define minimum score to pass</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Guidelines Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-card-title">
+                            <i class="fas fa-clipboard-check"></i> Guidelines
+                        </div>
+                        
+                        <div class="guidelines-list">
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Title should be clear and descriptive</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Description helps students understand the quiz</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Each question must have 2-4 options</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Select one correct answer per question</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Quiz must have at least 1 question</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>All questions require text and options</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-footer-modern">
+            <a href="{{ route('admin.quizzes.index') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" form="quiz-form" class="btn btn-primary" id="submitButton">
+                <i class="fas fa-save"></i> Create Quiz
+            </button>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="question-template">
+        <div class="question-card">
+            <div class="question-header">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="question-number">#1</span>
+                    <span style="font-weight: 600; color: #2d3748;">Question</span>
+                </div>
+                <button type="button" class="btn btn-danger remove-question-btn">
+                    <i class="fas fa-trash-alt"></i> Remove
+                </button>
+            </div>
+            
+            <div class="question-content">
+                <div class="form-group">
+                    <label class="form-label required">
+                        <i class="fas fa-question-circle"></i> Question Text
+                    </label>
+                    <textarea name="questions[0][question]" 
+                              class="question-text form-textarea"
                               rows="3"
                               required
-                              placeholder="Describe what this quiz covers..."
-                              style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;">{{ old('description') }}</textarea>
-                </div>
-            </div>
-            
-            <!-- Questions Section -->
-            <div style="margin-bottom: 2rem;" id="questions-container">
-                <h3 style="font-size: 1rem; font-weight: 600; color: var(--dark); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
-                    Questions & Options
-                </h3>
-                
-                <div id="questions-list">
-                    <!-- Questions will be added here dynamically -->
+                              placeholder="Enter the question..."></textarea>
                 </div>
                 
-                <button type="button" 
-                        id="add-question-btn"
-                        style="margin-top: 1rem; padding: 10px 20px; background: #f3f4f6; color: var(--dark); border: 1px dashed var(--border); border-radius: 6px; width: 100%; cursor: pointer; font-weight: 500;">
-                    <i class="fas fa-plus-circle"></i> Add Question
-                </button>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-list"></i> Options (Select one correct answer)
+                    </label>
+                    <div class="options-list">
+                        <!-- Options will be added here dynamically -->
+                    </div>
+                    
+                    <button type="button" 
+                            class="btn btn-add-option add-option-btn"
+                            style="margin-top: 0.75rem;">
+                        <i class="fas fa-plus"></i> Add Option
+                    </button>
+                </div>
             </div>
-            
-            <div style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                <a href="{{ route('admin.quizzes.index') }}" 
-                   style="padding: 10px 20px; background: transparent; color: var(--secondary); border: 1px solid var(--secondary); border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-times"></i> Cancel
-                </a>
-                <button type="submit" 
-                        style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-save"></i> Create Quiz
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
+    </template>
 
-<template id="question-template">
-    <div class="question-card" style="margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--dark);" class="question-title">Question <span class="question-number">1</span></h4>
-            <button type="button" class="remove-question-btn" style="padding: 4px 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
-                <i class="fas fa-trash"></i> Remove
-            </button>
-        </div>
-        
-        <div style="margin-bottom: 1rem;">
-            <label class="form-label">Question Text *</label>
-            <textarea name="questions[0][question]" 
-                      class="question-text"
-                      rows="3"
-                      required
-                      placeholder="Enter the question..."
-                      style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; width: 100%; resize: vertical;"></textarea>
-        </div>
-        
-        <div class="options-container" style="margin-top: 1rem;">
-            <h5 style="font-size: 0.875rem; font-weight: 600; color: var(--dark); margin-bottom: 0.75rem;">
-                Options (Select one as correct answer)
-            </h5>
-            <div class="options-list">
-                <!-- Options will be added here dynamically -->
-            </div>
-            
+    <template id="option-template">
+        <div class="option-item">
+            <input type="radio" 
+                   class="option-radio is-correct-checkbox"
+                   name="questions[0][correct_answer]"
+                   value="0">
+            <input type="text" 
+                   class="option-input option-text"
+                   name="questions[0][options][0][option_text]"
+                   placeholder="Enter option text"
+                   required>
             <button type="button" 
-                    class="add-option-btn"
-                    style="margin-top: 0.5rem; padding: 8px 16px; background: #e0e7ff; color: var(--primary); border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
-                <i class="fas fa-plus"></i> Add Option
+                    class="btn remove-option-btn">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-    </div>
-</template>
-
-<template id="option-template">
-    <div class="option-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; padding: 12px; background: white; border: 1px solid var(--border); border-radius: 6px;">
-        <input type="hidden" class="option-id" value="">
-        <input type="radio" 
-               class="is-correct-checkbox"
-               value="0">
-        <input type="text" 
-               class="option-text"
-               placeholder="Enter option text"
-               required
-               style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;">
-        <button type="button" 
-                class="remove-option-btn"
-                style="padding: 4px 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-</template>
-
-<style>
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--dark);
-        font-size: 0.875rem;
-    }
-    
-    .card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--dark);
-        margin: 0;
-    }
-    
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    input, select, textarea {
-        transition: border-color 0.15s ease-in-out;
-    }
-    
-    input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    }
-</style>
+    </template>
+@endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const titleInput = document.getElementById('title');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewAvatar = document.getElementById('previewAvatar');
+        
+        // Live preview update
+        function updatePreview() {
+            const title = titleInput.value.trim();
+            previewTitle.textContent = title || 'New Quiz';
+            
+            if (title) {
+                previewAvatar.textContent = title.charAt(0).toUpperCase();
+            } else {
+                previewAvatar.textContent = '📝';
+            }
+        }
+        
+        if (titleInput) {
+            titleInput.addEventListener('input', updatePreview);
+        }
+
         const questionsContainer = document.getElementById('questions-list');
         const addQuestionBtn = document.getElementById('add-question-btn');
         const questionTemplate = document.getElementById('question-template');
         const optionTemplate = document.getElementById('option-template');
+        const submitButton = document.getElementById('submitButton');
         
         let questionCount = 0;
+        const MAX_OPTIONS_PER_QUESTION = 4;
         
         // Add first question by default
         addQuestion();
@@ -212,13 +352,7 @@
             const questionCard = questionClone.querySelector('.question-card');
             
             // Update question number display
-            questionCard.querySelector('.question-number').textContent = questionCount + 1;
-            
-            // Clear textarea for new question
-            const questionText = questionCard.querySelector('.question-text');
-            if (questionText) {
-                questionText.value = '';
-            }
+            questionCard.querySelector('.question-number').textContent = `#${questionCount + 1}`;
             
             // Update all input names with current question count
             updateQuestionNames(questionCard, questionCount);
@@ -226,8 +360,17 @@
             // Add remove question event
             const removeBtn = questionCard.querySelector('.remove-question-btn');
             removeBtn.addEventListener('click', function() {
-                questionCard.remove();
-                updateQuestionNumbers();
+                if (document.querySelectorAll('.question-card').length > 1) {
+                    questionCard.remove();
+                    updateQuestionNumbers();
+                } else {
+                    Swal.fire({
+                        title: 'Cannot Remove',
+                        text: 'Quiz must have at least one question.',
+                        icon: 'warning',
+                        confirmButtonColor: '#667eea'
+                    });
+                }
             });
             
             // Add option button event
@@ -236,105 +379,102 @@
                 addOption(questionCard, questionCount);
             });
             
-            // Add 4 default options
-            const optionsList = questionCard.querySelector('.options-list');
-            for (let i = 0; i < 4; i++) {
+            // Add 2 default options
+            for (let i = 0; i < 2; i++) {
                 addOption(questionCard, questionCount);
             }
             
             // Append to questions list
             questionsContainer.appendChild(questionCard);
             questionCount++;
+            
+            // Update add option button visibility
+            updateAddOptionButton(questionCard);
         }
         
         function updateQuestionNames(questionCard, questionIndex) {
-            // Update question inputs
-            const questionInputs = questionCard.querySelectorAll('[name]');
-            questionInputs.forEach(input => {
-                let name = input.getAttribute('name');
-                name = name.replace(/questions\[0\]/, `questions[${questionIndex}]`);
-                input.setAttribute('name', name);
-            });
+            // Update question textarea
+            const questionText = questionCard.querySelector('.question-text');
+            if (questionText) {
+                questionText.name = `questions[${questionIndex}][question]`;
+                questionText.value = '';
+            }
             
-            // Update option names - THIS IS THE KEY FIX
-            const optionsList = questionCard.querySelector('.options-list');
-            const options = optionsList.querySelectorAll('.option-item');
-            
-            options.forEach((optionItem, optionIndex) => {
-                const optionInputs = optionItem.querySelectorAll('[name]');
-                optionInputs.forEach(input => {
-                    let name = input.getAttribute('name');
-                    
-                    // Replace question index
-                    name = name.replace(/questions\[0\]/, `questions[${questionIndex}]`);
-                    
-                    // Replace option index
-                    name = name.replace(/options\[0\]/, `options[${optionIndex}]`);
-                    
-                    // Update radio button value
-                    if (input.classList.contains('is-correct-checkbox')) {
-                        input.value = optionIndex;
-                    }
-                    
-                    input.setAttribute('name', name);
-                });
-            });
+            // Update options in this question
+            updateOptionNames(questionCard, questionIndex);
         }
         
         function addOption(questionCard, questionIndex) {
             const optionsList = questionCard.querySelector('.options-list');
+            const currentOptionCount = optionsList.children.length;
+            
+            // Check if we can add more options
+            if (currentOptionCount >= MAX_OPTIONS_PER_QUESTION) {
+                Swal.fire({
+                    title: 'Maximum Options Reached',
+                    text: `Maximum ${MAX_OPTIONS_PER_QUESTION} options allowed per question.`,
+                    icon: 'warning',
+                    confirmButtonColor: '#667eea'
+                });
+                return;
+            }
+            
             const optionClone = optionTemplate.content.cloneNode(true);
             const optionItem = optionClone.querySelector('.option-item');
             
-            // Get current option count
-            const optionCount = optionsList.children.length;
-            
-            // Create unique names for this option
-            const optionIdInput = document.createElement('input');
-            optionIdInput.type = 'hidden';
-            optionIdInput.className = 'option-id';
-            optionIdInput.name = `questions[${questionIndex}][options][${optionCount}][id]`;
-            optionIdInput.value = '';
-            
+            // Create radio input
             const radioInput = optionItem.querySelector('.is-correct-checkbox');
             radioInput.name = `questions[${questionIndex}][correct_answer]`;
-            radioInput.value = optionCount;
+            radioInput.value = currentOptionCount;
             
+            // Create option text input
             const optionTextInput = optionItem.querySelector('.option-text');
-            optionTextInput.name = `questions[${questionIndex}][options][${optionCount}][option_text]`;
-            
-            // Replace the default inputs with our named ones
-            optionItem.querySelector('.option-id')?.replaceWith(optionIdInput);
-            optionItem.querySelector('.is-correct-checkbox')?.replaceWith(radioInput);
-            optionItem.querySelector('.option-text')?.replaceWith(optionTextInput);
-            
-            // Clear option text
+            optionTextInput.name = `questions[${questionIndex}][options][${currentOptionCount}][option_text]`;
             optionTextInput.value = '';
             
             // Add remove option event
             const removeBtn = optionItem.querySelector('.remove-option-btn');
             removeBtn.addEventListener('click', function() {
-                optionItem.remove();
-                updateRadioButtonValues(questionCard, questionIndex);
+                if (optionsList.children.length > 2) {
+                    optionItem.remove();
+                    updateOptionNames(questionCard, questionIndex);
+                    updateAddOptionButton(questionCard);
+                } else {
+                    Swal.fire({
+                        title: 'Cannot Remove',
+                        text: 'Each question must have at least 2 options.',
+                        icon: 'warning',
+                        confirmButtonColor: '#667eea'
+                    });
+                }
             });
             
             // Set first option as checked by default
-            if (optionCount === 0) {
+            if (currentOptionCount === 0) {
                 radioInput.checked = true;
             }
             
             // Append to options list
             optionsList.appendChild(optionItem);
+            
+            // Update add option button visibility
+            updateAddOptionButton(questionCard);
         }
         
-        function updateRadioButtonValues(questionCard, questionIndex) {
+        function updateOptionNames(questionCard, questionIndex) {
             const optionsList = questionCard.querySelector('.options-list');
             const options = optionsList.querySelectorAll('.option-item');
             
             options.forEach((optionItem, index) => {
                 const radio = optionItem.querySelector('.is-correct-checkbox');
                 if (radio) {
+                    radio.name = `questions[${questionIndex}][correct_answer]`;
                     radio.value = index;
+                }
+                
+                const optionText = optionItem.querySelector('.option-text');
+                if (optionText) {
+                    optionText.name = `questions[${questionIndex}][options][${index}][option_text]`;
                 }
             });
         }
@@ -347,7 +487,7 @@
                 // Update display number
                 const questionNumberSpan = card.querySelector('.question-number');
                 if (questionNumberSpan) {
-                    questionNumberSpan.textContent = qIndex + 1;
+                    questionNumberSpan.textContent = `#${qIndex + 1}`;
                 }
                 
                 // Update question text name
@@ -357,66 +497,163 @@
                 }
                 
                 // Update options
-                const optionsList = card.querySelector('.options-list');
-                if (optionsList) {
-                    const options = optionsList.querySelectorAll('.option-item');
-                    
-                    options.forEach((optionItem, oIndex) => {
-                        // Update option ID input
-                        const optionIdInput = optionItem.querySelector('.option-id');
-                        if (optionIdInput) {
-                            optionIdInput.name = `questions[${qIndex}][options][${oIndex}][id]`;
-                        }
-                        
-                        // Update radio button
-                        const radioInput = optionItem.querySelector('.is-correct-checkbox');
-                        if (radioInput) {
-                            radioInput.name = `questions[${qIndex}][correct_answer]`;
-                            radioInput.value = oIndex;
-                        }
-                        
-                        // Update option text input
-                        const optionTextInput = optionItem.querySelector('.option-text');
-                        if (optionTextInput) {
-                            optionTextInput.name = `questions[${qIndex}][options][${oIndex}][option_text]`;
-                        }
-                    });
-                }
+                updateOptionNames(card, qIndex);
+                
+                // Update add option button visibility
+                updateAddOptionButton(card);
             });
         }
         
-        // Form validation
-        document.getElementById('quiz-form').addEventListener('submit', function(e) {
-            const questionCards = document.querySelectorAll('.question-card');
+        function updateAddOptionButton(questionCard) {
+            const optionsList = questionCard.querySelector('.options-list');
+            const addOptionBtn = questionCard.querySelector('.add-option-btn');
+            const currentOptionCount = optionsList.children.length;
             
-            if (questionCards.length === 0) {
-                e.preventDefault();
-                alert('Please add at least one question.');
-                return;
+            // Show/hide add option button based on option count
+            if (addOptionBtn) {
+                if (currentOptionCount >= MAX_OPTIONS_PER_QUESTION) {
+                    addOptionBtn.style.display = 'none';
+                } else {
+                    addOptionBtn.style.display = 'inline-flex';
+                }
             }
-            
-            let valid = true;
-            questionCards.forEach((card, index) => {
-                const options = card.querySelectorAll('.option-item');
-                if (options.length < 2) {
-                    valid = false;
-                    alert(`Question ${index + 1} must have at least 2 options.`);
-                    return;
+        }
+        
+        // Form validation with SweetAlert2
+        const form = document.getElementById('quiz-form');
+        
+        if (form && submitButton) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('title').value.trim();
+                const description = document.getElementById('description').value.trim();
+                const passingScore = document.getElementById('passing_score').value;
+                const duration = document.getElementById('duration').value;
+                const questionCards = document.querySelectorAll('.question-card');
+                
+                let isValid = true;
+                const errorMessages = [];
+                
+                // Validate basic info
+                if (!title) {
+                    isValid = false;
+                    errorMessages.push('Quiz title is required.');
                 }
                 
-                // Check one correct answer is selected
-                const checkedRadio = card.querySelector('input[type="radio"]:checked');
-                if (!checkedRadio) {
-                    valid = false;
-                    alert(`Question ${index + 1} must have one correct answer selected.`);
+                if (!description) {
+                    isValid = false;
+                    errorMessages.push('Quiz description is required.');
+                }
+                
+                if (!passingScore || passingScore < 0 || passingScore > 100) {
+                    isValid = false;
+                    errorMessages.push('Passing score must be between 0 and 100.');
+                }
+                
+                if (!duration || duration < 1 || duration > 180) {
+                    isValid = false;
+                    errorMessages.push('Duration must be between 1 and 180 minutes.');
+                }
+                
+                // Validate questions
+                if (questionCards.length === 0) {
+                    isValid = false;
+                    errorMessages.push('Please add at least one question.');
+                }
+                
+                questionCards.forEach((card, index) => {
+                    const questionText = card.querySelector('.question-text');
+                    if (!questionText || !questionText.value.trim()) {
+                        isValid = false;
+                        errorMessages.push(`Question ${index + 1} text is required.`);
+                    }
+                    
+                    const options = card.querySelectorAll('.option-item');
+                    if (options.length < 2) {
+                        isValid = false;
+                        errorMessages.push(`Question ${index + 1} must have at least 2 options.`);
+                    }
+                    
+                    // Check if all options have text
+                    options.forEach((option, optIndex) => {
+                        const optionText = option.querySelector('.option-text');
+                        if (!optionText || !optionText.value.trim()) {
+                            isValid = false;
+                            errorMessages.push(`Question ${index + 1}, Option ${optIndex + 1} text is required.`);
+                        }
+                    });
+                    
+                    // Check one correct answer is selected
+                    const checkedRadio = card.querySelector('input[type="radio"]:checked');
+                    if (!checkedRadio) {
+                        isValid = false;
+                        errorMessages.push(`Question ${index + 1} must have one correct answer selected.`);
+                    }
+                });
+                
+                if (!isValid) {
+                    Swal.fire({
+                        title: 'Validation Error',
+                        html: errorMessages.join('<br>'),
+                        icon: 'error',
+                        confirmButtonColor: '#667eea'
+                    });
+                    return false;
+                }
+                
+                // Show confirmation
+                Swal.fire({
+                    title: 'Create Quiz?',
+                    text: `You are about to create a quiz with ${questionCards.length} question(s).`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#667eea',
+                    cancelButtonColor: '#a0aec0',
+                    confirmButtonText: 'Yes, Create',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+                        submitButton.disabled = true;
+                        form.submit();
+                    }
+                });
+            });
+        }
+        
+        // Show notifications from session
+        @if(session('success'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                icon: 'success',
+                title: '{{ session('success') }}',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
                 }
             });
-            
-            if (!valid) {
-                e.preventDefault();
-            }
-        });
+        @endif
+        
+        @if(session('error'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                icon: 'error',
+                title: '{{ session('error') }}',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        @endif
     });
 </script>
 @endpush
-@endsection

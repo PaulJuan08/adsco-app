@@ -5,31 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ADSCO</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Force white theme */
-        body {
-            background-color: white !important;
-        }
-        /* Custom colors */
-        .bg-adsco-blue {
-            background-color: #270e00;
-        }
-        .text-adsco-gold {
-            color: #ffc400;
-        }
-        .bg-adsco-gold {
-            background-color: #ffc400;
-        }
-    </style>
+    <!-- Vite for CSS (Tailwind v4) -->
+    @vite(['resources/css/app.css'])
     
-    <!-- Font Awesome CDN -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- logo -->
+    <!-- Logo -->
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}?v=1" type="image/png" sizes="128x128">
+    
+    <!-- Development fallback -->
+    @env('local')
+    <style>
+        /* Show loading state */
+        .vite-loading body {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+        
+        /* Fallback if Vite fails */
+        .no-vite .bg-adsco-blue { background-color: #270e00 !important; }
+        .no-vite .text-adsco-gold { color: #ffc400 !important; }
+        .no-vite .bg-adsco-gold { background-color: #ffc400 !important; }
+    </style>
+    
+    <script>
+        // Check if Vite loaded after 2 seconds
+        setTimeout(() => {
+            const stylesLoaded = Array.from(document.styleSheets).some(sheet => 
+                sheet.href && sheet.href.includes('app.css')
+            );
+            
+            if (!stylesLoaded) {
+                console.log('Vite not detected, adding fallback classes');
+                document.documentElement.classList.add('no-vite');
+                
+                // Load Tailwind CSS v4 CDN
+                const script = document.createElement('script');
+                script.src = 'https://cdn.tailwindcss.com';
+                script.onload = () => {
+                    // Configure Tailwind CDN with custom colors
+                    tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    'adsco-blue': '#270e00',
+                                    'adsco-gold': '#ffc400',
+                                }
+                            }
+                        }
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        }, 2000);
+    </script>
+    @endenv
 </head>
+
+
 <body class="font-sans antialiased bg-white">
     <!-- Navigation -->
     <nav class="bg-white border-b border-gray-200 fixed w-full z-20">
@@ -413,26 +447,89 @@
                     </div>
                 </div>
                 
+                <!-- Contact Form -->
                 <div class="bg-gray-50 p-8 rounded-xl">
                     <h3 class="text-2xl font-semibold text-gray-900">Send Us a Message</h3>
-                    <form method="POST" action="#">
+                    
+                    <!-- Display success/error messages -->
+                    @if(session('success'))
+                        <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    
+                    @if($errors->any())
+                        <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
+                            <ul class="list-disc list-inside">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    
+                    <form method="POST" action="{{ route('contact.send') }}">
                         @csrf
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                            <input type="text" id="name" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]">
-                        </div>
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]">
-                        </div>
-                        <div>
-                            <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
-                            <textarea id="message" name="message" rows="4" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]"></textarea>
-                        </div>
-                        <div>
-                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#002147] hover:bg-[#001a3a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#002147]">
-                                Send Message
-                            </button>
+                        <div class="space-y-4">
+                            <!-- Name Field -->
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    name="name" 
+                                    value="{{ old('name') }}"
+                                    required 
+                                    autocomplete="name"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]"
+                                >
+                                @error('name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <!-- Email Field -->
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    value="{{ old('email') }}"
+                                    required 
+                                    autocomplete="email"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]"
+                                >
+                                @error('email')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <!-- Message Field -->
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
+                                <textarea 
+                                    id="message" 
+                                    name="message" 
+                                    rows="4" 
+                                    required 
+                                    autocomplete="off"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#002147] focus:border-[#002147]"
+                                >{{ old('message') }}</textarea>
+                                @error('message')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div>
+                                <button 
+                                    type="submit" 
+                                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#002147] hover:bg-[#001a3a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#002147] transition duration-300"
+                                >
+                                    Send Message
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

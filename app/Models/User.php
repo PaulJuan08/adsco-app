@@ -96,10 +96,10 @@ class User extends Authenticatable
     /**
      * Get assignments submitted by the user
      */
-    public function submittedAssignments()
-    {
-        return $this->hasMany(AssignmentSubmission::class, 'student_id');
-    }
+    // public function submittedAssignments()
+    // {
+    //     return $this->hasMany(AssignmentSubmission::class, 'student_id');
+    // }
     
     /**
      * Get grades for the user
@@ -107,6 +107,35 @@ class User extends Authenticatable
     public function grades()
     {
         return $this->hasMany(Grade::class, 'student_id');
+    }
+
+    /**
+     * Get the user who approved this user
+     */
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the user who created this user
+     */
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function completedTopics()
+    {
+        return $this->belongsToMany(Topic::class, 'progress', 'student_id', 'topic_id')
+            ->wherePivot('status', 'completed')
+            ->withPivot('completed_at', 'notes')
+            ->withTimestamps();
+    }
+
+    public function progress()
+    {
+        return $this->hasMany(Progress::class, 'student_id');
     }
     
     // Helper Methods
@@ -282,16 +311,4 @@ class User extends Authenticatable
         ]);
     }
 
-    public function completedTopics()
-    {
-        return $this->belongsToMany(Topic::class, 'progress', 'student_id', 'topic_id')
-            ->wherePivot('status', 'completed')
-            ->withPivot('completed_at', 'notes')
-            ->withTimestamps();
-    }
-
-    public function progress()
-    {
-        return $this->hasMany(Progress::class, 'student_id');
-    }
 }

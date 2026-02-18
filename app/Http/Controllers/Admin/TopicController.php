@@ -4,32 +4,54 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Topic;
+use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
+use App\Traits\CacheManager;
 
 class TopicController extends Controller
 {
+    use CacheManager;
+    
     public function index()
     {
-        $topics = Topic::latest()->paginate(10);
+        // Cache key based on page and filters
+        $cacheKey = 'admin_topics_index_page_' . request('page', 1);
         
-        $publishedTopics = Topic::where('is_published', 1)->count();
-        $draftTopics = Topic::where('is_published', 0)->count();
-        $topicsThisMonth = Topic::whereMonth('created_at', now()->month)->count();
-        $topicsWithVideo = Topic::whereNotNull('video_link')->count();
-        $topicsWithAttachment = Topic::whereNotNull('attachment')->count();
-        $topicsWithLearningOutcomes = Topic::whereNotNull('learning_outcomes')->count();
-
-        return view('admin.topics.index', compact(
-            'topics',
-            'publishedTopics',
-            'draftTopics',
-            'topicsThisMonth',
-            'topicsWithVideo',
-            'topicsWithAttachment',
-            'topicsWithLearningOutcomes'
-        ));
+        // Cache for 5 minutes (300 seconds)
+        $data = Cache::remember($cacheKey, 300, function() {
+            // Get topics with specific columns only
+            $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
+                ->latest()
+                ->paginate(10);
+            
+            // Get all statistics in ONE optimized query
+            $stats = Topic::selectRaw('
+                COUNT(*) as total_topics,
+                SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as published_topics,
+                SUM(CASE WHEN is_published = 0 THEN 1 ELSE 0 END) as draft_topics,
+                SUM(CASE WHEN video_link IS NOT NULL THEN 1 ELSE 0 END) as topics_with_video,
+                SUM(CASE WHEN attachment IS NOT NULL THEN 1 ELSE 0 END) as topics_with_attachment,
+                SUM(CASE WHEN learning_outcomes IS NOT NULL THEN 1 ELSE 0 END) as topics_with_learning_outcomes,
+                SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as topics_this_month
+            ', [now()->month, now()->year])
+            ->first();
+            
+            return [
+                'topics' => $topics,
+                'publishedTopics' => $stats->published_topics ?? 0,
+                'draftTopics' => $stats->draft_topics ?? 0,
+                'topicsThisMonth' => $stats->topics_this_month ?? 0,
+                'topicsWithVideo' => $stats->topics_with_video ?? 0,
+                'topicsWithAttachment' => $stats->topics_with_attachment ?? 0,
+                'topicsWithLearningOutcomes' => $stats->topics_with_learning_outcomes ?? 0,
+                'totalTopics' => $stats->total_topics ?? 0
+            ];
+        });
+        
+        return view('admin.topics.index', $data);
     }
 
     public function create()
@@ -45,7 +67,7 @@ class TopicController extends Controller
             'attachment' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'learning_outcomes' => 'nullable|string|max:1000',
-            'pdf_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB max, PDF only
+            'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         // Add default values
@@ -62,74 +84,169 @@ class TopicController extends Controller
 
         Topic::create($validated);
         
+        // Clear all topic-related caches
+        $this->clearAdminTopicCaches();
+        
         return redirect()->route('admin.topics.index')
             ->with('success', 'Topic created successfully.');
     }
 
     public function show($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $topic = Topic::findOrFail($id);
-        return view('admin.topics.show', compact('topic'));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $cacheKey = 'admin_topic_show_' . $id;
+            
+            $topic = Cache::remember($cacheKey, 600, function() use ($id) {
+                return Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'created_at', 'updated_at'])
+                    ->findOrFail($id);
+            });
+            
+            return view('admin.topics.show', compact('topic'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error showing topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Topic not found or invalid link.');
+        }
     }
 
     public function edit($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $topic = Topic::findOrFail($id);
-        return view('admin.topics.edit', compact('topic'));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $cacheKey = 'admin_topic_edit_' . $id;
+            
+            $topic = Cache::remember($cacheKey, 300, function() use ($id) {
+                return Topic::findOrFail($id);
+            });
+            
+            return view('admin.topics.edit', compact('topic'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error editing topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Topic not found or invalid link.');
+        }
     }
 
     public function update(Request $request, $encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $topic = Topic::findOrFail($id);
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $topic = Topic::findOrFail($id);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'video_link' => 'nullable|string|max:500',
-            'attachment' => 'nullable|string|max:500',
-            'is_published' => 'boolean',
-            'learning_outcomes' => 'nullable|string|max:1000',
-            'pdf_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB max, PDF only
-        ]);
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'video_link' => 'nullable|string|max:500',
+                'attachment' => 'nullable|string|max:500',
+                'is_published' => 'boolean',
+                'learning_outcomes' => 'nullable|string|max:1000',
+                'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
+            ]);
 
-        // Handle PDF file upload
-        if ($request->hasFile('pdf_file')) {
-            // Delete old file if exists
-            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                unlink(public_path($topic->pdf_file));
+            // Handle PDF file upload
+            if ($request->hasFile('pdf_file')) {
+                // Delete old file if exists
+                if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
+                    unlink(public_path($topic->pdf_file));
+                }
+                
+                $file = $request->file('pdf_file');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('pdfs', $fileName, 'public');
+                $validated['pdf_file'] = '/storage/' . $filePath;
+            } else {
+                // Keep existing pdf_file if not uploading new one
+                $validated['pdf_file'] = $topic->pdf_file;
+            }
+
+            $topic->update($validated);
+            
+            // Clear all topic-related caches
+            $this->clearAdminTopicCaches();
+            Cache::forget('admin_topic_show_' . $id);
+            Cache::forget('admin_topic_edit_' . $id);
+            
+            // When topic is updated, clear student caches for all courses that use this topic
+            $courses = $topic->courses;
+            foreach ($courses as $course) {
+                $this->clearStudentCachesForCourse($course->id);
             }
             
-            $file = $request->file('pdf_file');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('pdfs', $fileName, 'public');
-            $validated['pdf_file'] = '/storage/' . $filePath;
-        } else {
-            // Keep existing pdf_file if not uploading new one
-            $validated['pdf_file'] = $topic->pdf_file;
+            return redirect()->route('admin.topics.show', $encryptedId)
+                ->with('success', 'Topic updated successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error updating topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Failed to update topic.');
         }
-
-        $topic->update($validated);
-        
-        return redirect()->route('admin.topics.show', $encryptedId)
-            ->with('success', 'Topic updated successfully.');
     }
 
     public function destroy($encryptedId)
     {
-        $id = Crypt::decrypt($encryptedId);
-        $topic = Topic::findOrFail($id);
-        
-        // Delete PDF file if exists
-        if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-            unlink(public_path($topic->pdf_file));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $topic = Topic::findOrFail($id);
+            
+            // Get all courses that use this topic before deletion
+            $courses = $topic->courses;
+            
+            // Delete PDF file if exists
+            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
+                unlink(public_path($topic->pdf_file));
+            }
+            
+            $topic->delete();
+            
+            // Clear all topic-related caches
+            $this->clearAdminTopicCaches();
+            Cache::forget('admin_topic_show_' . $id);
+            Cache::forget('admin_topic_edit_' . $id);
+            
+            // Clear student caches for all affected courses
+            foreach ($courses as $course) {
+                $this->clearStudentCachesForCourse($course->id);
+            }
+            
+            return redirect()->route('admin.topics.index')
+                ->with('success', 'Topic deleted successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error deleting topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Topic not found or invalid link.');
         }
-        
-        $topic->delete();
+    }
+
+    /**
+     * Manual cache clearing endpoint
+     */
+    public function clearCache()
+    {
+        $this->clearAdminTopicCaches();
         
         return redirect()->route('admin.topics.index')
-            ->with('success', 'Topic deleted successfully.');
+            ->with('success', 'Topic caches cleared successfully.');
     }
     
     /**
