@@ -21,6 +21,7 @@ use App\Http\Controllers\Student\TopicController as StudentTopicController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Student\ProgressController as StudentProgressController;
+use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 
 // Public routes
 Route::get('/', function () {
@@ -31,6 +32,17 @@ Route::get('/', function () {
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
 
+// ===== PUBLIC API ROUTES FOR REGISTRATION =====
+Route::get('/api/registration/colleges', [App\Http\Controllers\Admin\CollegeController::class, 'getActiveColleges'])
+    ->name('api.registration.colleges');
+    
+Route::get('/api/registration/colleges/{collegeId}/programs', [App\Http\Controllers\Admin\CollegeController::class, 'getPrograms'])
+    ->name('api.registration.colleges.programs');
+    
+Route::get('/api/registration/colleges/{id}/years', [App\Http\Controllers\Admin\CollegeController::class, 'getYears'])
+    ->name('api.registration.colleges.years');
+
+// Guest routes
 Route::middleware(['guest'])->group(function () {
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
@@ -85,6 +97,43 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         
         Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])
             ->name('courses.removeTopic');
+
+        // College Management
+        Route::resource('colleges', App\Http\Controllers\Admin\CollegeController::class)->parameters([
+            'colleges' => 'encryptedId'
+        ]);
+        
+        Route::get('/colleges/{id}/years', [App\Http\Controllers\Admin\CollegeController::class, 'getYears'])
+            ->name('colleges.years');
+
+        Route::get('/colleges/{encryptedId}/students', [App\Http\Controllers\Admin\CollegeController::class, 'students'])
+            ->name('admin.colleges.students');
+        
+        // Program Management (new resource)
+        Route::resource('programs', App\Http\Controllers\Admin\ProgramController::class)->parameters([
+            'programs' => 'encryptedId'
+        ]);
+
+        // Program Management (resource already exists — just add these extra student routes below it)
+        Route::resource('programs', AdminProgramController::class)->parameters([
+            'programs' => 'encryptedId'
+        ]);
+
+        // ── Program Student Management ──────────────────────────────────────────────
+        // Search students eligible to be assigned to this program (AJAX)
+        Route::get('/programs/{encryptedId}/students/search',
+            [AdminProgramController::class, 'searchStudents'])
+            ->name('programs.students.search');
+
+        // Assign an existing student to this program
+        Route::post('/programs/{encryptedId}/students/assign',
+            [AdminProgramController::class, 'assignStudent'])
+            ->name('programs.students.assign');
+
+        // Unassign (remove) a student from this program (keeps user account)
+        Route::delete('/programs/{encryptedId}/students/unassign',
+            [AdminProgramController::class, 'unassignStudent'])
+            ->name('programs.students.unassign');
     });
     
     // Registrar routes
@@ -203,6 +252,16 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         // Progress & Grades
         Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress.index');
         Route::get('/grades', [StudentProgressController::class, 'grades'])->name('grades.index');
+        
+        // ===== NEW COLLEGE AND PROGRAM ROUTES FOR STUDENTS =====
+        // Colleges
+        Route::get('/colleges', [App\Http\Controllers\Student\CollegeController::class, 'index'])->name('colleges.index');
+        Route::get('/colleges/{encryptedId}', [App\Http\Controllers\Student\CollegeController::class, 'show'])->name('colleges.show');
+        Route::get('/colleges/{collegeId}/programs', [App\Http\Controllers\Student\CollegeController::class, 'getPrograms'])->name('colleges.programs');
+        
+        // Programs
+        Route::get('/programs', [App\Http\Controllers\Student\ProgramController::class, 'index'])->name('programs.index');
+        Route::get('/programs/{encryptedId}', [App\Http\Controllers\Student\ProgramController::class, 'show'])->name('programs.show');
         
         // Additional student routes
         Route::get('/timetable', function() {

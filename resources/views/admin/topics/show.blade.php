@@ -7,37 +7,34 @@
 @endpush
 
 @section('content')
-    <!-- Topic Details Card -->
     <div class="form-container">
+
+        {{-- ── CARD HEADER ── --}}
         <div class="card-header">
             <div class="card-title-group">
                 <i class="fas fa-file-alt card-icon"></i>
                 <h2 class="card-title">Topic Details</h2>
             </div>
             <div class="top-actions">
-                <!-- Edit Button -->
                 <a href="{{ route('admin.topics.edit', Crypt::encrypt($topic->id)) }}" class="top-action-btn">
                     <i class="fas fa-edit"></i> Edit
                 </a>
-                
-                <!-- Delete Button -->
-                <form action="{{ route('admin.topics.destroy', Crypt::encrypt($topic->id)) }}" method="POST" id="deleteForm" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
+                <form action="{{ route('admin.topics.destroy', Crypt::encrypt($topic->id)) }}"
+                      method="POST" id="deleteForm" style="display:inline;">
+                    @csrf @method('DELETE')
                     <button type="submit" class="top-action-btn delete-btn" id="deleteButton">
                         <i class="fas fa-trash-alt"></i> Delete
                     </button>
                 </form>
-                
-                <!-- Back Button -->
                 <a href="{{ route('admin.topics.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
             </div>
         </div>
-        
+
         <div class="card-body">
-            <!-- Topic Preview -->
+
+            {{-- ── TOPIC PREVIEW BANNER ── --}}
             <div class="topic-preview">
                 <div class="topic-preview-avatar">
                     {{ strtoupper(substr($topic->title, 0, 1)) }}
@@ -54,65 +51,65 @@
                 </div>
             </div>
 
-            <!-- Display success/error messages -->
+            {{-- ── ALERTS ── --}}
             @if(session('success'))
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i>
-                {{ session('success') }}
-            </div>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> {{ session('success') }}
+                </div>
             @endif
-            
             @if(session('error'))
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i>
-                {{ session('error') }}
-            </div>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                </div>
             @endif
 
-            <!-- Two Column Layout -->
             <div class="two-column-layout">
-                <!-- Left Column - Main Content -->
+
+                {{-- ══ LEFT COLUMN ══ --}}
                 <div class="form-column">
-                    <!-- Topic Description -->
+
+                    {{-- Description --}}
                     <div class="detail-section">
                         <div class="detail-section-title">
                             <i class="fas fa-align-left"></i> Topic Description
                         </div>
-                        
                         <div class="description-box">
                             {{ $topic->description ?: 'No description provided for this topic.' }}
                         </div>
                     </div>
 
-                    <!-- Resources Section -->
-                    @if($topic->pdf_file || $topic->video_link || $topic->attachment)
+                    {{-- Resources: PDF + Video only --}}
+                    @if($topic->pdf_file || $topic->video_link)
                     <div class="detail-section">
                         <div class="detail-section-title">
-                            <i class="fas fa-paperclip"></i> Resources & Attachments
+                            <i class="fas fa-paperclip"></i> Resources
                         </div>
-                        
-                        <!-- PDF Document -->
+
+                        {{-- ════ PDF FILE ════ --}}
                         @if($topic->pdf_file)
+                        @php
+                            $pdfUrl      = App\Http\Controllers\Admin\TopicController::getPdfUrl($topic->pdf_file);
+                            $pdfFilename = $topic->pdf_file;
+                        @endphp
                         <div class="resource-card">
                             <div class="resource-header">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="resource-meta">
                                     <div class="file-icon file-pdf">
                                         <i class="fas fa-file-pdf"></i>
                                     </div>
                                     <div>
                                         <div class="resource-title">PDF Document</div>
-                                        <div style="font-size: 0.75rem; color: #718096;">
-                                            <i class="fas fa-file"></i>
-                                            {{ basename($topic->pdf_file) }}
+                                        <div class="resource-subtitle">
+                                            <i class="fas fa-file"></i> {{ $pdfFilename }}
                                         </div>
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button onclick="openPdfModal('{{ asset($topic->pdf_file) }}')" 
+                                <div class="resource-actions">
+                                    <button onclick="openPdfModal('{{ $pdfUrl }}')"
                                             class="resource-action-btn primary">
                                         <i class="fas fa-eye"></i> View PDF
                                     </button>
-                                    <a href="{{ asset($topic->pdf_file) }}" download 
+                                    <a href="{{ $pdfUrl }}" download
                                        class="resource-action-btn secondary">
                                         <i class="fas fa-download"></i> Download
                                     </a>
@@ -120,37 +117,51 @@
                             </div>
                             <div class="resource-content">
                                 <div class="resource-description">
-                                    PDF document associated with this topic.
+                                    Stored via <code>pdf_disk</code> &rarr;
+                                    <code>public/pdf/{{ $pdfFilename }}</code>
                                 </div>
                             </div>
                         </div>
                         @endif
-                        
-                        <!-- Video Link -->
+
+                        {{-- ════ VIDEO LINK ════ --}}
                         @if($topic->video_link)
+                        @php
+                            $vUrl = $topic->video_link;
+                            if (str_contains($vUrl, 'youtube.com') || str_contains($vUrl, 'youtu.be')) {
+                                $platformLabel = 'YouTube';
+                                $platformIcon  = 'fab fa-youtube';
+                            } elseif (str_contains($vUrl, 'vimeo.com')) {
+                                $platformLabel = 'Vimeo';
+                                $platformIcon  = 'fab fa-vimeo-v';
+                            } elseif (str_contains($vUrl, 'drive.google.com')) {
+                                $platformLabel = 'Google Drive';
+                                $platformIcon  = 'fab fa-google-drive';
+                            } else {
+                                $host          = parse_url($vUrl, PHP_URL_HOST);
+                                $platformLabel = $host ? str_replace('www.', '', $host) : 'Video Link';
+                                $platformIcon  = 'fas fa-video';
+                            }
+                        @endphp
                         <div class="resource-card">
                             <div class="resource-header">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="resource-meta">
                                     <div class="file-icon file-video">
-                                        <i class="fas fa-video"></i>
+                                        <i class="{{ $platformIcon }}"></i>
                                     </div>
                                     <div>
                                         <div class="resource-title">Video Content</div>
-                                        <div style="font-size: 0.75rem; color: #718096;">
-                                            <i class="fas fa-link"></i>
-                                            @php
-                                                $host = parse_url($topic->video_link, PHP_URL_HOST);
-                                                echo $host ? str_replace('www.', '', $host) : 'Video Link';
-                                            @endphp
+                                        <div class="resource-subtitle">
+                                            <i class="{{ $platformIcon }}"></i> {{ $platformLabel }}
                                         </div>
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button onclick="openVideoModal('{{ $topic->video_link }}')" 
+                                <div class="resource-actions">
+                                    <button onclick="openSmartVideoModal('{{ $vUrl }}')"
                                             class="resource-action-btn primary">
                                         <i class="fas fa-play"></i> Play Video
                                     </button>
-                                    <a href="{{ $topic->video_link }}" target="_blank" 
+                                    <a href="{{ $vUrl }}" target="_blank"
                                        class="resource-action-btn secondary">
                                         <i class="fas fa-external-link-alt"></i> Open Link
                                     </a>
@@ -158,68 +169,21 @@
                             </div>
                             <div class="resource-content">
                                 <div class="resource-description">
-                                    <div style="color: #4a5568; margin-bottom: 0.5rem;">Video URL:</div>
-                                    <div style="word-break: break-all; font-family: monospace; font-size: 0.8125rem; background: #f8fafc; padding: 0.625rem; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                        {{ $topic->video_link }}
-                                    </div>
+                                    <div style="color:#4a5568;margin-bottom:.4rem;">Video URL:</div>
+                                    <div class="url-box">{{ $vUrl }}</div>
                                 </div>
                             </div>
                         </div>
                         @endif
-                        
-                        <!-- Attachment -->
-                        @if($topic->attachment)
-                        <div class="resource-card">
-                            <div class="resource-header">
-                                @php
-                                    $fileType = \App\Http\Controllers\Admin\TopicController::getFileType($topic->attachment);
-                                    $icon = \App\Http\Controllers\Admin\TopicController::getFileIcon($topic->attachment);
-                                    $colorClass = 'file-generic';
-                                    
-                                    if (str_contains($fileType, 'pdf')) $colorClass = 'file-pdf';
-                                    elseif (str_contains($fileType, 'video')) $colorClass = 'file-video';
-                                    elseif (str_contains($fileType, 'word')) $colorClass = 'file-word';
-                                    elseif (str_contains($fileType, 'excel')) $colorClass = 'file-excel';
-                                    elseif (str_contains($fileType, 'powerpoint')) $colorClass = 'file-powerpoint';
-                                    elseif (str_contains($fileType, 'image')) $colorClass = 'file-image';
-                                    elseif (str_contains($fileType, 'zip')) $colorClass = 'file-zip';
-                                @endphp
-                                
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <div class="file-icon {{ $colorClass }}">
-                                        <i class="{{ $icon }}"></i>
-                                    </div>
-                                    <div>
-                                        <div class="resource-title">Additional Attachment</div>
-                                        <div style="font-size: 0.75rem; color: #718096;">
-                                            <i class="fas fa-paperclip"></i>
-                                            {{ $fileType }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <a href="{{ $topic->attachment }}" target="_blank" 
-                                       class="resource-action-btn primary">
-                                        <i class="fas fa-external-link-alt"></i> Open File
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="resource-content">
-                                <div class="resource-description">
-                                    <a href="{{ $topic->attachment }}" target="_blank" style="color: #667eea; text-decoration: none; word-break: break-all;">
-                                        {{ basename($topic->attachment) }}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
+
                     </div>
                     @endif
 
-                    <!-- Publish Button for Draft Topics -->
+                    {{-- Publish button (drafts only) --}}
                     @if(!$topic->is_published)
                     <div class="publish-section">
-                        <form action="{{ route('admin.topics.publish', Crypt::encrypt($topic->id)) }}" method="POST" id="publishForm" style="display: inline-block;">
+                        <form action="{{ route('admin.topics.publish', Crypt::encrypt($topic->id)) }}"
+                              method="POST" id="publishForm" style="display:inline-block;">
                             @csrf
                             <button type="submit" class="publish-btn" id="publishButton">
                                 <i class="fas fa-upload"></i> Publish Topic
@@ -227,360 +191,476 @@
                         </form>
                     </div>
                     @endif
-                </div>
 
-                <!-- Right Column - Sidebar -->
+                </div>{{-- /form-column --}}
+
+                {{-- ══ RIGHT SIDEBAR ══ --}}
                 <div class="sidebar-column">
-                    <!-- Topic Information Card -->
+
                     <div class="detail-section">
                         <div class="detail-section-title">
                             <i class="fas fa-info-circle"></i> Topic Information
                         </div>
-                        
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-hashtag"></i> Topic ID</span>
                             <span class="info-value">#{{ $topic->id }}</span>
                         </div>
-                        
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-calendar-alt"></i> Created</span>
-                            <div style="text-align: right;">
+                            <div style="text-align:right;">
                                 <span class="info-value">{{ $topic->created_at->format('M d, Y') }}</span>
                                 <div class="info-subvalue">{{ $topic->created_at->diffForHumans() }}</div>
                             </div>
                         </div>
-                        
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-clock"></i> Last Updated</span>
-                            <div style="text-align: right;">
+                            <div style="text-align:right;">
                                 <span class="info-value">{{ $topic->updated_at->format('M d, Y') }}</span>
                                 <div class="info-subvalue">{{ $topic->updated_at->diffForHumans() }}</div>
                             </div>
                         </div>
-                        
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-check-circle"></i> Status</span>
                             <span class="info-value">
                                 @if($topic->is_published)
-                                    <span style="color: #48bb78;">Published</span>
+                                    <span style="color:#48bb78;font-weight:700;">Published</span>
                                 @else
-                                    <span style="color: #ed8936;">Draft</span>
+                                    <span style="color:#ed8936;font-weight:700;">Draft</span>
                                 @endif
                             </span>
                         </div>
-                        
                         @php
-                            $resources = 0;
-                            if($topic->pdf_file) $resources++;
-                            if($topic->video_link) $resources++;
-                            if($topic->attachment) $resources++;
+                            $resourceCount = ($topic->pdf_file ? 1 : 0) + ($topic->video_link ? 1 : 0);
                         @endphp
-                        
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-paperclip"></i> Resources</span>
-                            <span class="info-value">{{ $resources }} file(s)</span>
+                            <span class="info-value">{{ $resourceCount }} file(s)</span>
                         </div>
+                        @if($topic->pdf_file)
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-hdd"></i> PDF Storage</span>
+                            <span class="info-value pdf-disk-badge">pdf_disk</span>
+                        </div>
+                        @endif
                     </div>
-                    
-                    <!-- Courses Card -->
+
                     <div class="detail-section">
                         <div class="detail-section-title">
                             <i class="fas fa-book"></i> Assigned Courses
                         </div>
-                        
                         @if($topic->courses && $topic->courses->count() > 0)
-                            <div style="margin-bottom: 0.75rem;">
-                                <span class="info-label"><i class="fas fa-layer-group"></i> Total Courses</span>
-                                <span class="info-value" style="display: block; margin-top: 0.25rem; font-size: 1.25rem;">{{ $topic->courses->count() }}</span>
+                            <div style="margin-bottom:.75rem;">
+                                <span class="info-label">
+                                    <i class="fas fa-layer-group"></i> Total Courses
+                                </span>
+                                <span class="info-value"
+                                      style="display:block;margin-top:.25rem;font-size:1.25rem;">
+                                    {{ $topic->courses->count() }}
+                                </span>
                             </div>
-                            <div style="margin-top: 0.5rem;">
+                            <div style="margin-top:.5rem;">
                                 @foreach($topic->courses as $course)
-                                    <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" 
+                                    <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}"
                                        class="course-tag">
                                         {{ $course->course_code }}
                                     </a>
                                 @endforeach
                             </div>
                         @else
-                            <div class="empty-state" style="padding: 1.5rem 0.5rem;">
-                                <i class="fas fa-book-open" style="font-size: 2rem;"></i>
-                                <h3 style="margin-top: 0.5rem;">No Courses Assigned</h3>
-                                <p style="font-size: 0.75rem;">This topic is not used in any courses yet.</p>
-                                <a href="{{ route('admin.topics.edit', Crypt::encrypt($topic->id)) }}" 
-                                   style="display: inline-block; margin-top: 0.75rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
-                                    <i class="fas fa-plus" style="margin-right: 0.375rem;"></i> Assign to Course
+                            <div class="empty-state" style="padding:1.5rem .5rem;">
+                                <i class="fas fa-book-open" style="font-size:2rem;"></i>
+                                <h3 style="margin-top:.5rem;">No Courses Assigned</h3>
+                                <p style="font-size:.75rem;">This topic is not used in any courses yet.</p>
+                                <a href="{{ route('admin.topics.edit', Crypt::encrypt($topic->id)) }}"
+                                   style="display:inline-block;margin-top:.75rem;padding:.5rem 1rem;
+                                          background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+                                          color:white;border-radius:8px;text-decoration:none;
+                                          font-size:.75rem;font-weight:600;">
+                                    <i class="fas fa-plus" style="margin-right:.375rem;"></i>
+                                    Assign to Course
                                 </a>
                             </div>
                         @endif
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- PDF Preview Modal -->
-    <div class="pdf-modal-overlay" id="pdfModal">
-        <div class="pdf-modal-container">
-            <div class="modal-header">
-                <h3 style="margin: 0; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                </div>{{-- /sidebar-column --}}
+            </div>{{-- /two-column-layout --}}
+        </div>{{-- /card-body --}}
+    </div>{{-- /form-container --}}
+
+
+    {{-- ══════════════════════════════════════════════════════════════
+         MODALS  —  PDF + VIDEO only
+    ══════════════════════════════════════════════════════════════════ --}}
+
+    {{-- PDF Modal --}}
+    <div class="modal-overlay" id="pdfModal">
+        <div class="modal-box modal-box--pdf">
+            <div class="modal-header modal-header--pdf">
+                <span class="modal-header__title">
                     <i class="fas fa-file-pdf"></i> PDF Preview
-                </h3>
-                <button class="modal-close" onclick="closePdfModal()">&times;</button>
+                </span>
+                <button class="modal-close" onclick="closePdfModal()" aria-label="Close">&times;</button>
             </div>
-            <div style="flex: 1; position: relative; background: #f8fafc;">
-                <iframe id="pdfIframe" style="width: 100%; height: 100%; border: none;"></iframe>
-                <div id="pdfLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none;">
-                    <div style="width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                    <p style="color: #4a5568;">Loading PDF...</p>
+            <div class="modal-body modal-body--iframe">
+                <div class="modal-loading" id="pdfLoading">
+                    <div class="spinner"></div>
+                    <p>Loading PDF…</p>
                 </div>
+                <iframe id="pdfIframe" class="modal-iframe" src=""></iframe>
             </div>
+            <div class="modal-footer modal-footer--dark" id="pdfFooter"></div>
         </div>
     </div>
 
-    <!-- Video Player Modal -->
-    <div class="video-modal-overlay" id="videoModal">
-        <div class="video-modal-container">
-            <div class="modal-header">
-                <h3 style="margin: 0; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-video"></i> Video Player
-                </h3>
-                <button class="modal-close" onclick="closeVideoModal()">&times;</button>
+    {{-- Unified Video Modal (YouTube / Vimeo iframe + native <video>) --}}
+    <div class="modal-overlay" id="videoModal">
+        <div class="modal-box modal-box--video">
+            <div class="modal-header modal-header--video">
+                <span class="modal-header__title" id="videoModalTitle">
+                    <i class="fas fa-play-circle"></i> Video Player
+                </span>
+                <button class="modal-close" onclick="closeVideoModal()" aria-label="Close">&times;</button>
             </div>
-            <div class="video-player-container">
-                <iframe id="videoPlayer" class="video-player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                <div id="videoLoading" class="video-loading" style="display: none;">
-                    <div class="video-loading-spinner"></div>
-                    <p>Loading video...</p>
+
+            {{-- Panel A: iframe embed (YouTube, Vimeo) --}}
+            <div id="videoIframeWrap" class="modal-body modal-body--video" style="display:none;">
+                <div class="video-ratio-box">
+                    <iframe id="videoIframe"
+                            class="video-ratio-iframe"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media;
+                                   gyroscope; picture-in-picture"
+                            allowfullscreen src=""></iframe>
+                    <div class="modal-loading video-dark-loading" id="videoIframeLoading">
+                        <div class="spinner spinner--light"></div>
+                        <p>Loading video…</p>
+                    </div>
                 </div>
             </div>
-            <div style="padding: 1rem; background: #1a202c; color: white; font-size: 0.8125rem; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
-                <div id="videoUrlDisplay" style="word-break: break-all; opacity: 0.8;"></div>
+
+            {{-- Panel B: native <video> (direct mp4/webm/etc.) --}}
+            <div id="videoNativeWrap" class="modal-body modal-body--video" style="display:none;">
+                <div class="native-video-wrap">
+                    <div class="modal-loading video-dark-loading" id="videoNativeLoading">
+                        <div class="spinner spinner--light"></div>
+                        <p>Loading video…</p>
+                    </div>
+                    <video id="nativeVideoPlayer"
+                           controls preload="metadata"
+                           class="native-video-player"
+                           style="display:none;">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div id="videoNativeError" class="video-error-state" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Could not load this video file.</p>
+                        <p class="video-error-hint">
+                            The format may not be supported by your browser,
+                            or the file is still processing.
+                        </p>
+                        <a id="videoNativeDownload" href="#" download
+                           class="resource-action-btn primary"
+                           style="margin-top:1rem;font-size:.875rem;">
+                            <i class="fas fa-download"></i> Download to Play
+                        </a>
+                    </div>
+                </div>
             </div>
+
+            <div class="modal-footer modal-footer--dark" id="videoFooter"></div>
         </div>
     </div>
+
+    {{-- Google Drive Modal --}}
+    <div class="modal-overlay" id="driveModal">
+        <div class="modal-box modal-box--drive">
+            <div class="modal-header modal-header--video">
+                <span class="modal-header__title">
+                    <i class="fab fa-google-drive"></i> Google Drive Viewer
+                </span>
+                <button class="modal-close" onclick="closeDriveModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body modal-body--iframe modal-body--dark">
+                <div class="modal-loading video-dark-loading" id="driveLoading">
+                    <div class="spinner spinner--light"></div>
+                    <p>Loading file…</p>
+                </div>
+                <iframe id="driveIframe" class="modal-iframe"
+                        src="" allow="autoplay" allowfullscreen></iframe>
+            </div>
+            <div class="modal-footer modal-footer--dark" id="driveFooter"></div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Handle publish button click with SweetAlert2
-        const publishButton = document.getElementById('publishButton');
-        if (publishButton) {
-            publishButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                Swal.fire({
-                    title: 'Publish Topic?',
-                    text: 'Once published, this topic will be visible to students.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#48bb78',
-                    cancelButtonColor: '#a0aec0',
-                    confirmButtonText: 'Yes, Publish',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        publishButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-                        publishButton.disabled = true;
-                        document.getElementById('publishForm').submit();
-                    }
-                });
+// ════════════════════════════════════════════════════════════════
+// DOM READY
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Publish confirm
+    const publishButton = document.getElementById('publishButton');
+    if (publishButton) {
+        publishButton.addEventListener('click', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Publish Topic?',
+                text: 'Once published, this topic will be visible to students.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#48bb78',
+                cancelButtonColor: '#a0aec0',
+                confirmButtonText: 'Yes, Publish',
+                cancelButtonText: 'Cancel'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    publishButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing…';
+                    publishButton.disabled = true;
+                    document.getElementById('publishForm').submit();
+                }
             });
-        }
-        
-        // Handle delete button click with SweetAlert2
-        const deleteButton = document.getElementById('deleteButton');
-        if (deleteButton) {
-            deleteButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                Swal.fire({
-                    title: 'Delete Topic?',
-                    text: 'This action cannot be undone. All topic data will be permanently removed.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#f56565',
-                    cancelButtonColor: '#a0aec0',
-                    confirmButtonText: 'Yes, Delete',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
-                        deleteButton.disabled = true;
-                        document.getElementById('deleteForm').submit();
-                    }
-                });
+        });
+    }
+
+    // Delete confirm
+    const deleteButton = document.getElementById('deleteButton');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Delete Topic?',
+                text: 'This action cannot be undone. All topic data will be permanently removed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f56565',
+                cancelButtonColor: '#a0aec0',
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(result => {
+                if (result.isConfirmed) {
+                    deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting…';
+                    deleteButton.disabled = true;
+                    document.getElementById('deleteForm').submit();
+                }
             });
+        });
+    }
+
+    // Session flash toasts
+    @if(session('success'))
+        showNotification('{{ session('success') }}', 'success');
+    @endif
+    @if(session('error'))
+        showNotification('{{ session('error') }}', 'error');
+    @endif
+
+    setupModalDismiss();
+});
+
+// ════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════
+function showNotification(message, type = 'info') {
+    Swal.fire({
+        toast: true, position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000, timerProgressBar: true,
+        icon: type, title: message,
+        didOpen: toast => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
         }
-        
-        // Show notifications from session
-        @if(session('success'))
-            showNotification('{{ session('success') }}', 'success');
-        @endif
-        
-        @if(session('error'))
-            showNotification('{{ session('error') }}', 'error');
-        @endif
-        
-        // Setup modal event listeners
-        setupModals();
     });
-    
-    // Toast Notification Function
-    function showNotification(message, type = 'info') {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true,
-            icon: type,
-            title: message,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
-            }
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function closeAllModals() {
+    ['pdfModal', 'videoModal', 'driveModal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    const pdfIframe = document.getElementById('pdfIframe');
+    if (pdfIframe) pdfIframe.src = '';
+
+    const videoIframe = document.getElementById('videoIframe');
+    if (videoIframe) { videoIframe.src = ''; videoIframe.style.opacity = '0'; }
+
+    const driveIframe = document.getElementById('driveIframe');
+    if (driveIframe) { driveIframe.src = ''; driveIframe.style.opacity = '0'; }
+
+    const vid = document.getElementById('nativeVideoPlayer');
+    if (vid) { vid.pause(); vid.src = ''; vid.style.display = 'none'; }
+}
+
+function setupModalDismiss() {
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === this) closeAllModals();
         });
-    }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeAllModals();
+    });
+}
 
-    // PDF Modal Functions
-    function openPdfModal(pdfUrl) {
-        const modal = document.getElementById('pdfModal');
-        const iframe = document.getElementById('pdfIframe');
-        const loading = document.getElementById('pdfLoading');
-        
-        modal.style.display = 'flex';
-        loading.style.display = 'block';
-        
-        iframe.src = pdfUrl;
-        
-        iframe.onload = () => {
-            loading.style.display = 'none';
-        };
-        
-        iframe.onerror = () => {
-            loading.style.display = 'none';
-            showNotification('Failed to load PDF. Please try downloading the file instead.', 'error');
-            closePdfModal();
-        };
-    }
+// ════════════════════════════════════════════════════════════════
+// PDF MODAL
+// Served via pdf_disk: public/pdf/{filename} → /pdf/{filename}
+// ════════════════════════════════════════════════════════════════
+function openPdfModal(pdfUrl) {
+    closeAllModals();
+    openModal('pdfModal');
 
-    function closePdfModal() {
-        const modal = document.getElementById('pdfModal');
-        const iframe = document.getElementById('pdfIframe');
-        const loading = document.getElementById('pdfLoading');
-        
-        modal.style.display = 'none';
-        iframe.src = '';
+    const iframe  = document.getElementById('pdfIframe');
+    const loading = document.getElementById('pdfLoading');
+    const footer  = document.getElementById('pdfFooter');
+
+    loading.style.display = 'flex';
+    iframe.style.opacity  = '0';
+    iframe.src            = pdfUrl;
+    footer.textContent    = 'Source: ' + pdfUrl;
+
+    iframe.onload  = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
+    iframe.onerror = () => {
         loading.style.display = 'none';
-    }
+        showNotification('Failed to load PDF. Try downloading instead.', 'error');
+        closeModal('pdfModal');
+    };
+}
+function closePdfModal() {
+    closeModal('pdfModal');
+    document.getElementById('pdfIframe').src = '';
+}
 
-    // Video Modal Functions
-    function openVideoModal(videoUrl) {
-        const modal = document.getElementById('videoModal');
-        const player = document.getElementById('videoPlayer');
-        const loading = document.getElementById('videoLoading');
-        const urlDisplay = document.getElementById('videoUrlDisplay');
-        
-        modal.style.display = 'flex';
-        loading.style.display = 'block';
-        
-        const embedUrl = getEmbedUrl(videoUrl);
-        
-        if (embedUrl) {
-            player.src = embedUrl;
-            player.style.display = 'block';
-            urlDisplay.textContent = 'Source: ' + videoUrl;
-        } else {
-            loading.innerHTML = `
-                <div style="color: white; text-align: center;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ed8936;"></i>
-                    <p>This video cannot be embedded directly.</p>
-                    <a href="${videoUrl}" target="_blank" style="color: #667eea; text-decoration: underline; display: inline-block; margin-top: 0.5rem;">
-                        Open video in new tab
-                    </a>
-                </div>
-            `;
-            player.style.display = 'none';
-            urlDisplay.textContent = 'Source: ' + videoUrl;
-        }
-        
-        player.onload = () => {
-            loading.style.display = 'none';
-        };
-        
-        player.onerror = () => {
-            loading.innerHTML = `
-                <div style="color: white; text-align: center;">
-                    <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #f56565;"></i>
-                    <p>Failed to load video.</p>
-                    <a href="${videoUrl}" target="_blank" style="color: #667eea; text-decoration: underline; display: inline-block; margin-top: 0.5rem;">
-                        Try opening in new tab
-                    </a>
-                </div>
-            `;
-            player.style.display = 'none';
-        };
-    }
+// ════════════════════════════════════════════════════════════════
+// SMART VIDEO ROUTER
+// YouTube → embed iframe
+// Vimeo   → embed iframe
+// Google Drive → Drive modal iframe
+// Direct file  → native <video>
+// ════════════════════════════════════════════════════════════════
+function openSmartVideoModal(url) {
+    closeAllModals();
 
-    function getEmbedUrl(url) {
-        // YouTube
-        const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-        const youtubeMatch = url.match(youtubeRegex);
-        if (youtubeMatch) {
-            return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0`;
-        }
-        
-        // Vimeo
-        const vimeoRegex = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|video\/|)(\d+)(?:|\/\?)/i;
-        const vimeoMatch = url.match(vimeoRegex);
-        if (vimeoMatch) {
-            return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
-        }
-        
-        // Direct video file (mp4, webm, etc.)
-        if (url.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv)(\?.*)?$/i)) {
-            return url;
-        }
-        
-        return null;
-    }
+    // 1. YouTube
+    const yt = url.match(
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
+    );
+    if (yt) return _openEmbedPanel(`https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0`, url, 'YouTube');
 
-    function closeVideoModal() {
-        const modal = document.getElementById('videoModal');
-        const player = document.getElementById('videoPlayer');
-        const loading = document.getElementById('videoLoading');
-        
-        modal.style.display = 'none';
-        player.src = '';
+    // 2. Vimeo
+    const vimeo = url.match(
+        /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|video\/|)(\d+)(?:|\/\?)/i
+    );
+    if (vimeo) return _openEmbedPanel(`https://player.vimeo.com/video/${vimeo[1]}?autoplay=1`, url, 'Vimeo');
+
+    // 3. Google Drive
+    const driveId = _extractDriveId(url);
+    if (driveId) return _openDrivePanel(`https://drive.google.com/file/d/${driveId}/preview`, url);
+
+    // 4. Direct video file
+    if (url.match(/\.(mp4|webm|mov|mkv|avi|wmv|flv|ogg|ogv|3gp|m4v)(\?.*)?$/i))
+        return _openNativePanel(url);
+
+    // 5. Unknown — try native, error-states gracefully
+    _openNativePanel(url);
+}
+
+// ── Embed iframe panel (YouTube / Vimeo) ─────────────────────────
+function _openEmbedPanel(embedUrl, sourceUrl, label) {
+    openModal('videoModal');
+    document.getElementById('videoModalTitle').innerHTML =
+        `<i class="fas fa-play-circle"></i> ${label} Player`;
+    document.getElementById('videoIframeWrap').style.display = 'block';
+    document.getElementById('videoNativeWrap').style.display = 'none';
+
+    const iframe  = document.getElementById('videoIframe');
+    const loading = document.getElementById('videoIframeLoading');
+    loading.style.display = 'flex';
+    iframe.style.opacity  = '0';
+    iframe.src = embedUrl;
+    iframe.onload = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
+    document.getElementById('videoFooter').textContent = 'Source: ' + sourceUrl;
+}
+
+// ── Google Drive iframe panel ────────────────────────────────────
+function _openDrivePanel(embedUrl, sourceUrl) {
+    openModal('driveModal');
+    const iframe  = document.getElementById('driveIframe');
+    const loading = document.getElementById('driveLoading');
+    loading.style.display = 'flex';
+    iframe.style.opacity  = '0';
+    iframe.src = embedUrl;
+    iframe.onload  = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
+    iframe.onerror = () => {
         loading.style.display = 'none';
-        loading.innerHTML = '<div class="video-loading-spinner"></div><p>Loading video...</p>';
-    }
+        showNotification('Could not load Google Drive file. Try opening the link directly.', 'error');
+    };
+    document.getElementById('driveFooter').textContent = 'Source: ' + sourceUrl;
+}
+function closeDriveModal() {
+    closeModal('driveModal');
+    const i = document.getElementById('driveIframe');
+    i.src = ''; i.style.opacity = '0';
+}
 
-    function setupModals() {
-        // Close PDF modal when clicking outside
-        document.getElementById('pdfModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closePdfModal();
-            }
-        });
+// ── Native <video> panel ─────────────────────────────────────────
+function _openNativePanel(url) {
+    openModal('videoModal');
+    document.getElementById('videoModalTitle').innerHTML =
+        '<i class="fas fa-film"></i> Video Player';
+    document.getElementById('videoIframeWrap').style.display = 'none';
+    document.getElementById('videoNativeWrap').style.display = 'block';
 
-        // Close video modal when clicking outside
-        document.getElementById('videoModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeVideoModal();
-            }
-        });
+    const vid     = document.getElementById('nativeVideoPlayer');
+    const loading = document.getElementById('videoNativeLoading');
+    const errBox  = document.getElementById('videoNativeError');
+    const dlBtn   = document.getElementById('videoNativeDownload');
 
-        // Close modals with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closePdfModal();
-                closeVideoModal();
-            }
-        });
-    }
+    vid.style.display     = 'none';
+    errBox.style.display  = 'none';
+    loading.style.display = 'flex';
+    dlBtn.href            = url;
+
+    vid.src = url;
+    vid.load();
+
+    vid.onloadedmetadata = () => { loading.style.display = 'none'; vid.style.display = 'block'; };
+    vid.oncanplay        = () => { loading.style.display = 'none'; vid.style.display = 'block'; };
+    vid.onerror          = () => { loading.style.display = 'none'; errBox.style.display = 'flex'; };
+
+    document.getElementById('videoFooter').textContent = 'Source: ' + url;
+}
+
+// ── Close video modal ────────────────────────────────────────────
+function closeVideoModal() {
+    closeModal('videoModal');
+    const iframe = document.getElementById('videoIframe');
+    iframe.src = ''; iframe.style.opacity = '0';
+    const vid = document.getElementById('nativeVideoPlayer');
+    vid.pause(); vid.src = ''; vid.style.display = 'none';
+    document.getElementById('videoNativeError').style.display   = 'none';
+    document.getElementById('videoNativeLoading').style.display = 'flex';
+    document.getElementById('videoIframeLoading').style.display = 'flex';
+}
+
+// ── Drive ID extractor ───────────────────────────────────────────
+function _extractDriveId(url) {
+    const m1 = url.match(/\/file\/d\/([^\/?#&]+)/);
+    if (m1) return m1[1];
+    const m2 = url.match(/[?&]id=([^&]+)/);
+    if (m2) return m2[1];
+    return null;
+}
 </script>
 @endpush

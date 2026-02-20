@@ -8,6 +8,7 @@ use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Traits\CacheManager;
 
@@ -17,8 +18,6 @@ class TopicController extends Controller
     
     public function index()
     {
-        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
-        
         // Get topics with specific columns only
         $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
             ->latest()
@@ -68,26 +67,24 @@ class TopicController extends Controller
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
 
-        // Handle PDF file upload
+        // 🔥 SIMPLE PDF UPLOAD - Works on both local and live
         if ($request->hasFile('pdf_file')) {
             $file = $request->file('pdf_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('pdfs', $fileName, 'public');
-            $validated['pdf_file'] = '/storage/' . $filePath;
+            
+            // Store directly in public/pdf folder
+            $file->move(public_path('pdf'), $fileName);
+            
+            // Save just the filename in database
+            $validated['pdf_file'] = $fileName;
         }
 
         $topic = Topic::create($validated);
         
-        // Clear ALL topic-related caches
+        // Clear all caches
         $this->clearAdminTopicCaches();
-        
-        // Clear ALL teacher topic caches (teachers can see all topics)
         $this->clearAllTeacherTopicCaches();
-        
-        // 🔥 ADD THIS: Clear admin dashboard caches
         $this->clearAdminDashboardCaches();
-        
-        // 🔥 ADD THIS: Clear teacher dashboard caches for all teachers
         $this->clearTeacherDashboardCaches();
         
         \Log::info('New topic created - ID: ' . $topic->id . ', Title: ' . $topic->title);
@@ -160,17 +157,21 @@ class TopicController extends Controller
                 'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
             ]);
 
-            // Handle PDF file upload
+            // 🔥 SIMPLE PDF UPDATE - Works on both local and live
             if ($request->hasFile('pdf_file')) {
                 // Delete old file if exists
-                if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                    unlink(public_path($topic->pdf_file));
+                if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                    unlink(public_path('pdf/' . $topic->pdf_file));
                 }
                 
                 $file = $request->file('pdf_file');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('pdfs', $fileName, 'public');
-                $validated['pdf_file'] = '/storage/' . $filePath;
+                
+                // Store directly in public/pdf folder
+                $file->move(public_path('pdf'), $fileName);
+                
+                // Save just the filename
+                $validated['pdf_file'] = $fileName;
             } else {
                 // Keep existing pdf_file if not uploading new one
                 $validated['pdf_file'] = $topic->pdf_file;
@@ -178,12 +179,11 @@ class TopicController extends Controller
 
             $topic->update($validated);
             
-            // Clear all topic-related caches
+            // Clear caches
             $this->clearAdminTopicCaches();
             Cache::forget('admin_topic_show_' . $id);
             Cache::forget('admin_topic_edit_' . $id);
             
-            // When topic is updated, clear student caches for all courses that use this topic
             $courses = $topic->courses;
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
@@ -209,22 +209,20 @@ class TopicController extends Controller
             $id = Crypt::decrypt($encryptedId);
             $topic = Topic::findOrFail($id);
             
-            // Get all courses that use this topic before deletion
             $courses = $topic->courses;
             
-            // Delete PDF file if exists
-            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                unlink(public_path($topic->pdf_file));
+            // 🔥 SIMPLE PDF DELETION
+            if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                unlink(public_path('pdf/' . $topic->pdf_file));
             }
             
             $topic->delete();
             
-            // Clear all topic-related caches
+            // Clear caches
             $this->clearAdminTopicCaches();
             Cache::forget('admin_topic_show_' . $id);
             Cache::forget('admin_topic_edit_' . $id);
             
-            // Clear student caches for all affected courses
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
             }
@@ -255,6 +253,31 @@ class TopicController extends Controller
         
         return redirect()->route('admin.topics.index')
             ->with('success', 'Topic caches cleared successfully.');
+    }
+    
+    /**
+     * 🔥 HELPER METHOD - Get PDF URL (handles both old and new formats)
+     */
+    public static function getPdfUrl($pdfFile)
+    {
+        if (empty($pdfFile)) {
+            return null;
+        }
+        
+        // If it's already a full URL or old storage path
+        if (str_contains($pdfFile, '/storage/')) {
+            // Extract just the filename
+            $filename = basename($pdfFile);
+            return asset('pdf/' . $filename);
+        }
+        
+        // If it's just a filename (new format)
+        if (!str_contains($pdfFile, '/')) {
+            return asset('pdf/' . $pdfFile);
+        }
+        
+        // If it's some other path, return as is
+        return asset($pdfFile);
     }
     
     /**

@@ -69,6 +69,27 @@
                         {{ $roleDisplay }}
                     </div>
                 </div>
+
+                {{-- Academic badges for students --}}
+                @if($user->role == 4)
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;margin-top:0.75rem;">
+                    @if($user->college)
+                        <span style="background:#ede9fe;color:#5b21b6;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
+                            <i class="fas fa-university"></i> {{ $user->college->college_name }}
+                        </span>
+                    @endif
+                    @if($user->program)
+                        <span style="background:#dbeafe;color:#1d4ed8;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
+                            <i class="fas fa-graduation-cap"></i> {{ $user->program->program_name }}
+                        </span>
+                    @endif
+                    @if($user->college_year)
+                        <span style="background:#dcfce7;color:#15803d;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
+                            <i class="fas fa-calendar-alt"></i> {{ $user->college_year }}
+                        </span>
+                    @endif
+                </div>
+                @endif
             </div>
 
             <!-- Quick Stats -->
@@ -202,6 +223,59 @@
                     
                 </div>
             </div>
+
+            {{-- ── Academic Information (students only) ── --}}
+            @if($user->role == 4)
+            <div class="detail-section">
+                <div class="detail-section-title">
+                    <i class="fas fa-university"></i>
+                    Academic Information
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
+                        <div class="detail-label">College</div>
+                        <div class="detail-value" style="text-align:left;">
+                            @if($user->college)
+                                <a href="{{ route('admin.colleges.show', Crypt::encrypt($user->college->id)) }}"
+                                   style="color:#4f46e5;text-decoration:none;font-weight:600;">
+                                    <i class="fas fa-university"></i> {{ $user->college->college_name }}
+                                </a>
+                            @else
+                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not assigned</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
+                        <div class="detail-label">Program</div>
+                        <div class="detail-value" style="text-align:left;">
+                            @if($user->program)
+                                <a href="{{ route('admin.programs.show', Crypt::encrypt($user->program->id)) }}"
+                                   style="color:#4f46e5;text-decoration:none;font-weight:600;">
+                                    <i class="fas fa-graduation-cap"></i> {{ $user->program->program_name }}
+                                    @if($user->program->program_code)
+                                        <span style="color:#6b7280;font-weight:400;">({{ $user->program->program_code }})</span>
+                                    @endif
+                                </a>
+                            @else
+                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not assigned</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
+                        <div class="detail-label">Year Level</div>
+                        <div class="detail-value" style="text-align:left;">
+                            @if($user->college_year)
+                                <span style="background:#dcfce7;color:#15803d;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
+                                    {{ $user->college_year }}
+                                </span>
+                            @else
+                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not set</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Approval Information -->
             @if($user->is_approved && $user->approved_at)

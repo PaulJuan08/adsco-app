@@ -181,6 +181,11 @@
                 
                 <!-- PDF Materials Section -->
                 @if($topic->pdf_file)
+                @php
+                    // Get PDF URL using the helper method from Student TopicController
+                    $pdfUrl = App\Http\Controllers\Student\TopicController::getPdfUrl($topic->pdf_file);
+                    $pdfFilename = basename(str_replace('/storage/pdfs/', '', $topic->pdf_file));
+                @endphp
                 <div class="detail-section">
                     <h3 class="detail-section-title">
                         <i class="fas fa-file-pdf" style="color: var(--danger);"></i> PDF Materials
@@ -194,7 +199,7 @@
                                 </div>
                                 <div>
                                     <div class="resource-title">PDF Document</div>
-                                    <div class="resource-description">{{ basename($topic->pdf_file) }}</div>
+                                    <div class="resource-description">{{ $pdfFilename }}</div>
                                 </div>
                             </div>
                         </div>
@@ -209,10 +214,10 @@
                                     </span>
                                 </div>
                                 <div style="display: flex; gap: 0.75rem;">
-                                    <button onclick="openPdfModal('{{ asset($topic->pdf_file) }}')" class="resource-action-btn primary">
+                                    <button onclick="openPdfModal('{{ $pdfUrl }}')" class="resource-action-btn primary">
                                         <i class="fas fa-eye"></i> Preview
                                     </button>
-                                    <a href="{{ asset($topic->pdf_file) }}" download class="resource-action-btn secondary">
+                                    <a href="{{ $pdfUrl }}" download class="resource-action-btn secondary">
                                         <i class="fas fa-download"></i> Download
                                     </a>
                                 </div>

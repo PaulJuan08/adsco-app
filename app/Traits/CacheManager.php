@@ -9,6 +9,15 @@ use App\Models\User;
 trait CacheManager
 {
     /**
+     * Clear college-related caches
+     */
+    protected function clearCollegeCaches()
+    {
+        Cache::forget('all_colleges');
+        Cache::forget('active_colleges');
+    }
+    
+    /**
      * Clear all student caches for a specific course
      */
     protected function clearStudentCachesForCourse($courseId)

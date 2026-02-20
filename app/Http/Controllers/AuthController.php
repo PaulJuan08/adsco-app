@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
+use App\Models\Program; // Add this import
 use App\Mail\UserApprovedMail;
 
 class AuthController extends Controller
@@ -19,6 +20,7 @@ class AuthController extends Controller
     
     public function register(Request $request)
     {
+        // Fix the validation rules
         $request->validate([
             'f_name' => 'required|string|max:50',
             'l_name' => 'required|string|max:50',
@@ -26,14 +28,18 @@ class AuthController extends Controller
             'sex' => 'required|in:male,female',
             'contact' => 'required|string|max:20',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|in:1,2,3,4',
-            'employee_id' => 'required_if:role,1,2,3|nullable|unique:users,employee_id',
+            'role' => 'required|in:2,3,4', // Only allow Registrar(2), Teacher(3), Student(4) to register
+            'employee_id' => 'required_if:role,2,3|nullable|unique:users,employee_id',
             'student_id' => 'required_if:role,4|nullable|unique:users,student_id',
+            // Add academic field validation for students
+            'college_id' => 'required_if:role,4|nullable|exists:colleges,id',
+            'program_id' => 'required_if:role,4|nullable|exists:programs,id',
+            'college_year' => 'required_if:role,4|nullable|string|max:50',
             'password' => 'required|string|min:8|confirmed'
         ]);
         
-        // Create user
-        $user = User::create([
+        // Prepare user data
+        $userData = [
             'f_name' => $request->f_name,
             'l_name' => $request->l_name,
             'age' => $request->age,
@@ -41,20 +47,38 @@ class AuthController extends Controller
             'contact' => $request->contact,
             'email' => $request->email,
             'role' => $request->role,
-            'employee_id' => $request->employee_id,
-            'student_id' => $request->student_id,
             'password' => Hash::make($request->password),
             'is_approved' => false // Not approved by default
-        ]);
+        ];
         
-        // If admin self-registers, auto-approve
-        if ($request->role == 1 && User::where('role', 1)->count() == 1) {
-            $user->update([
-                'is_approved' => true,
-                'approved_at' => now(),
-                'approved_by' => $user->id
-            ]);
+        // Handle employee ID for Registrar/Teacher
+        if (in_array($request->role, [2, 3])) {
+            $userData['employee_id'] = $request->employee_id;
         }
+        
+        // Handle student-specific fields
+        if ($request->role == 4) {
+            $userData['student_id'] = $request->student_id;
+            
+            // ── IMPORTANT: Set program and derive college from program ──
+            if ($request->filled('program_id')) {
+                $program = Program::find($request->program_id);
+                $userData['program_id'] = $program->id;
+                $userData['college_id'] = $program->college_id; // Derived from program
+            } elseif ($request->filled('college_id')) {
+                $userData['college_id'] = $request->college_id;
+            }
+            
+            if ($request->filled('college_year')) {
+                $userData['college_year'] = $request->college_year;
+            }
+        }
+        
+        // Create user
+        $user = User::create($userData);
+        
+        // If admin self-registers, auto-approve (but admin shouldn't be able to register via this form)
+        // This is kept for backward compatibility but role 1 is not allowed in validation anymore
         
         // 🔥 CRITICAL: Clear ALL caches when new user registers
         $this->clearAllCachesOnRegistration();
@@ -82,17 +106,33 @@ class AuthController extends Controller
                 Cache::forget('registrar_dashboard_' . $registrarId);
             }
             
-            // ============ 3. 🔥 CRITICAL: CLEAR REGISTRAR USER INDEX CACHES ============
-            // This is what was missing! The registrar user list was still cached.
+            // ============ 3. 🔥 CRITICAL: CLEAR ADMIN USER INDEX CACHES ============
+            $this->clearAdminUserIndexCaches();
+            
+            // ============ 4. 🔥 CRITICAL: CLEAR REGISTRAR USER INDEX CACHES ============
             $this->clearRegistrarUserIndexCaches();
             
-            // ============ 4. CLEAR STATS CACHES ============
+            // ============ 5. CLEAR STATS CACHES ============
             Cache::forget('user_stats');
             Cache::forget('pending_users_count');
             Cache::forget('users_this_month');
             Cache::forget('registrar_user_stats');
             Cache::forget('registrar_pending_users_count');
             Cache::forget('registrar_users_this_month');
+            
+            // ============ 6. CLEAR COLLEGE/PROGRAM RELATED CACHES ============
+            // Clear all college-related caches
+            $colleges = \App\Models\College::pluck('id')->toArray();
+            foreach ($colleges as $collegeId) {
+                Cache::forget('college_programs_' . $collegeId);
+                Cache::forget('college_students_' . $collegeId);
+            }
+            
+            // Clear all program-related caches
+            $programs = \App\Models\Program::pluck('id')->toArray();
+            foreach ($programs as $programId) {
+                Cache::forget('program_students_' . $programId);
+            }
             
             \Log::info('All caches cleared after new registration (Admin + Registrar)');
         } catch (\Exception $e) {
@@ -101,14 +141,56 @@ class AuthController extends Controller
     }
     
     /**
+     * Clear all admin user index caches
+     */
+    private function clearAdminUserIndexCaches()
+    {
+        // Clear all possible filter combinations for pages 1-10
+        for ($page = 1; $page <= 10; $page++) {
+            // All filter combinations for admin
+            $filterCombinations = [
+                ['role' => null, 'status' => null],
+                ['role' => null, 'status' => 'pending'],
+                ['role' => 1, 'status' => null],
+                ['role' => 2, 'status' => null],
+                ['role' => 3, 'status' => null],
+                ['role' => 3, 'status' => 'pending'],
+                ['role' => 4, 'status' => null],
+                ['role' => 4, 'status' => 'pending'],
+            ];
+            
+            foreach ($filterCombinations as $filters) {
+                // Clear without search
+                $cacheKey = 'users_index_' . md5(json_encode([
+                    'search' => null,
+                    'role' => $filters['role'],
+                    'status' => $filters['status'],
+                    'page' => $page
+                ]));
+                Cache::forget($cacheKey);
+                
+                // Clear with wildcard search
+                $cacheKeyWithSearch = 'users_index_' . md5(json_encode([
+                    'search' => '*',
+                    'role' => $filters['role'],
+                    'status' => $filters['status'],
+                    'page' => $page
+                ]));
+                Cache::forget($cacheKeyWithSearch);
+            }
+        }
+        
+        \Log::info('Admin user index caches cleared');
+    }
+    
+    /**
      * Clear all registrar user index caches
-     * This ensures the registrar's user list shows new pending users immediately
      */
     private function clearRegistrarUserIndexCaches()
     {
         // Clear all possible filter combinations for pages 1-10
         for ($page = 1; $page <= 10; $page++) {
-            // All filter combinations
+            // Registrars typically only see teachers and students
             $filterCombinations = [
                 ['role' => null, 'status' => null],
                 ['role' => null, 'status' => 'pending'],

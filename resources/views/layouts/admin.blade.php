@@ -262,6 +262,14 @@
                     <i class="fas fa-users"></i>
                     <span>Users</span>
                 </a>
+                <a href="{{ route('admin.colleges.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.colleges.*') ? 'active' : '' }}">
+                    <i class="fas fa-university"></i>
+                    <span>Colleges</span>
+                </a>
+                <a href="{{ route('admin.programs.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.programs.*') ? 'active' : '' }}">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Programs</span>
+                </a>
                 <a href="{{ route('admin.courses.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
                     <i class="fas fa-book"></i>
                     <span>Courses</span>

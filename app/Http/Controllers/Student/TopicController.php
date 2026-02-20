@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Progress;
@@ -393,6 +394,31 @@ class TopicController extends Controller
                 'message' => 'Failed to save notes.'
             ], 500);
         }
+    }
+    
+    /**
+     * 🔥 HELPER METHOD - Get PDF URL (handles both old and new formats)
+     */
+    public static function getPdfUrl($pdfFile)
+    {
+        if (empty($pdfFile)) {
+            return null;
+        }
+        
+        // If it's already a full URL or old storage path
+        if (str_contains($pdfFile, '/storage/')) {
+            // Extract just the filename
+            $filename = basename($pdfFile);
+            return asset('pdf/' . $filename);
+        }
+        
+        // If it's just a filename (new format)
+        if (!str_contains($pdfFile, '/')) {
+            return asset('pdf/' . $pdfFile);
+        }
+        
+        // If it's some other path, return as is
+        return asset($pdfFile);
     }
     
     /**

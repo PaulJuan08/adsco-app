@@ -198,6 +198,32 @@
             color: #9ca3af;
         }
         
+        .sidebar-user-college {
+            font-size: 0.75rem;
+            color: #10b981;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .sidebar-user-college i {
+            font-size: 0.7rem;
+        }
+        
+        .sidebar-user-program {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 0.125rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .sidebar-user-program i {
+            font-size: 0.65rem;
+        }
+        
         .sidebar-logout-btn {
             background: rgba(239, 68, 68, 0.15);
             color: #fca5a5;
@@ -265,6 +291,14 @@
                     <i class="fas fa-calendar-check"></i>
                     <span>Quizzes</span>
                 </a>
+                <a href="{{ route('student.colleges.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.colleges.*') ? 'active' : '' }}">
+                    <i class="fas fa-university"></i>
+                    <span>Colleges</span>
+                </a>
+                <a href="{{ route('student.programs.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.programs.*') ? 'active' : '' }}">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Programs</span>
+                </a>
             </nav>  
             
             <div class="sidebar-footer">
@@ -285,8 +319,31 @@
                             $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
                         @endphp
                         
-                        <div class="sidebar-user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
+                        <div class="sidebar-user-name">{{ $user ? $user->f_name . ' ' . $user->l_name : 'Guest' }}</div>
                         <div class="sidebar-user-role">{{ $roleText }}</div>
+                        
+                        @if($user && $user->isStudent())
+                            @if($user->college)
+                                <div class="sidebar-user-college">
+                                    <i class="fas fa-university"></i>
+                                    <span>{{ Str::limit($user->college->college_name, 25) }}</span>
+                                </div>
+                            @endif
+                            
+                            @if($user->program)
+                                <div class="sidebar-user-program">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>{{ Str::limit($user->program->program_name, 25) }}</span>
+                                </div>
+                            @endif
+                            
+                            @if($user->college_year)
+                                <div class="sidebar-user-program">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>{{ $user->college_year }}</span>
+                                </div>
+                            @endif
+                        @endif
                     </div>
                 </div>
                 

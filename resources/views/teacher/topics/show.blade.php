@@ -93,6 +93,11 @@
                         
                         <!-- PDF Document -->
                         @if($topic->pdf_file)
+                        @php
+                            // Get PDF URL using the helper method from Teacher TopicController
+                            $pdfUrl = App\Http\Controllers\Teacher\TopicController::getPdfUrl($topic->pdf_file);
+                            $pdfFilename = basename(str_replace('/storage/pdfs/', '', $topic->pdf_file));
+                        @endphp
                         <div class="resource-card">
                             <div class="resource-header">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -103,17 +108,17 @@
                                         <div class="resource-title">PDF Document</div>
                                         <div style="font-size: 0.75rem; color: #718096;">
                                             <i class="fas fa-file"></i>
-                                            {{ basename($topic->pdf_file) }}
+                                            {{ $pdfFilename }}
                                         </div>
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <button onclick="openPdfModal('{{ asset($topic->pdf_file) }}')" 
+                                    <button onclick="openPdfModal('{{ $pdfUrl }}')" 
                                             class="resource-action-btn primary">
                                         <i class="fas fa-eye"></i> View PDF
                                     </button>
-                                    <a href="{{ asset($topic->pdf_file) }}" download 
-                                       class="resource-action-btn secondary">
+                                    <a href="{{ $pdfUrl }}" download 
+                                    class="resource-action-btn secondary">
                                         <i class="fas fa-download"></i> Download
                                     </a>
                                 </div>
