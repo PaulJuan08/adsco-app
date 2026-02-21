@@ -22,6 +22,7 @@ use App\Http\Controllers\Student\AssignmentController as StudentAssignmentContro
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Auth\VerificationController; // Add this
 
 // Public routes
 Route::get('/', function () {
@@ -50,6 +51,48 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 });
 
+// ============ EMAIL VERIFICATION ROUTES ============
+Route::get('/email/verify', [App\Http\Controllers\Auth\VerificationController::class, 'show'])
+    ->middleware('auth')
+    ->name('verification.notice');
+
+// Use encrypted ID route (REMOVE the standard id route)
+Route::get('/email/verify/{encryptedId}/{hash}', [App\Http\Controllers\Auth\VerificationController::class, 'verify'])
+    ->middleware(['signed']) // Note: 'auth' middleware is removed because the user might not be logged in when clicking the link
+    ->name('verification.verify');
+
+Route::post('/email/verification-notification', [App\Http\Controllers\Auth\VerificationController::class, 'resend'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.resend');
+
+
+// TEST EMAIL ROUTE - Remove after testing
+Route::get('/test-email', function() {
+    try {
+        // Log the current mail configuration
+        \Log::info('Testing mail configuration:', [
+            'driver' => config('mail.default'),
+            'host' => config('mail.mailers.smtp.host'),
+            'port' => config('mail.mailers.smtp.port'),
+            'username' => config('mail.mailers.smtp.username'),
+            'encryption' => config('mail.mailers.smtp.encryption'),
+            'from_address' => config('mail.from.address'),
+        ]);
+
+        // Send a test email
+        \Mail::raw('This is a test email from ADSCO LMS using Brevo!', function ($message) {
+            $message->to('elishaphatpauljuan@gmail.com') // Send to yourself for testing
+                    ->subject('Brevo Test Email - ' . now());
+        });
+        
+        return '✅ Test email sent! Check your inbox at elishaphatpauljuan@gmail.com';
+    } catch (\Exception $e) {
+        \Log::error('Test email failed: ' . $e->getMessage());
+        return '❌ Error: ' . $e->getMessage();
+    }
+});
+
+
 // Protected routes
 Route::middleware(['auth', 'check.approval'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -59,6 +102,14 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Admin routes
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
+
+        // Admin Profile Routes
+        Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+        Route::get('/profile/change-password', [App\Http\Controllers\Admin\ProfileController::class, 'showChangePasswordForm'])->name('profile.change-password');
+        Route::put('/profile/password', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.update-password');
+
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'encryptedId'
         ]);
@@ -109,31 +160,26 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/colleges/{encryptedId}/students', [App\Http\Controllers\Admin\CollegeController::class, 'students'])
             ->name('admin.colleges.students');
         
-        // Program Management (new resource)
+        // Program Management
         Route::resource('programs', App\Http\Controllers\Admin\ProgramController::class)->parameters([
             'programs' => 'encryptedId'
         ]);
 
-        // Program Management (resource already exists — just add these extra student routes below it)
-        Route::resource('programs', AdminProgramController::class)->parameters([
-            'programs' => 'encryptedId'
-        ]);
-
-        // ── Program Student Management ──────────────────────────────────────────────
-        // Search students eligible to be assigned to this program (AJAX)
+        // Program Student Management
         Route::get('/programs/{encryptedId}/students/search',
             [AdminProgramController::class, 'searchStudents'])
             ->name('programs.students.search');
 
-        // Assign an existing student to this program
         Route::post('/programs/{encryptedId}/students/assign',
             [AdminProgramController::class, 'assignStudent'])
             ->name('programs.students.assign');
 
-        // Unassign (remove) a student from this program (keeps user account)
         Route::delete('/programs/{encryptedId}/students/unassign',
             [AdminProgramController::class, 'unassignStudent'])
             ->name('programs.students.unassign');
+
+        Route::post('/users/{encryptedId}/resend-verification', [AdminUserController::class, 'resendVerification'])
+            ->name('admin.users.resend-verification');
     });
     
     // Registrar routes
@@ -150,6 +196,12 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // Teacher routes
     Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'check.approval', 'role:teacher'])->group(function () {
+
+        // Teacher Profile Routes 
+        Route::get('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'update'])->name('profile.update');
+
         // Course Routes
         Route::get('/courses', [TeacherCourseController::class, 'index'])->name('courses.index');
         Route::get('/courses/create', [TeacherCourseController::class, 'create'])->name('courses.create');
@@ -189,8 +241,6 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             ->name('quizzes.attempts.show');
         Route::get('/quizzes/{encryptedId}/preview', [TeacherQuizController::class, 'preview'])
             ->name('quizzes.preview');
-
-        // Add take and submit routes (if not already in resource)
         Route::get('/quizzes/{encryptedId}/take', [TeacherQuizController::class, 'take'])
             ->name('quizzes.take');
         Route::post('/quizzes/{encryptedId}/submit', [TeacherQuizController::class, 'submit'])
@@ -212,9 +262,13 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
     });
     
-    // Student routes - SINGLE GROUP (FIXED VERSION)
+    // Student routes
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
-        // Dashboard is handled by the main DashboardController
+        
+        // Student Profile Routes
+        Route::get('/profile', [App\Http\Controllers\Student\ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Student\ProfileController::class, 'update'])->name('profile.update');
         
         // Courses
         Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
@@ -224,14 +278,14 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/courses/{encryptedId}/materials', [StudentCourseController::class, 'materials'])->name('courses.materials');
         Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
         
-        // Topics - SIMPLIFIED ROUTES
+        // Topics
         Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');
         Route::get('/topics/{encryptedId}', [StudentTopicController::class, 'show'])->name('topics.show');
         Route::post('/topics/{encryptedId}/complete', [StudentTopicController::class, 'markComplete'])->name('topics.complete');
         Route::post('/topics/{encryptedId}/incomplete', [StudentTopicController::class, 'markIncomplete'])->name('topics.incomplete');
         Route::post('/topics/{encryptedId}/notes', [StudentTopicController::class, 'saveNotes'])->name('topics.notes');
         
-        // Quiz routes - USE StudentQuizController::class
+        // Quiz routes
         Route::get('/quizzes', [StudentQuizController::class, 'index'])->name('quizzes.index');
         Route::get('/quizzes/{encryptedId}', [StudentQuizController::class, 'show'])->name('quizzes.show');
         Route::post('/quizzes/{encryptedId}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
@@ -253,8 +307,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress.index');
         Route::get('/grades', [StudentProgressController::class, 'grades'])->name('grades.index');
         
-        // ===== NEW COLLEGE AND PROGRAM ROUTES FOR STUDENTS =====
-        // Colleges
+        // College and Program routes
         Route::get('/colleges', [App\Http\Controllers\Student\CollegeController::class, 'index'])->name('colleges.index');
         Route::get('/colleges/{encryptedId}', [App\Http\Controllers\Student\CollegeController::class, 'show'])->name('colleges.show');
         Route::get('/colleges/{collegeId}/programs', [App\Http\Controllers\Student\CollegeController::class, 'getPrograms'])->name('colleges.programs');
@@ -272,22 +325,19 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             return view('student.attendance');
         })->name('attendance');
         
-        // Calendar/Events
         Route::get('/calendar', function() {
             return view('student.calendar');
         })->name('calendar');
         
-        // Notifications
         Route::get('/notifications', function() {
             return view('student.notifications');
         })->name('notifications');
         
-        // Settings
         Route::get('/settings', function() {
             return view('student.settings');
         })->name('settings');
         
-        // TEST ROUTE - Add this at the end
+        // TEST ROUTE
         Route::get('/test-route', function() {
             return response()->json(['message' => 'Student routes are working!']);
         })->name('test.route');

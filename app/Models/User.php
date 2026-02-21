@@ -1,14 +1,17 @@
 <?php
+// app/Models/User.php
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Encryptable;
+use App\Notifications\VerifyEmail; // Add this import
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, Encryptable;
 
@@ -28,10 +31,10 @@ class User extends Authenticatable
         'approved_by',
         'created_by',
         'last_login_at',
-        // ── Academic fields (students only) ──────────────────
-        'college_id',           // which college (FK → colleges.id)
-        'program_id',           // which degree program (FK → programs.id) - CHANGED FROM college_course_id
-        'college_year',         // year level string e.g. "1st Year"
+        'college_id',
+        'program_id',
+        'college_year',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -53,31 +56,21 @@ class User extends Authenticatable
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
-    /** The college this student belongs to. */
     public function college()
     {
         return $this->belongsTo(College::class, 'college_id');
     }
 
-    /**
-     * The degree program this student is enrolled in.
-     * e.g. "BS Civil Engineering" from the programs table.
-     */
     public function program()
     {
         return $this->belongsTo(Program::class, 'program_id');
     }
 
-    /**
-     * Alias for program() to maintain backward compatibility
-     * if any old code still calls collegeCourse()
-     */
     public function collegeCourse()
     {
         return $this->belongsTo(Program::class, 'program_id');
     }
 
-    /** Subjects/courses taught as a teacher. */
     public function coursesAsTeacher()
     {
         return $this->hasMany(Course::class, 'teacher_id');
@@ -88,7 +81,6 @@ class User extends Authenticatable
         return $this->hasMany(Course::class, 'teacher_id');
     }
 
-    /** Subject enrollments (the courses/subjects table). */
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class, 'student_id');
@@ -201,6 +193,44 @@ class User extends Authenticatable
     public function scopeApproved($query)      { return $query->where('is_approved', true); }
     public function scopePending($query)        { return $query->where('is_approved', false); }
     public function scopeByRole($query, $role)  { return $query->where('role', $role); }
+    public function scopeVerified($query)       { return $query->whereNotNull('email_verified_at'); }
+    public function scopeUnverified($query)     { return $query->whereNull('email_verified_at'); }
+
+    // ── Email Verification ───────────────────────────────────────────────────
+
+    /**
+     * Send the email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmail());
+    }
+
+    /**
+     * Determine if the user has verified their email address.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    /**
+     * Mark the given user's email as verified.
+     */
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
+    }
+
+    /**
+     * Get the email address that should be used for verification.
+     */
+    public function getEmailForVerification(): string
+    {
+        return $this->email;
+    }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 

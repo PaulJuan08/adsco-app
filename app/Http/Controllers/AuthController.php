@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -8,8 +9,9 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
-use App\Models\Program; // Add this import
+use App\Models\Program;
 use App\Mail\UserApprovedMail;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
@@ -48,7 +50,8 @@ class AuthController extends Controller
             'email' => $request->email,
             'role' => $request->role,
             'password' => Hash::make($request->password),
-            'is_approved' => false // Not approved by default
+            'is_approved' => false, // Not approved by default
+            'email_verified_at' => null, // Not verified yet
         ];
         
         // Handle employee ID for Registrar/Teacher
@@ -77,14 +80,23 @@ class AuthController extends Controller
         // Create user
         $user = User::create($userData);
         
-        // If admin self-registers, auto-approve (but admin shouldn't be able to register via this form)
-        // This is kept for backward compatibility but role 1 is not allowed in validation anymore
+        // 🔥 FIX: Send verification email DIRECTLY instead of relying on event
+        try {
+            $user->sendEmailVerificationNotification();
+            \Log::info('Verification email sent to: ' . $user->email);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send verification email: ' . $e->getMessage());
+        }
+        
+        // 🔥 DON'T log the user in - redirect to login page instead
+        // Auth::login($user); - COMMENT THIS OUT
         
         // 🔥 CRITICAL: Clear ALL caches when new user registers
         $this->clearAllCachesOnRegistration();
         
+        // 🔥 REDIRECT TO LOGIN PAGE with registration success message
         return redirect()->route('login')
-            ->with('success', 'Registration submitted successfully. Your account is pending approval.');
+            ->with('registration_success', 'Your account has been created and is waiting for approval. Please check your email to verify your account.');
     }
     
     /**
@@ -106,10 +118,10 @@ class AuthController extends Controller
                 Cache::forget('registrar_dashboard_' . $registrarId);
             }
             
-            // ============ 3. 🔥 CRITICAL: CLEAR ADMIN USER INDEX CACHES ============
+            // ============ 3. CLEAR ADMIN USER INDEX CACHES ============
             $this->clearAdminUserIndexCaches();
             
-            // ============ 4. 🔥 CRITICAL: CLEAR REGISTRAR USER INDEX CACHES ============
+            // ============ 4. CLEAR REGISTRAR USER INDEX CACHES ============
             $this->clearRegistrarUserIndexCaches();
             
             // ============ 5. CLEAR STATS CACHES ============
@@ -254,39 +266,52 @@ class AuthController extends Controller
         $credentials = [];
         $user = null;
         
+        // 🔥 FIX: First find the user to check their status without attempting login
         if ($loginType === 'email') {
             $user = User::where('email', $loginValue)->first();
-            if ($user) {
-                $credentials['email'] = $loginValue;
-            }
         } else {
             $user = User::where('employee_id', $loginValue)
                 ->orWhere('student_id', $loginValue)
                 ->first();
-            
-            if ($user) {
-                $credentials['email'] = $user->email;
-            }
         }
         
+        // Check if user exists
         if (!$user) {
             return back()->withErrors([
-                $loginField => 'The provided credentials do not match our records.'
-            ]);
+                'login' => 'The provided credentials do not match our records.'
+            ])->withInput();
         }
         
+        // Check if password is correct first (without logging in)
+        if (!Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'password' => 'The provided password is incorrect.'
+            ])->withInput();
+        }
+        
+        // 🔥 CHECK EMAIL VERIFICATION FIRST
+        if (is_null($user->email_verified_at)) {
+            return redirect()->route('verification.notice')
+                ->with('warning', 'Please verify your email address before logging in. Check your inbox for the verification link.');
+        }
+        
+        // 🔥 CHECK IF USER IS APPROVED - WITH CUSTOM MESSAGE
+        if (!$user->is_approved) {
+            return back()->withErrors([
+                'approval' => 'Your account is pending approval. Please wait for administrator confirmation.'
+            ])->with('warning', 'pending_approval')->withInput();
+        }
+        
+        // Now log the user in
+        if ($loginType === 'email') {
+            $credentials['email'] = $loginValue;
+        } else {
+            $credentials['email'] = $user->email;
+        }
         $credentials['password'] = $request->password;
         
         if (Auth::attempt($credentials, $request->remember)) {
             $user = Auth::user();
-            
-            // Check if user is approved
-            if (!$user->is_approved) {
-                Auth::logout();
-                return back()->withErrors([
-                    $loginField => 'Your account is pending approval. Please wait for admin confirmation.'
-                ]);
-            }
             
             // Update last login
             $user->last_login_at = now();
@@ -309,8 +334,8 @@ class AuthController extends Controller
         }
         
         return back()->withErrors([
-            $loginField => 'The provided credentials do not match our records.'
-        ]);
+            'login' => 'The provided credentials do not match our records.'
+        ])->withInput();
     }
     
     public function logout(Request $request)

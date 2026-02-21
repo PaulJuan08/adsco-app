@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}" type="image/png">
+    <!-- <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lf-InMsAAAAALLl-UT7ohlaUuRFIMQLqxhD15I8"></script> -->
     <style>
         .select-loading { opacity: 0.6; pointer-events: none; }
         .dropdown-hint {
@@ -597,6 +598,13 @@
             setTimeout(() => a.remove(), 300);
         });
     }, 5000);
+
+    // function onClick(e) {
+    //     e.preventDefault();
+    //     grecaptcha.enterprise.ready(async () => {
+    //     const token = await grecaptcha.enterprise.execute('6Lf-InMsAAAAALLl-UT7ohlaUuRFIMQLqxhD15I8', {action: 'LOGIN'});
+    //     });
+    // }
     </script>
 </body>
 </html>

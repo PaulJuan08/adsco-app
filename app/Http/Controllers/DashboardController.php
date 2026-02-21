@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/DashboardController.php
 
 namespace App\Http\Controllers;
 
@@ -19,6 +20,19 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        
+        // Check if email is verified
+        if (is_null($user->email_verified_at)) {
+            return redirect()->route('verification.notice')
+                ->with('warning', 'Please verify your email address before accessing the dashboard.');
+        }
+        
+        // Check if user is approved
+        if (!$user->is_approved) {
+            return view('dashboard.pending-approval', [
+                'user' => $user
+            ]);
+        }
         
         // Redirect based on role
         switch ($user->role) {
@@ -49,12 +63,19 @@ class DashboardController extends Controller
                 SUM(CASE WHEN role = 1 THEN 1 ELSE 0 END) as admins,
                 SUM(CASE WHEN role = 2 THEN 1 ELSE 0 END) as registrars,
                 SUM(CASE WHEN role = 3 THEN 1 ELSE 0 END) as teachers,
-                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students
+                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students,
+                SUM(CASE WHEN email_verified_at IS NULL THEN 1 ELSE 0 END) as unverified
             ')->first();
             
-            // 🔥 FIXED: Get pending users directly WITHOUT caching
-            // This ensures fresh data is always displayed
+            // 🔥 Get pending users directly WITHOUT caching
             $pendingUsers = User::where('is_approved', false)
+                ->select(['id', 'f_name', 'l_name', 'email', 'role', 'created_at'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // Get unverified users
+            $unverifiedUsers = User::whereNull('email_verified_at')
                 ->select(['id', 'f_name', 'l_name', 'email', 'role', 'created_at'])
                 ->latest()
                 ->take(5)
@@ -96,8 +117,10 @@ class DashboardController extends Controller
             
             return [
                 'totalUsers' => $userCounts->total ?? 0,
-                'pendingUsers' => $pendingUsers, // Now this is fresh data
+                'pendingUsers' => $pendingUsers,
                 'pendingApprovals' => $userCounts->pending ?? 0,
+                'unverifiedUsers' => $unverifiedUsers,
+                'unverifiedCount' => $userCounts->unverified ?? 0,
                 'totalCourses' => $totalCourses,
                 'activeEnrollments' => $activeEnrollments,
                 'todayLogins' => $todayLogins,
@@ -131,10 +154,11 @@ class DashboardController extends Controller
                 SUM(CASE WHEN role = 3 AND is_approved = 1 THEN 1 ELSE 0 END) as approved_teachers,
                 SUM(CASE WHEN role = 4 AND is_approved = 1 THEN 1 ELSE 0 END) as approved_students,
                 SUM(CASE WHEN role IN (3, 4) AND is_approved = 0 THEN 1 ELSE 0 END) as total_pending,
-                SUM(CASE WHEN role IN (3, 4) AND is_approved = 1 THEN 1 ELSE 0 END) as total_approved
+                SUM(CASE WHEN role IN (3, 4) AND is_approved = 1 THEN 1 ELSE 0 END) as total_approved,
+                SUM(CASE WHEN role IN (3, 4) AND email_verified_at IS NULL THEN 1 ELSE 0 END) as unverified
             ')->first();
             
-            // Get pending teachers and students separately (small datasets)
+            // Get pending teachers and students separately
             $pendingTeachers = User::where('role', 3)
                 ->where('is_approved', false)
                 ->select(['id', 'f_name', 'l_name', 'email', 'created_at'])
@@ -145,11 +169,25 @@ class DashboardController extends Controller
                 ->select(['id', 'f_name', 'l_name', 'email', 'created_at'])
                 ->get();
             
+            // Get unverified teachers and students
+            $unverifiedTeachers = User::where('role', 3)
+                ->whereNull('email_verified_at')
+                ->select(['id', 'f_name', 'l_name', 'email', 'created_at'])
+                ->get();
+            
+            $unverifiedStudents = User::where('role', 4)
+                ->whereNull('email_verified_at')
+                ->select(['id', 'f_name', 'l_name', 'email', 'created_at'])
+                ->get();
+            
             $totalTopics = Topic::count();
             
             return [
                 'pendingTeachers' => $pendingTeachers,
                 'pendingStudents' => $pendingStudents,
+                'unverifiedTeachers' => $unverifiedTeachers,
+                'unverifiedStudents' => $unverifiedStudents,
+                'unverifiedCount' => $teacherStudentCounts->unverified ?? 0,
                 'totalTeachers' => $teacherStudentCounts->approved_teachers ?? 0,
                 'totalStudents' => $teacherStudentCounts->approved_students ?? 0,
                 'totalPending' => $teacherStudentCounts->total_pending ?? 0,
@@ -358,7 +396,7 @@ class DashboardController extends Controller
                 ->count();
             
             return [
-                // Progress stats - WITHOUT average_grade
+                // Progress stats
                 'stats' => [
                     'total_courses' => count($enrolledCourses),
                     'completed_courses' => $completedCourses,
@@ -410,6 +448,7 @@ class DashboardController extends Controller
                 Cache::forget('registrar_dashboard_' . $userId);
                 break;
             case 3:
+                // Teacher dashboard doesn't use cache, but clear if it did
                 Cache::forget('teacher_dashboard_' . $userId);
                 break;
             case 4:

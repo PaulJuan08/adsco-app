@@ -33,7 +33,7 @@ class UserController extends Controller
         // Get user statistics using cached method
         $stats = $this->getStats();
         
-        // Check if we need to bypass cache (after deletion)
+        // Check if we need to bypass cache (after deletion/approval)
         $bypassCache = session()->get('bypass_cache', false);
         
         // Create cache key based on filters
@@ -54,7 +54,7 @@ class UserController extends Controller
         
         // Cache for 1 minute (reduced from 2 for fresher data)
         $users = Cache::remember($cacheKey, 60, function() use ($search, $role, $status) {
-            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at']);
+            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at', 'email_verified_at']);
             
             // Apply search filter
             if ($search) {
@@ -185,13 +185,14 @@ class UserController extends Controller
             'email' => $request->email,
             'role' => $request->role,
             'password' => bcrypt($request->password),
-            'is_approved' => true,
+            'is_approved' => true, // Admin created users are auto-approved
             'approved_at' => now(),
             'approved_by' => auth()->id(),
             'age' => $request->age,
             'sex' => $request->sex,
             'contact' => $request->contact,
-            'created_by' => auth()->id()
+            'created_by' => auth()->id(),
+            'email_verified_at' => now(), // Admin created users are auto-verified
         ];
         
         // Add appropriate ID based on role
@@ -574,6 +575,9 @@ class UserController extends Controller
         }
     }
     
+    /**
+     * Approve a user - Updated to check email verification
+     */
     public function approve($encryptedId)
     {
         try {
@@ -592,6 +596,12 @@ class UserController extends Controller
                     ->with('warning', 'User is already approved.');
             }
             
+            // 🔥 NEW: Check if email is verified before allowing approval
+            if (is_null($user->email_verified_at)) {
+                return redirect()->route('admin.users.show', $encryptedId)
+                    ->with('error', 'Cannot approve user until email is verified. The user must click the verification link sent to their email.');
+            }
+            
             // Update user approval status
             $user->update([
                 'is_approved' => true,
@@ -607,7 +617,7 @@ class UserController extends Controller
             Cache::forget('user_detailed_stats_' . $id);
             Cache::forget('user_activities_' . $id);
             
-            // Clear ALL user index caches (this is what's missing)
+            // Clear ALL user index caches
             $this->clearAllUserIndexCaches();
             
             // Clear dashboard caches for ALL admins
@@ -658,6 +668,35 @@ class UserController extends Controller
             \Log::error('Error approving user: ' . $e->getMessage());
             return redirect()->route('admin.users.index')
                 ->with('error', 'An error occurred: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Resend verification email to user
+     */
+    public function resendVerification($encryptedId)
+    {
+        try {
+            if (!auth()->user()->isAdmin()) {
+                abort(403);
+            }
+            
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            
+            if (!is_null($user->email_verified_at)) {
+                return redirect()->route('admin.users.show', $encryptedId)
+                    ->with('info', 'User email is already verified.');
+            }
+            
+            $user->sendEmailVerificationNotification();
+            
+            return redirect()->route('admin.users.show', $encryptedId)
+                ->with('success', 'Verification email resent successfully.');
+                
+        } catch (\Exception $e) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Failed to resend verification email.');
         }
     }
     
@@ -777,7 +816,7 @@ class UserController extends Controller
             }
         }
         
-        \Log::info('All user index caches cleared after approval');
+        \Log::info('All user index caches cleared');
     }
     
     /**
@@ -807,7 +846,8 @@ class UserController extends Controller
                 SUM(CASE WHEN role = 1 THEN 1 ELSE 0 END) as admins,
                 SUM(CASE WHEN role = 2 THEN 1 ELSE 0 END) as registrars,
                 SUM(CASE WHEN role = 3 THEN 1 ELSE 0 END) as teachers,
-                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students
+                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students,
+                SUM(CASE WHEN email_verified_at IS NULL THEN 1 ELSE 0 END) as unverified
             ')->first();
             
             // Add this month's count
@@ -818,6 +858,7 @@ class UserController extends Controller
             return [
                 'total' => $stats->total ?? 0,
                 'pending' => $stats->pending ?? 0,
+                'unverified' => $stats->unverified ?? 0,
                 'admins' => $stats->admins ?? 0,
                 'registrars' => $stats->registrars ?? 0,
                 'teachers' => $stats->teachers ?? 0,
@@ -840,7 +881,9 @@ class UserController extends Controller
                 'quiz_attempts' => 0,
                 'assignments_submitted' => 0,
                 'completed_topics' => 0,
-                'gpa' => 0.0
+                'gpa' => 0.0,
+                'email_verified' => !is_null($user->email_verified_at),
+                'email_verified_at' => $user->email_verified_at
             ];
             
             try {

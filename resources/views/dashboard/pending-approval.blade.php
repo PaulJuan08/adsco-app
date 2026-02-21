@@ -1,83 +1,72 @@
-<!-- resources/views/auth/verify-email.blade.php -->
+<!-- resources/views/dashboard/pending-approval.blade.php -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Email - ADSCO LMS</title>
+    <title>Pending Approval - ADSCO LMS</title>
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}" type="image/png">
     <style>
-        .verification-icon {
+        .pending-icon {
             font-size: 4rem;
-            color: var(--color-adsco-primary, #4f46e5);
+            color: #f59e0b;
             margin-bottom: 1rem;
         }
-        .email-highlight {
-            background: #eef2ff;
-            color: #4f46e5;
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .steps {
-            text-align: left;
-            margin: 1.5rem 0;
-            padding: 1rem;
+        .status-steps {
             background: #f9fafb;
             border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
             border: 1px solid #e5e7eb;
         }
-        .step-item {
+        .step {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem 0;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .step:last-child {
+            border-bottom: none;
         }
         .step-number {
-            width: 24px;
-            height: 24px;
-            background: #e5e7eb;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
             font-weight: 600;
-            color: #4b5563;
+            font-size: 0.875rem;
         }
-        .step-number.completed {
+        .step.completed .step-number {
             background: #48bb78;
             color: white;
         }
-        .step-number.active {
+        .step.active .step-number {
             background: #f59e0b;
             color: white;
         }
-        .step-number.pending {
+        .step.pending .step-number {
             background: #e5e7eb;
             color: #9ca3af;
         }
-        .step-text {
-            font-size: 0.875rem;
-            color: #374151;
+        .step.completed .step-text { color: #065f46; }
+        .step.active .step-text { color: #92400e; font-weight: 600; }
+        .step.pending .step-text { color: #6b7280; }
+        .user-info {
+            background: #eef2ff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
         }
-        .step-text strong {
-            color: #4f46e5;
-        }
-        .pending-badge {
-            background: #fef3c7;
-            color: #92400e;
-            padding: 0.5rem 1rem;
-            border-radius: 999px;
-            font-size: 0.875rem;
+        .user-email {
+            font-size: 1.1rem;
             font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            color: #4f46e5;
         }
     </style>
 </head>
@@ -96,7 +85,7 @@
             <div class="nav-links" id="navLinks">
                 <a href="/" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
                 <a href="{{ route('login') }}" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
-                <a href="{{ route('register') }}" class="nav-link active"><i class="fas fa-user-plus"></i><span>Register</span></a>
+                <a href="{{ route('register') }}" class="nav-link"><i class="fas fa-user-plus"></i><span>Register</span></a>
             </div>
         </div>
     </nav>
@@ -107,18 +96,11 @@
                 <div class="logo-container">
                     <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo" class="logo">
                 </div>
-                <h1>Verify Your Email</h1>
-                <p class="subtitle">Almost there! Just one more step.</p>
+                <h1>Account Pending Approval</h1>
+                <p class="subtitle">Almost there! One final step.</p>
             </div>
 
             <div class="auth-card-body">
-                @if(session('success'))
-                <div class="alert alert-success alert-dismissible">
-                    <i class="fas fa-check-circle"></i><span>{{ session('success') }}</span>
-                    <button type="button" class="btn-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-                </div>
-                @endif
-
                 @if(session('warning'))
                 <div class="alert alert-warning alert-dismissible">
                     <i class="fas fa-exclamation-triangle"></i><span>{{ session('warning') }}</span>
@@ -126,42 +108,47 @@
                 </div>
                 @endif
 
+                @if(session('success'))
+                <div class="alert alert-success alert-dismissible">
+                    <i class="fas fa-check-circle"></i><span>{{ session('success') }}</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                </div>
+                @endif
+
                 <div class="text-center">
-                    <div class="pending-badge">
-                        <i class="fas fa-hourglass-half"></i> Pending Email Verification
-                    </div>
-                    
-                    <div class="verification-icon">
-                        <i class="fas fa-envelope-circle-check"></i>
-                    </div>
-                    
-                    <p style="margin-bottom: 1.5rem; color: #4b5563;">
-                        We've sent a verification link to:
-                    </p>
-                    
-                    <div class="email-highlight" style="display: inline-block; margin-bottom: 1.5rem;">
-                        {{ Auth::user()->email }}
+                    <div class="pending-icon">
+                        <i class="fas fa-hourglass-half"></i>
                     </div>
 
-                    <div class="steps">
-                        <div class="step-item">
-                            <div class="step-number completed">1</div>
+                    <div class="user-info">
+                        <div style="font-size: 0.875rem; color: #4b5563; margin-bottom: 0.25rem;">Welcome,</div>
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #1f2937;">{{ $user->f_name }} {{ $user->l_name }}</div>
+                        <div class="user-email">{{ $user->email }}</div>
+                    </div>
+
+                    <p style="color: #4b5563; margin-bottom: 1.5rem;">
+                        Your account has been successfully verified. It is now awaiting administrator approval.
+                    </p>
+
+                    <div class="status-steps">
+                        <div class="step completed">
+                            <div class="step-number">1</div>
                             <div class="step-text">
-                                <strong>Step 1:</strong> Account created successfully
+                                <strong>Step 1:</strong> Email verified successfully
                                 <i class="fas fa-check-circle" style="color: #48bb78; margin-left: 0.5rem;"></i>
                             </div>
                         </div>
-                        <div class="step-item">
-                            <div class="step-number active">2</div>
+                        <div class="step active">
+                            <div class="step-number">2</div>
                             <div class="step-text">
-                                <strong>Step 2:</strong> Verify your email address
+                                <strong>Step 2:</strong> Pending administrator approval
                                 <i class="fas fa-hourglass-half" style="color: #f59e0b; margin-left: 0.5rem;"></i>
                             </div>
                         </div>
-                        <div class="step-item">
-                            <div class="step-number pending">3</div>
+                        <div class="step pending">
+                            <div class="step-number">3</div>
                             <div class="step-text">
-                                <strong>Step 3:</strong> Admin approves your account
+                                <strong>Step 3:</strong> Access your dashboard
                             </div>
                         </div>
                     </div>
@@ -169,19 +156,11 @@
                     <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1.5rem 0; text-align: left;">
                         <p style="margin: 0; color: #0369a1; font-size: 0.875rem;">
                             <i class="fas fa-info-circle"></i> 
-                            After email verification, an administrator will review and approve your account. 
-                            You will receive another email once your account is approved.
+                            You will receive an email notification once your account is approved. This usually takes 24-48 hours.
                         </p>
                     </div>
 
                     <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e5e7eb;">
-
-                    <form method="POST" action="{{ route('verification.resend') }}" style="margin-bottom: 0.5rem;">
-                        @csrf
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-paper-plane"></i> Resend Verification Email
-                        </button>
-                    </form>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -194,8 +173,7 @@
                 <div class="divider"><span>Need help?</span></div>
                 <div class="text-center">
                     <p style="font-size: 0.875rem; color: #6b7280;">
-                        <i class="fas fa-envelope"></i> Check your spam folder if you don't see the email.<br>
-                        Contact support at <a href="mailto:support@adsco.edu.ph">support@adsco.edu.ph</a>
+                        Contact the administrator at <a href="mailto:admin@adsco.edu.ph">admin@adsco.edu.ph</a>
                     </p>
                 </div>
             </div>
