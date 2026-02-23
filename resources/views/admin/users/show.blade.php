@@ -7,306 +7,321 @@
 @endpush
 
 @section('content')
-    <!-- User Profile Card - Smaller Container -->
-    <div class="form-container">
-        <div class="card-header">
-            <div class="card-title-group">
-                <i class="fas fa-user-circle card-icon"></i>
-                <h2 class="card-title">User Profile</h2>
+<div class="user-show-container">
+    <!-- Profile Header -->
+    <div class="profile-header-card">
+        <div class="profile-header-gradient">
+            <div class="profile-title-group">
+                <div class="profile-title-icon">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h2 class="profile-title">User Profile</h2>
             </div>
-            <div class="top-actions">
-                <!-- Edit Button -->
-                <a href="{{ route('admin.users.edit', Crypt::encrypt($user->id)) }}" class="top-action-btn">
+            
+            <div class="profile-actions">
+                @if($user->role == 4) {{-- If student --}}
+                <a href="{{ route('admin.enrollments.student', Crypt::encrypt($user->id)) }}" class="profile-action-btn btn-enroll">
+                    <i class="fas fa-user-graduate"></i> Enrollments
+                </a>
+                @endif
+                
+                <a href="{{ route('admin.users.edit', Crypt::encrypt($user->id)) }}" class="profile-action-btn">
                     <i class="fas fa-edit"></i> Edit
                 </a>
                 
-                <!-- Delete Button - Only for Admin and not current user -->
                 @if(auth()->user()->isAdmin() && $user->id !== auth()->id())
                 <form action="{{ route('admin.users.destroy', Crypt::encrypt($user->id)) }}" method="POST" id="deleteForm" style="display: inline;">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="top-action-btn delete-btn" id="deleteButton">
+                    <button type="submit" class="profile-action-btn btn-delete" id="deleteButton">
                         <i class="fas fa-trash-alt"></i> Delete
                     </button>
                 </form>
                 @endif
                 
-                <!-- Back Button -->
-                <a href="{{ route('admin.users.index') }}" class="top-action-btn">
+                <a href="{{ route('admin.users.index') }}" class="profile-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
             </div>
         </div>
         
-        <div class="card-body">
-            <!-- User Avatar & Basic Info -->
-            <div class="user-avatar-section">
-                <div class="user-details-avatar">
+        <div class="profile-content">
+            <!-- Avatar & Basic Info -->
+            <div class="profile-avatar-section">
+                <div class="avatar-large">
                     {{ strtoupper(substr($user->f_name, 0, 1)) }}{{ strtoupper(substr($user->l_name, 0, 1)) }}
                 </div>
-                <h3 class="user-name">{{ $user->f_name }} {{ $user->l_name }}</h3>
-                <p class="user-email">{{ $user->email }}</p>
                 
-                <div class="user-status-container">
-                    <div class="user-status-badge {{ $user->is_approved ? 'status-approved' : 'status-pending' }}">
-                        <i class="fas {{ $user->is_approved ? 'fa-check-circle' : 'fa-clock' }}"></i>
-                        {{ $user->is_approved ? 'Approved' : 'Pending' }}
-                    </div>
+                <div class="profile-name-section">
+                    <h1 class="profile-name">{{ $user->f_name }} {{ $user->l_name }}</h1>
+                    <div class="profile-email">{{ $user->email }}</div>
                     
-                    @php
-                        $roleDisplay = match($user->role) {
-                            1 => 'Admin',
-                            2 => 'Registrar',
-                            3 => 'Teacher',
-                            4 => 'Student',
-                            default => 'Unknown'
-                        };
-                        $roleClass = strtolower($roleDisplay);
-                    @endphp
-                    
-                    <div class="user-status-badge role-badge role-{{ $roleClass }}">
-                        <i class="fas fa-user-tag"></i>
-                        {{ $roleDisplay }}
-                    </div>
-                </div>
-
-                {{-- Academic badges for students --}}
-                @if($user->role == 4)
-                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;margin-top:0.75rem;">
-                    @if($user->college)
-                        <span style="background:#ede9fe;color:#5b21b6;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
-                            <i class="fas fa-university"></i> {{ $user->college->college_name }}
+                    <div class="profile-badge-group">
+                        <span class="badge {{ $user->is_approved ? 'badge-approved' : 'badge-pending' }}">
+                            <i class="fas {{ $user->is_approved ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                            {{ $user->is_approved ? 'Approved' : 'Pending' }}
                         </span>
-                    @endif
-                    @if($user->program)
-                        <span style="background:#dbeafe;color:#1d4ed8;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
-                            <i class="fas fa-graduation-cap"></i> {{ $user->program->program_name }}
-                        </span>
-                    @endif
-                    @if($user->college_year)
-                        <span style="background:#dcfce7;color:#15803d;padding:0.375rem 0.875rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
-                            <i class="fas fa-calendar-alt"></i> {{ $user->college_year }}
-                        </span>
-                    @endif
-                </div>
-                @endif
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-id-badge"></i>
-                    </div>
-                    <div class="stat-value">#{{ $user->id }}</div>
-                    <div class="stat-label">User ID</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-value">{{ $user->created_at->format('M Y') }}</div>
-                    <div class="stat-label">Joined</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="stat-value">
+                        
                         @php
-                            $accountType = match($user->role) {
+                            $roleDisplay = match($user->role) {
                                 1 => 'Admin',
                                 2 => 'Registrar',
                                 3 => 'Teacher',
                                 4 => 'Student',
-                                default => 'User'
+                                default => 'Unknown'
+                            };
+                            $roleClass = match($user->role) {
+                                1 => 'badge-role-admin',
+                                2 => 'badge-role-registrar',
+                                3 => 'badge-role-teacher',
+                                4 => 'badge-role-student',
+                                default => ''
                             };
                         @endphp
-                        {{ $accountType }}
+                        
+                        <span class="badge {{ $roleClass }}">
+                            <i class="fas fa-user-tag"></i> {{ $roleDisplay }}
+                        </span>
+                        
+                        @if($user->student_id)
+                        <span class="badge badge-college">
+                            <i class="fas fa-id-card"></i> ID: {{ $user->student_id }}
+                        </span>
+                        @endif
+                        
+                        @if($user->employee_id)
+                        <span class="badge badge-college">
+                            <i class="fas fa-id-card"></i> ID: {{ $user->employee_id }}
+                        </span>
+                        @endif
                     </div>
-                    <div class="stat-label">Account Type</div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION 1: INFORMATION ===== -->
+            <div class="section-divider">
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Information
+                </div>
+            </div>
+
+            <!-- Quick Stats Row -->
+            <div class="stats-grid-compact">
+                <div class="stat-card-mini">
+                    <div class="stat-icon-mini">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                    <div class="stat-number-mini">#{{ $user->id }}</div>
+                    <div class="stat-label-mini">User ID</div>
                 </div>
                 
+                <div class="stat-card-mini">
+                    <div class="stat-icon-mini">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-number-mini">{{ $user->created_at->format('M Y') }}</div>
+                    <div class="stat-label-mini">Joined</div>
+                </div>
+                
+                @if($user->last_login_at)
+                <div class="stat-card-mini">
+                    <div class="stat-icon-mini">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-number-mini">{{ $user->last_login_at->diffForHumans() }}</div>
+                    <div class="stat-label-mini">Last Login</div>
+                </div>
+                @endif
+                
                 @if($user->is_approved && $user->approved_at)
-                <div class="stat-card">
-                    <div class="stat-icon">
+                <div class="stat-card-mini">
+                    <div class="stat-icon-mini">
                         <i class="fas fa-user-check"></i>
                     </div>
-                    <div class="stat-value">{{ $user->approved_at->format('M Y') }}</div>
-                    <div class="stat-label">Approved</div>
+                    <div class="stat-number-mini">{{ $user->approved_at->format('M Y') }}</div>
+                    <div class="stat-label-mini">Approved</div>
                 </div>
                 @endif
             </div>
 
-            <!-- Detailed Information -->
-            <div class="details-grid">
-                <div class="detail-section">
-                    <div class="detail-section-title">
-                        <i class="fas fa-id-card"></i>
-                        Personal Information
+            <!-- Information Grid - 2 Columns -->
+            <div class="info-grid-2col">
+                <!-- Personal Information -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-user"></i>
+                        <h3>Personal Details</h3>
                     </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">Full Name</div>
-                        <div class="detail-value">{{ $user->f_name }} {{ $user->l_name }}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">Email</div>
-                        <div class="detail-value">{{ $user->email }}</div>
-                    </div>
-                    
-                    @if($user->age)
-                    <div class="detail-row">
-                        <div class="detail-label">Age</div>
-                        <div class="detail-value">{{ $user->age }} years</div>
-                    </div>
-                    @endif
-                    
-                    @if($user->sex)
-                    <div class="detail-row">
-                        <div class="detail-label">Gender</div>
-                        <div class="detail-value">{{ ucfirst($user->sex) }}</div>
-                    </div>
-                    @endif
-                    
-                    @if($user->contact)
-                    <div class="detail-row">
-                        <div class="detail-label">Contact</div>
-                        <div class="detail-value">{{ $user->contact }}</div>
-                    </div>
-                    @endif
-                </div>
-                
-                <div class="detail-section">
-                    <div class="detail-section-title">
-                        <i class="fas fa-user-cog"></i>
-                        Account Information
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">User Role</div>
-                        <div class="detail-value">
-                            <span class="role-badge role-{{ $roleClass }}">
-                                <i class="fas fa-user-tag"></i> {{ $roleDisplay }}
+                    <div class="info-card-body">
+                        <div class="info-row">
+                            <span class="info-label">Full Name</span>
+                            <span class="info-value">{{ $user->f_name }} {{ $user->l_name }}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">{{ $user->email }}</span>
+                        </div>
+                        
+                        @if($user->age || $user->sex)
+                        <div class="info-row">
+                            <span class="info-label">Age/Gender</span>
+                            <span class="info-value">
+                                @if($user->age){{ $user->age }} years @endif
+                                @if($user->age && $user->sex) • @endif
+                                @if($user->sex){{ ucfirst($user->sex) }} @endif
+                                @if(!$user->age && !$user->sex)Not provided @endif
                             </span>
                         </div>
-                    </div>
-                    
-                    @if($user->employee_id)
-                    <div class="detail-row">
-                        <div class="detail-label">Employee ID</div>
-                        <div class="detail-value">{{ $user->employee_id }}</div>
-                    </div>
-                    @endif
-                    
-                    @if($user->student_id)
-                    <div class="detail-row">
-                        <div class="detail-label">Student ID</div>
-                        <div class="detail-value">{{ $user->student_id }}</div>
-                    </div>
-                    @endif
-
-                    <div class="detail-row">
-                        <div class="detail-label">Last Login</div>
-                        <div class="detail-value">
-                            @if($user->last_login_at)
-                                {{ $user->last_login_at->format('M d, Y h:i A') }}
-                                <div class="detail-subvalue">{{ $user->last_login_at->diffForHumans() }}</div>
-                            @else
-                                Never logged in
-                            @endif
+                        @endif
+                        
+                        @if($user->contact)
+                        <div class="info-row">
+                            <span class="info-label">Contact</span>
+                            <span class="info-value">{{ $user->contact }}</span>
                         </div>
+                        @endif
                     </div>
-                    
+                </div>
+                
+                <!-- Account Information -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <i class="fas fa-cog"></i>
+                        <h3>Account Details</h3>
+                    </div>
+                    <div class="info-card-body">
+                        <div class="info-row">
+                            <span class="info-label">Role</span>
+                            <span class="info-value">
+                                <span class="badge {{ $roleClass }}">{{ $roleDisplay }}</span>
+                            </span>
+                        </div>
+                        
+                        @if($user->student_id || $user->employee_id)
+                        <div class="info-row">
+                            <span class="info-label">ID Number</span>
+                            <span class="info-value">
+                                {{ $user->student_id ?? $user->employee_id }}
+                            </span>
+                        </div>
+                        @endif
+                        
+                        <div class="info-row">
+                            <span class="info-label">Status</span>
+                            <span class="info-value">
+                                <span class="badge {{ $user->is_approved ? 'badge-approved' : 'badge-pending' }}">
+                                    {{ $user->is_approved ? 'Approved' : 'Pending' }}
+                                </span>
+                            </span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label">Email Verified</span>
+                            <span class="info-value">
+                                @if($user->email_verified_at)
+                                    <span style="color:#48bb78;">
+                                        <i class="fas fa-check-circle"></i> Verified
+                                    </span>
+                                @else
+                                    <span style="color:#f59e0b;">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                @endif
+                            </span>
+                        </div>
+                        
+                        @if($user->created_by && $user->createdBy)
+                        <div class="info-row">
+                            <span class="info-label">Created By</span>
+                            <span class="info-value">
+                                {{ $user->createdBy->f_name }} {{ $user->createdBy->l_name }}
+                                <div class="info-subvalue">{{ $user->created_at->format('M d, Y') }}</div>
+                            </span>
+                        </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
-            {{-- ── Academic Information (students only) ── --}}
+            <!-- Academic Information (Students Only) -->
             @if($user->role == 4)
-            <div class="detail-section">
-                <div class="detail-section-title">
-                    <i class="fas fa-university"></i>
-                    Academic Information
+            <div class="info-card" style="margin-top: 0.5rem;">
+                <div class="info-card-header">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h3>Academic Information</h3>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
-                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
-                        <div class="detail-label">College</div>
-                        <div class="detail-value" style="text-align:left;">
-                            @if($user->college)
-                                <a href="{{ route('admin.colleges.show', Crypt::encrypt($user->college->id)) }}"
-                                   style="color:#4f46e5;text-decoration:none;font-weight:600;">
-                                    <i class="fas fa-university"></i> {{ $user->college->college_name }}
-                                </a>
-                            @else
-                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not assigned</span>
-                            @endif
+                <div class="info-card-body">
+                    <div class="info-grid-2col" style="gap: 0.5rem; margin-bottom: 0;">
+                        <div class="info-row">
+                            <span class="info-label">College</span>
+                            <span class="info-value">
+                                @if($user->college)
+                                    <a href="{{ route('admin.colleges.show', Crypt::encrypt($user->college->id)) }}" style="color:#4f46e5; text-decoration:none;">
+                                        {{ $user->college->college_name }}
+                                    </a>
+                                @else
+                                    <span style="color:#94a3b8;">Not assigned</span>
+                                @endif
+                            </span>
                         </div>
-                    </div>
-                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
-                        <div class="detail-label">Program</div>
-                        <div class="detail-value" style="text-align:left;">
-                            @if($user->program)
-                                <a href="{{ route('admin.programs.show', Crypt::encrypt($user->program->id)) }}"
-                                   style="color:#4f46e5;text-decoration:none;font-weight:600;">
-                                    <i class="fas fa-graduation-cap"></i> {{ $user->program->program_name }}
-                                    @if($user->program->program_code)
-                                        <span style="color:#6b7280;font-weight:400;">({{ $user->program->program_code }})</span>
-                                    @endif
-                                </a>
-                            @else
-                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not assigned</span>
-                            @endif
+                        
+                        <div class="info-row">
+                            <span class="info-label">Program</span>
+                            <span class="info-value">
+                                @if($user->program)
+                                    <a href="{{ route('admin.programs.show', Crypt::encrypt($user->program->id)) }}" style="color:#4f46e5; text-decoration:none;">
+                                        {{ $user->program->program_name }}
+                                    </a>
+                                @else
+                                    <span style="color:#94a3b8;">Not assigned</span>
+                                @endif
+                            </span>
                         </div>
-                    </div>
-                    <div class="detail-row" style="flex-direction:column;gap:0.25rem;">
-                        <div class="detail-label">Year Level</div>
-                        <div class="detail-value" style="text-align:left;">
-                            @if($user->college_year)
-                                <span style="background:#dcfce7;color:#15803d;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.8125rem;font-weight:600;">
-                                    {{ $user->college_year }}
-                                </span>
-                            @else
-                                <span style="color:#f59e0b;"><i class="fas fa-exclamation-circle"></i> Not set</span>
-                            @endif
+                        
+                        <div class="info-row">
+                            <span class="info-label">Year Level</span>
+                            <span class="info-value">
+                                @if($user->college_year)
+                                    <span class="badge badge-year">{{ $user->college_year }}</span>
+                                @else
+                                    <span style="color:#94a3b8;">Not set</span>
+                                @endif
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
             @endif
 
-            <!-- Approval Information -->
+            <!-- Approval Information (if approved) -->
             @if($user->is_approved && $user->approved_at)
-            <div class="detail-section">
-                <div class="detail-section-title">
-                    <i class="fas fa-user-check"></i>
-                    Approval Information
+            <div class="info-card" style="margin-top: 0.5rem;">
+                <div class="info-card-header">
+                    <i class="fas fa-check-circle" style="color:#48bb78;"></i>
+                    <h3>Approval Information</h3>
                 </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div class="detail-row">
-                        <div class="detail-label">Approval Date</div>
-                        <div class="detail-value">
-                            {{ $user->approved_at->format('M d, Y') }}
-                            <div class="detail-subvalue">
-                                <i class="fas fa-clock"></i> {{ $user->approved_at->diffForHumans() }}
-                            </div>
+                <div class="info-card-body">
+                    <div class="info-grid-2col" style="gap: 0.5rem; margin-bottom: 0;">
+                        <div class="info-row">
+                            <span class="info-label">Approved On</span>
+                            <span class="info-value">
+                                {{ $user->approved_at->format('M d, Y') }}
+                                <div class="info-subvalue">{{ $user->approved_at->diffForHumans() }}</div>
+                            </span>
                         </div>
+                        
+                        @if($user->approved_by && $user->approvedBy)
+                        <div class="info-row">
+                            <span class="info-label">Approved By</span>
+                            <span class="info-value">
+                                {{ $user->approvedBy->f_name }} {{ $user->approvedBy->l_name }}
+                                <div class="info-subvalue">{{ $roleNames[$user->approvedBy->role] ?? 'Admin' }}</div>
+                            </span>
+                        </div>
+                        @endif
                     </div>
-                    
-                    @if($user->approved_by && $user->approvedBy)
-                    <div class="detail-row">
-                        <div class="detail-label">Approved By</div>
-                        <div class="detail-value">
-                            {{ $user->approvedBy->f_name }} {{ $user->approvedBy->l_name }}
-                        </div>
-                        <div class="detail-subvalue">
-                            {{ $roleNames[$user->approvedBy->role] ?? 'Admin' }}
-                        </div>
-                    </div>
-                    @endif
                 </div>
             </div>
             @endif
@@ -314,31 +329,308 @@
             <!-- Approve Button for Pending Users -->
             @if(!$user->is_approved && (auth()->user()->isAdmin() || auth()->user()->isRegistrar()))
             <div style="margin-top: 1.5rem; text-align: center;">
-                <form action="{{ route('admin.users.approve', Crypt::encrypt($user->id)) }}" method="POST" id="approveForm" style="display: inline-block;">
+                <form action="{{ route('admin.users.approve', Crypt::encrypt($user->id)) }}" method="POST" id="approveForm">
                     @csrf
-                    <button type="submit" class="top-action-btn" id="approveButton" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border: none; padding: 0.75rem 2rem;">
+                    <button type="submit" class="profile-action-btn" id="approveButton" style="background: #48bb78; border: none; padding: 0.6rem 2rem;">
                         <i class="fas fa-check-circle"></i> Approve User
                     </button>
                 </form>
             </div>
             @endif
 
-            <!-- Success/Error Messages -->
+            <!-- ===== SECTION 2: PROGRESS ===== -->
+            @if($user->role == 4)
+            <div class="section-divider" style="margin-top: 2rem;">
+                <div class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Progress
+                </div>
+            </div>
+
+            <!-- Progress Tabs -->
+            <div class="progress-tabs-compact">
+                <button class="tab-btn-compact active" onclick="showProgressTab('courses')" id="tab-courses">Courses</button>
+                <button class="tab-btn-compact" onclick="showProgressTab('quizzes')" id="tab-quizzes">Quizzes</button>
+                <button class="tab-btn-compact" onclick="showProgressTab('assignments')" id="tab-assignments">Assignments</button>
+            </div>
+
+            <!-- Courses Tab -->
+            <div id="progress-courses">
+                @php
+                    $enrolledCourses = App\Models\Enrollment::where('student_id', $user->id)
+                        ->with(['course.topics', 'course.teacher'])
+                        ->orderBy('enrolled_at', 'desc')
+                        ->get();
+                    
+                    $completedTopicIds = App\Models\Progress::where('student_id', $user->id)
+                        ->where('status', 'completed')
+                        ->pluck('topic_id')
+                        ->toArray();
+                    
+                    $enrolledTopicIds = [];
+                    $courseTopicsMap = [];
+                    
+                    foreach ($enrolledCourses as $enrollment) {
+                        if ($enrollment->course && $enrollment->course->topics) {
+                            $courseTopics = $enrollment->course->topics->pluck('id')->toArray();
+                            $enrolledTopicIds = array_merge($enrolledTopicIds, $courseTopics);
+                            $courseTopicsMap[$enrollment->course->id] = $courseTopics;
+                        }
+                    }
+                    
+                    $validCompletedTopicIds = array_intersect($completedTopicIds, $enrolledTopicIds);
+                    
+                    $totalTopics = count($enrolledTopicIds);
+                    $totalCompletedTopics = count($validCompletedTopicIds);
+                    $overallProgress = $totalTopics > 0 ? round(($totalCompletedTopics / $totalTopics) * 100) : 0;
+                @endphp
+
+                <!-- Overall Progress Bar -->
+                <div style="background:#f8fafc; border-radius:8px; padding:1rem; margin-bottom:1.5rem; border:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                        <span style="font-size:0.75rem; font-weight:600; color:#334155;">
+                            <i class="fas fa-chart-line" style="margin-right:0.375rem; color:#667eea;"></i>
+                            Overall Progress
+                        </span>
+                        <span style="font-size:0.875rem; font-weight:700; color:#667eea;">{{ $overallProgress }}%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: {{ $overallProgress }}%"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:0.5rem; font-size:0.625rem; color:#64748b;">
+                        <span>{{ $enrolledCourses->count() }} Courses</span>
+                        <span>{{ $totalCompletedTopics }}/{{ $totalTopics }} Topics</span>
+                    </div>
+                </div>
+
+                @if($enrolledCourses->isEmpty())
+                    <div class="empty-state-mini">
+                        <i class="fas fa-book-open"></i>
+                        <p>No courses enrolled</p>
+                        <a href="{{ route('admin.enrollments.student', Crypt::encrypt($user->id)) }}" class="profile-action-btn" style="background:#667eea; color:white; margin-top:0.75rem;">
+                            <i class="fas fa-user-plus"></i> Enroll Now
+                        </a>
+                    </div>
+                @else
+                    @foreach($enrolledCourses as $enrollment)
+                        @php
+                            $course = $enrollment->course;
+                            if (!$course) continue;
+                            
+                            $courseTopics = $courseTopicsMap[$course->id] ?? [];
+                            $courseTopicCount = count($courseTopics);
+                            $courseCompletedTopics = count(array_intersect($validCompletedTopicIds, $courseTopics));
+                            $courseProgress = $courseTopicCount > 0 ? round(($courseCompletedTopics / $courseTopicCount) * 100) : 0;
+                            
+                            $teacherName = $course->teacher ? $course->teacher->f_name . ' ' . $course->teacher->l_name : 'Not Assigned';
+                        @endphp
+                        
+                        <div class="progress-item">
+                            <div class="progress-item-header" onclick="toggleCourseDetails({{ $course->id }})">
+                                <div style="display:flex; align-items:center; gap:0.75rem; flex:1;">
+                                    <i class="fas fa-book" style="color:#667eea; width:16px;"></i>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:600; font-size:0.8125rem; color:#1e293b;">
+                                            {{ $course->title }}
+                                        </div>
+                                        <div style="font-size:0.625rem; color:#64748b;">
+                                            {{ $course->course_code }} • {{ $teacherName }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:0.75rem;">
+                                    <span style="font-weight:600; font-size:0.75rem; color:{{ $courseProgress >= 80 ? '#48bb78' : ($courseProgress >= 50 ? '#fbbf24' : '#f87171') }};">
+                                        {{ $courseProgress }}%
+                                    </span>
+                                    <i class="fas fa-chevron-down" id="chevron-{{ $course->id }}" style="color:#94a3b8; font-size:0.75rem; transition:transform 0.2s;"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Course Details (Hidden by default) -->
+                            <div id="course-{{ $course->id }}" style="display: none; padding:0.75rem 1rem 1rem 2rem; border-top:1px solid #edf2f7;">
+                                <!-- Enrollment Info Row -->
+                                <div style="display:flex; gap:1.5rem; background:#f8fafc; padding:0.5rem 0.75rem; border-radius:6px; margin-bottom:1rem; font-size:0.6875rem;">
+                                    <div>
+                                        <span style="color:#64748b;">Enrolled:</span>
+                                        <span style="font-weight:600; margin-left:0.375rem;">{{ $enrollment->enrolled_at->format('M d, Y') }}</span>
+                                    </div>
+                                    <div>
+                                        <span style="color:#64748b;">Status:</span>
+                                        <span style="font-weight:600; margin-left:0.375rem; color:{{ $enrollment->grade ? '#48bb78' : '#fbbf24' }};">
+                                            {{ $enrollment->grade ? 'Completed' : 'In Progress' }}
+                                        </span>
+                                    </div>
+                                    @if($enrollment->grade)
+                                    <div>
+                                        <span style="color:#64748b;">Grade:</span>
+                                        <span style="font-weight:600; margin-left:0.375rem;">{{ $enrollment->grade }}%</span>
+                                    </div>
+                                    @endif
+                                </div>
+                                
+                                <!-- Topics List -->
+                                <div style="margin-top:0.5rem;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                        <span style="font-size:0.6875rem; font-weight:600; color:#334155;">
+                                            <i class="fas fa-list" style="margin-right:0.375rem;"></i>
+                                            Topics ({{ $courseTopicCount }})
+                                        </span>
+                                        <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" style="font-size:0.625rem; color:#667eea; text-decoration:none;">
+                                            View Course <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:0.25rem;"></i>
+                                        </a>
+                                    </div>
+                                    
+                                    @if($courseTopicCount > 0)
+                                        <div style="max-height:200px; overflow-y:auto; border:1px solid #edf2f7; border-radius:6px;">
+                                            @foreach($course->topics as $topic)
+                                                @php $isCompleted = in_array($topic->id, $validCompletedTopicIds); @endphp
+                                                <div style="padding:0.5rem; border-bottom:1px solid #edf2f7; display:flex; align-items:center; justify-content:space-between;">
+                                                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                                                        <div style="width:16px; text-align:center;">
+                                                            @if($isCompleted)
+                                                                <i class="fas fa-check-circle" style="color:#48bb78; font-size:0.75rem;"></i>
+                                                            @else
+                                                                <i class="fas fa-circle" style="color:#e2e8f0; font-size:0.375rem;"></i>
+                                                            @endif
+                                                        </div>
+                                                        <div>
+                                                            <span style="font-size:0.75rem; font-weight:500; color:#1e293b;">{{ Str::limit($topic->title, 40) }}</span>
+                                                            <div style="display:flex; gap:0.5rem; margin-top:0.125rem;">
+                                                                @if($topic->video_link)
+                                                                    <span style="font-size:0.5625rem; background:#fee2e2; color:#b91c1c; padding:0.125rem 0.25rem; border-radius:4px;">Video</span>
+                                                                @endif
+                                                                @if($topic->pdf_file)
+                                                                    <span style="font-size:0.5625rem; background:#dbeafe; color:#1e3a8a; padding:0.125rem 0.25rem; border-radius:4px;">PDF</span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ route('admin.topics.show', Crypt::encrypt($topic->id)) }}" style="font-size:0.5625rem; color:#64748b;">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div style="text-align:center; padding:0.75rem; background:#f8fafc; border-radius:6px; color:#94a3b8; font-size:0.6875rem;">
+                                            No topics added yet
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+
+            <!-- Quizzes Tab (Hidden by default) -->
+            <div id="progress-quizzes" style="display:none;">
+                @php
+                    $quizAttempts = App\Models\QuizAttempt::where('user_id', $user->id)
+                        ->with('quiz')
+                        ->latest('completed_at')
+                        ->get();
+                @endphp
+
+                @if($quizAttempts->isEmpty())
+                    <div class="empty-state-mini">
+                        <i class="fas fa-brain"></i>
+                        <p>No quiz attempts</p>
+                    </div>
+                @else
+                    @foreach($quizAttempts as $attempt)
+                    <div class="progress-item">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <i class="fas fa-question-circle" style="color:#667eea; width:16px;"></i>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.8125rem;">{{ $attempt->quiz->title ?? 'Unknown Quiz' }}</div>
+                                    <div style="display:flex; gap:1rem; margin-top:0.125rem; font-size:0.625rem; color:#64748b;">
+                                        <span>Score: {{ $attempt->score }}/{{ $attempt->total_points }}</span>
+                                        @if($attempt->completed_at)
+                                            <span>{{ $attempt->completed_at->format('M d, Y') }}</span>
+                                        @else
+                                            <span>In Progress</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="badge {{ $attempt->passed ? 'badge-approved' : 'badge-pending' }}" style="padding:0.2rem 0.5rem;">
+                                {{ $attempt->percentage }}%
+                            </span>
+                        </div>
+                        <div class="progress-bar-container" style="margin-top:0.5rem;">
+                            <div class="progress-bar-fill" style="width: {{ $attempt->percentage }}%"></div>
+                        </div>
+                    </div>
+                    @endforeach
+                @endif
+            </div>
+
+            <!-- Assignments Tab (Hidden by default) -->
+            <div id="progress-assignments" style="display:none;">
+                @php
+                    $assignmentSubmissions = App\Models\AssignmentSubmission::where('student_id', $user->id)
+                        ->with('assignment')
+                        ->latest('submitted_at')
+                        ->get();
+                @endphp
+
+                @if($assignmentSubmissions->isEmpty())
+                    <div class="empty-state-mini">
+                        <i class="fas fa-file-alt"></i>
+                        <p>No assignments submitted</p>
+                    </div>
+                @else
+                    @foreach($assignmentSubmissions as $submission)
+                    <div class="progress-item">
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <i class="fas fa-file-alt" style="color:#667eea; width:16px;"></i>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.8125rem;">{{ $submission->assignment->title ?? 'Unknown Assignment' }}</div>
+                                    <div style="display:flex; gap:1rem; margin-top:0.125rem; font-size:0.625rem; color:#64748b;">
+                                        <span>
+                                            Score: 
+                                            @if($submission->score !== null)
+                                                {{ $submission->score }}/{{ $submission->assignment->points ?? 0 }}
+                                            @else
+                                                Not graded
+                                            @endif
+                                        </span>
+                                        @if($submission->submitted_at)
+                                            <span>{{ $submission->submitted_at->format('M d, Y') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="badge {{ $submission->status == 'graded' ? 'badge-approved' : 'badge-pending' }}">
+                                {{ ucfirst($submission->status) }}
+                            </span>
+                        </div>
+                    </div>
+                    @endforeach
+                @endif
+            </div>
+            @endif
+
+            <!-- Messages -->
             @if(session('success'))
-            <div class="message-success">
+            <div class="message-compact message-success-compact">
                 <i class="fas fa-check-circle"></i>
                 {{ session('success') }}
             </div>
             @endif
             
             @if(session('error'))
-            <div class="message-error">
+            <div class="message-compact message-error-compact">
                 <i class="fas fa-exclamation-circle"></i>
                 {{ session('error') }}
             </div>
             @endif
         </div>
     </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -395,55 +687,34 @@
                 });
             });
         }
-        
-        // Show notifications from session
-        @if(session('success'))
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true,
-                icon: 'success',
-                title: '{{ session('success') }}',
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
-        @endif
-        
-        @if(session('error'))
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true,
-                icon: 'error',
-                title: '{{ session('error') }}',
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
-        @endif
-        
-        @if(session('warning'))
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true,
-                icon: 'warning',
-                title: '{{ session('warning') }}',
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
-        @endif
     });
+
+    // Progress tab switching
+    window.showProgressTab = function(tab) {
+        document.getElementById('progress-courses').style.display = 'none';
+        document.getElementById('progress-quizzes').style.display = 'none';
+        document.getElementById('progress-assignments').style.display = 'none';
+        
+        document.getElementById('tab-courses').classList.remove('active');
+        document.getElementById('tab-quizzes').classList.remove('active');
+        document.getElementById('tab-assignments').classList.remove('active');
+        
+        document.getElementById('progress-' + tab).style.display = 'block';
+        document.getElementById('tab-' + tab).classList.add('active');
+    };
+
+    // Toggle course details
+    window.toggleCourseDetails = function(courseId) {
+        const detailsDiv = document.getElementById('course-' + courseId);
+        const chevron = document.getElementById('chevron-' + courseId);
+        
+        if (detailsDiv.style.display === 'none') {
+            detailsDiv.style.display = 'block';
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            detailsDiv.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    };
 </script>
 @endpush

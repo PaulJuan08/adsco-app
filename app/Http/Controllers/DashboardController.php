@@ -342,14 +342,7 @@ class DashboardController extends Controller
                 ? round($totalProgress / count($enrolledCourses), 1) 
                 : 0;
             
-            // Get available courses (published and not enrolled)
-            $availableCourses = Course::where('is_published', true)
-                ->whereNotIn('id', $enrolledCourseIds)
-                ->with('teacher:id,f_name,l_name')
-                ->withCount('topics')
-                ->orderBy('title')
-                ->limit(3)
-                ->get(['id', 'title', 'description', 'teacher_id', 'course_code', 'credits']);
+            // 🔥 REMOVED: availableCourses query - students can no longer self-enroll
             
             // Get available quizzes
             $availableQuizzes = Quiz::where('is_published', true)
@@ -408,9 +401,10 @@ class DashboardController extends Controller
                 
                 // Courses
                 'enrolledCourses' => $enrolledCourses,
-                'availableCourses' => $availableCourses,
                 'completedCourses' => $completedCourses,
                 'totalEnrolled' => count($enrolledCourses),
+                
+                // 🔥 REMOVED: 'availableCourses' => $availableCourses,
                 
                 // Quizzes
                 'availableQuizzes' => $availableQuizzes,

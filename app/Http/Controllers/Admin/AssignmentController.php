@@ -49,8 +49,12 @@ class AssignmentController extends Controller
     public function show($encryptedId)
     {
         $id = Crypt::decrypt($encryptedId);
-        $assignment = Assignment::with(['course', 'topic'])->findOrFail($id);
-        return view('admin.assignments.show', compact('assignment'));
+        $assignment = Assignment::with(['course', 'topic', 'submissions.student', 'submissions.gradedBy'])
+            ->withCount(['allowedStudents as allowed_students_count', 'submissions as submissions_count'])
+            ->findOrFail($id);
+        
+        // Pass the encryptedId to the view
+        return view('admin.assignments.show', compact('assignment', 'encryptedId'));
     }
 
     public function edit($encryptedId)
@@ -59,7 +63,9 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
         $courses = Course::all();
         $topics = Topic::all();
-        return view('admin.assignments.edit', compact('assignment', 'courses', 'topics'));
+        
+        // Pass the encryptedId to the view
+        return view('admin.assignments.edit', compact('assignment', 'courses', 'topics', 'encryptedId'));
     }
 
     public function update(Request $request, $encryptedId)
@@ -95,5 +101,22 @@ class AssignmentController extends Controller
         
         return redirect()->route('admin.assignments.index')
             ->with('success', 'Assignment deleted successfully.');
+    }
+
+    /**
+     * Toggle publish status
+     */
+    public function togglePublish(Request $request, $encryptedId)
+    {
+        $id = Crypt::decrypt($encryptedId);
+        $assignment = Assignment::findOrFail($id);
+        
+        $assignment->update([
+            'is_published' => !$assignment->is_published
+        ]);
+        
+        $status = $assignment->is_published ? 'published' : 'unpublished';
+        
+        return redirect()->back()->with('success', "Assignment {$status} successfully.");
     }
 }

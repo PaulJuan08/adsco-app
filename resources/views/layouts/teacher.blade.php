@@ -25,6 +25,145 @@
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
     
     @stack('styles')
+    
+    <style>
+        /* Smooth animations for sidebar */
+        .sidebar-nav-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        
+        .sidebar-nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+            color: white;
+        }
+        
+        .sidebar-nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: white;
+            border-left: 3px solid #667eea;
+        }
+        
+        .sidebar-nav-item i {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 20px;
+            font-size: 1rem;
+        }
+        
+        .sidebar-nav-item:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Badge animation */
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.1rem 0.4rem;
+            margin-left: auto;
+            min-width: 18px;
+            text-align: center;
+            animation: pulse 2s infinite;
+            display: inline-block;
+            transition: transform 0.2s ease;
+        }
+        
+        .sidebar-nav-item:hover .badge-count {
+            transform: scale(1.1);
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        /* Profile link hover animation */
+        .sidebar-user-profile-link {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: block;
+            border-radius: 0.5rem;
+        }
+        
+        .sidebar-user-profile-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+        
+        .sidebar-user-avatar {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar-user-profile-link:hover .sidebar-user-avatar {
+            transform: scale(1.05);
+        }
+        
+        /* Logout button animation */
+        .sidebar-logout-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            border-radius: 0.375rem !important;
+        }
+        
+        .sidebar-logout-btn:hover {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+            transform: translateX(4px);
+        }
+        
+        .sidebar-logout-btn:hover i {
+            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+        
+        @keyframes shake {
+            10%, 90% {
+                transform: translateX(-1px);
+            }
+            20%, 80% {
+                transform: translateX(2px);
+            }
+            30%, 50%, 70% {
+                transform: translateX(-2px);
+            }
+            40%, 60% {
+                transform: translateX(2px);
+            }
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        .sidebar-nav-item,
+        .sidebar-user-profile-link,
+        .sidebar-user-avatar,
+        .badge-count,
+        .sidebar-logout-btn i {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .sidebar-nav-item:hover {
+                transform: translateX(2px);
+            }
+            
+            .sidebar-user-profile-link:hover {
+                transform: translateX(2px);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="layout-with-sidebar">
@@ -42,29 +181,43 @@
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
+                
                 <a href="{{ route('teacher.courses.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.courses.*') ? 'active' : '' }}">
                     <i class="fas fa-book"></i>
                     <span>My Courses</span>
                 </a>
+                
                 <a href="{{ route('teacher.topics.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.topics.*') ? 'active' : '' }}">
                     <i class="fas fa-list"></i>
                     <span>Topics</span>
                 </a>
-                <a href="{{ route('teacher.quizzes.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.quizzes.*') ? 'active' : '' }}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Quizzes</span>
-                </a>
-                <a href="{{ route('teacher.assignments.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.assignments.*') ? 'active' : '' }}">
-                    <i class="fas fa-tasks"></i>
-                    <span>Assignments</span>
-                </a>
-                <a href="{{ route('teacher.enrollments') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.enrollments') ? 'active' : '' }}">
-                    <i class="fas fa-user-graduate"></i>
-                    <span>Enrollments</span>
-                </a>
-                <a href="{{ route('teacher.progress.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.progress.*') ? 'active' : '' }}">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Progress</span>
+                
+                <a href="{{ route('teacher.todo.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.todo.*') ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>To-Do</span>
+                    @php
+                        $teacherId = Auth::id();
+                        
+                        // Get pending items count for badge
+                        $pendingQuizzes = \App\Models\Quiz::where('created_by', $teacherId)
+                            ->where('is_published', 0)
+                            ->count();
+                        
+                        $pendingAssignments = \App\Models\Assignment::where('created_by', $teacherId)
+                            ->where('is_published', 0)
+                            ->count();
+                        
+                        $pendingSubmissions = \App\Models\AssignmentSubmission::whereHas('assignment', function($q) use ($teacherId) {
+                                $q->where('created_by', $teacherId);
+                            })
+                            ->where('status', 'submitted')
+                            ->count();
+                        
+                        $pendingCount = $pendingQuizzes + $pendingAssignments + $pendingSubmissions;
+                    @endphp
+                    @if($pendingCount > 0)
+                        <span class="badge-count">{{ $pendingCount }}</span>
+                    @endif
                 </a>
             </nav>  
             

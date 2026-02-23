@@ -20,6 +20,27 @@
             border-radius: 20px;
         }
     }
+    
+    /* Additional helpful styles */
+    .enrollment-info {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .enrollment-info i {
+        font-size: 1.5rem;
+    }
+    
+    .enrollment-info p {
+        margin: 0;
+        font-size: 0.95rem;
+    }
 </style>
 @endpush
 
@@ -37,7 +58,7 @@
             <a href="{{ route('student.courses.index') }}" class="top-action-btn">
                 <i class="fas fa-arrow-left"></i> Back to Courses
             </a>
-            @if($enrollment && $enrollment->grade)
+            @if(isset($enrollment) && $enrollment && $enrollment->grade)
             <a href="{{ route('student.courses.grades', $encryptedId) }}" class="top-action-btn">
                 <i class="fas fa-chart-bar"></i> View Grades
             </a>
@@ -59,6 +80,17 @@
             {{ session('error') }}
         </div>
         @endif
+
+        {{-- 🔥 ADD THIS: Helpful message if not enrolled (though controller should redirect) --}}
+        @if(!isset($enrollment) || !$enrollment)
+        <div class="enrollment-info">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Not enrolled in this course?</strong>
+                <p>Only administrators can enroll students in courses. Please contact the registrar or your administrator for assistance.</p>
+            </div>
+        </div>
+        @endif
         
         <!-- Course Avatar Section - using exact classes from course-show.css -->
         <div class="course-avatar-section">
@@ -69,7 +101,7 @@
             <div class="course-code">{{ $course->course_code }} • {{ $course->credits }} Credits</div>
             
             <div class="course-status-container">
-                @if($enrollment)
+                @if(isset($enrollment) && $enrollment)
                     @if($enrollment->grade)
                     <span class="status-badge status-published">
                         <i class="fas fa-check-circle"></i> Completed ({{ $enrollment->grade }}%)
@@ -90,7 +122,7 @@
         </div>
         
         <!-- Progress Section - Using courseProgress from controller -->
-        @if($enrollment && isset($courseProgress))
+        @if(isset($enrollment) && $enrollment && isset($courseProgress))
         <div style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; color: white; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
@@ -150,7 +182,7 @@
                 </div>
                 @endif
                 
-                @if($enrollment && $enrollment->grade)
+                @if(isset($enrollment) && $enrollment && $enrollment->grade)
                 <div class="detail-row">
                     <span class="detail-label">Your Grade</span>
                     <span class="detail-value" style="color: #48bb78; font-size: 1.25rem;">{{ $enrollment->grade }}%</span>
@@ -175,11 +207,11 @@
                 <h3 style="font-size: 1.25rem; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 0.5rem;">
                     <i class="fas fa-list" style="color: #667eea;"></i> Course Topics
                     <span style="margin-left: 0.75rem; padding: 0.25rem 0.75rem; background: #e0e7ff; color: #4f46e5; border-radius: 50px; font-size: 0.875rem; font-weight: 600;">
-                        {{ $courseProgress['total'] ?? $topics->count() }} Topics
+                        {{ isset($courseProgress) ? ($courseProgress['total'] ?? $topics->count()) : $topics->count() }} Topics
                     </span>
                 </h3>
                 
-                @if(($courseProgress['total'] ?? $topics->count()) > 0)
+                @if(isset($topics) && $topics->count() > 0)
                 <div class="search-container" style="width: 300px; margin-bottom: 0;">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" class="search-input" placeholder="Search topics..." id="search-topics">
@@ -187,7 +219,7 @@
                 @endif
             </div>
             
-            @if($topics->isEmpty())
+            @if(!isset($topics) || $topics->isEmpty())
             <div class="empty-state">
                 <i class="fas fa-book-open"></i>
                 <h3>No Topics Yet</h3>
@@ -219,14 +251,14 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            @if(in_array($topic->id, $completedTopicIds))
+                            @if(isset($completedTopicIds) && in_array($topic->id, $completedTopicIds))
                             <span class="status-badge status-published" style="padding: 0.375rem 1rem;">
                                 <i class="fas fa-check-circle"></i> Completed
                             </span>
                             @endif
                             <a href="{{ route('student.topics.show', Crypt::encrypt($topic->id)) }}" 
                                class="btn btn-primary" style="padding: 0.5rem 1.25rem;">
-                                @if(in_array($topic->id, $completedTopicIds))
+                                @if(isset($completedTopicIds) && in_array($topic->id, $completedTopicIds))
                                 <i class="fas fa-redo"></i> Review
                                 @else
                                 <i class="fas fa-play"></i> Start

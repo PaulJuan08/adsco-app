@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/Student/CourseController.php
 
 namespace App\Http\Controllers\Student;
 
@@ -47,7 +48,7 @@ class CourseController extends Controller
             // Get enrolled course IDs
             $enrolledCourseIds = $enrolledCourses->pluck('course_id')->toArray();
             
-            // ✅ FIXED: Get ALL completed topics WITHOUT using course_id column
+            // ✅ Get ALL completed topics WITHOUT using course_id column
             $completedTopicsMap = [];
             if (!empty($enrolledCourseIds)) {
                 // Get all completed topics for this student
@@ -108,31 +109,11 @@ class CourseController extends Controller
             // Get overall statistics
             $overallStats = $this->getOverallStats($studentId, $enrolledCourseIds, $completedTopicsMap);
             
-            // Get available courses
-            $availableCourses = Course::where('is_published', true)
-                ->whereNotIn('id', $enrolledCourseIds)
-                ->with(['teacher' => function($query) {
-                    $query->select(['id', 'f_name', 'l_name']);
-                }])
-                ->withCount(['students', 'topics'])
-                ->select(['id', 'title', 'course_code', 'description', 'teacher_id', 'credits', 'created_at'])
-                ->orderBy('created_at', 'desc')
-                ->take(6)
-                ->get();
-            
-            $totalAvailableCourses = Course::where('is_published', true)
-                ->whereNotIn('id', $enrolledCourseIds)
-                ->count();
-
-            $hasMoreAvailableCourses = $totalAvailableCourses > $availableCourses->count();
-            
             // Get recent activities
             $recentActivities = $this->getRecentActivities($student);
             
             return [
                 'enrolledCourses' => $enrolledCourses,
-                'availableCourses' => $availableCourses,
-                'hasMoreAvailableCourses' => $hasMoreAvailableCourses,
                 'overallStats' => $overallStats,
                 'recentActivities' => $recentActivities,
                 'enrolledCourseIds' => $enrolledCourseIds
@@ -141,8 +122,6 @@ class CourseController extends Controller
         
         return view('student.courses.index', [
             'enrolledCourses' => $data['enrolledCourses'],
-            'availableCourses' => $data['availableCourses'],
-            'hasMoreAvailableCourses' => $data['hasMoreAvailableCourses'],
             'overallStats' => $data['overallStats'],
             'recentActivities' => $data['recentActivities']
         ]);
@@ -164,7 +143,7 @@ class CourseController extends Controller
 
             if (!$enrollment) {
                 return redirect()->route('student.courses.index')
-                    ->with('error', 'Access denied.');
+                    ->with('error', 'You are not enrolled in this course. Please contact the administrator to enroll.');
             }
 
             // Cache course data but NOT progress
@@ -265,7 +244,7 @@ class CourseController extends Controller
         $completedTopics = 0;
         $totalProgress = 0;
         
-        // ✅ FIXED: Get completed topics WITHOUT using course_id column
+        // Get completed topics WITHOUT using course_id column
         if ($completedTopicsMap === null) {
             $completedTopicsMap = [];
             
@@ -413,165 +392,6 @@ class CourseController extends Controller
         return array_slice($activities, 0, 5);
     }
     
-    /**
-     * Enroll in a course
-     */
-    public function enroll(Request $request, $encryptedId)
-    {
-        try {
-            $courseId = Crypt::decrypt($encryptedId);
-            $student = Auth::user();
-            $studentId = $student->id;
-            
-            // Check if already enrolled
-            $existingEnrollment = Enrollment::where('student_id', $studentId)
-                ->where('course_id', $courseId)
-                ->first();
-                
-            if ($existingEnrollment) {
-                return back()->with('error', 'You are already enrolled in this course.');
-            }
-            
-            // Create enrollment
-            Enrollment::create([
-                'student_id' => $studentId,
-                'course_id' => $courseId,
-                'enrolled_at' => now(),
-                'status' => 'active'
-            ]);
-            
-            // Clear all student-related caches
-            $this->clearStudentCaches($studentId);
-            
-            return back()->with('success', 'Successfully enrolled in the course!');
-            
-        } catch (\Exception $e) {
-            \Log::error('Error enrolling in course', [
-                'encryptedId' => $encryptedId,
-                'student_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-            
-            return back()->with('error', 'Failed to enroll in the course.');
-        }
-    }
-    
-    /**
-     * Show topics for a course
-     */
-    public function topics($encryptedId)
-    {
-        try {
-            $courseId = Crypt::decrypt($encryptedId);
-            $studentId = Auth::id();
-            
-            // Verify enrollment
-            $enrollment = Enrollment::where('student_id', $studentId)
-                ->where('course_id', $courseId)
-                ->select(['id', 'course_id', 'student_id', 'enrolled_at', 'status'])
-                ->firstOrFail();
-            
-            $course = Course::with(['topics' => function($query) {
-                    $query->orderBy('course_topics.order')
-                          ->select(['topics.id', 'topics.title', 'topics.content', 
-                                    'topics.video_link', 'topics.attachment', 'topics.pdf_file']);
-                }])
-                ->select(['id', 'title', 'description'])
-                ->findOrFail($courseId);
-            
-            return view('student.courses.topics', compact('course', 'enrollment'));
-            
-        } catch (\Exception $e) {
-            \Log::error('Error showing course topics', [
-                'encryptedId' => $encryptedId,
-                'student_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found or access denied.');
-        }
-    }
-    
-    /**
-     * Show course materials
-     */
-    public function materials($encryptedId)
-    {
-        try {
-            $courseId = Crypt::decrypt($encryptedId);
-            $studentId = Auth::id();
-            
-            // Verify enrollment
-            $enrollment = Enrollment::where('student_id', $studentId)
-                ->where('course_id', $courseId)
-                ->select(['id', 'course_id', 'student_id', 'enrolled_at', 'status'])
-                ->firstOrFail();
-            
-            $course = Course::with(['topics' => function($query) {
-                    $query->orderBy('course_topics.order')
-                          ->select(['topics.id', 'topics.title', 'topics.content', 
-                                    'topics.video_link', 'topics.attachment', 'topics.pdf_file', 'topics.created_at']);
-                }])
-                ->select(['id', 'title', 'description'])
-                ->findOrFail($courseId);
-            
-            return view('student.courses.materials', compact('course', 'enrollment'));
-            
-        } catch (\Exception $e) {
-            \Log::error('Error showing course materials', [
-                'encryptedId' => $encryptedId,
-                'student_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found or access denied.');
-        }
-    }
-    
-    /**
-     * Show grades for a course
-     */
-    public function grades($encryptedId)
-    {
-        try {
-            $courseId = Crypt::decrypt($encryptedId);
-            $studentId = Auth::id();
-            
-            // Verify enrollment
-            $enrollment = Enrollment::where('student_id', $studentId)
-                ->where('course_id', $courseId)
-                ->select(['id', 'course_id', 'student_id', 'enrolled_at', 'status', 'grade'])
-                ->firstOrFail();
-            
-            $course = Course::with(['teacher' => function($query) {
-                    $query->select(['id', 'f_name', 'l_name']);
-                }])
-                ->select(['id', 'title', 'course_code', 'teacher_id'])
-                ->findOrFail($courseId);
-            
-            // In a real app, you would fetch grades from your grades table
-            $grades = [
-                'quizzes' => [],
-                'assignments' => [],
-                'exams' => []
-            ];
-            
-            return view('student.courses.grades', compact('course', 'enrollment', 'grades'));
-            
-        } catch (\Exception $e) {
-            \Log::error('Error showing course grades', [
-                'encryptedId' => $encryptedId,
-                'student_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('student.courses.index')
-                ->with('error', 'Course not found or access denied.');
-        }
-    }
-
     /**
      * Clear all student-related caches
      */

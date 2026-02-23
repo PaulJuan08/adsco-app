@@ -1,3 +1,5 @@
+{{-- resources/views/student/courses/index.blade.php --}}
+
 @extends('layouts.student')
 
 @section('title', 'My Courses - Student Dashboard')
@@ -18,7 +20,7 @@
                 <div class="greeting-text">
                     <h1 class="welcome-title">My Courses</h1>
                     <p class="welcome-subtitle">
-                        <i class="fas fa-book-open"></i> Browse and access your enrolled courses
+                        <i class="fas fa-book-open"></i> Access your enrolled courses and track progress
                         @if($enrolledCourses->count() > 0)
                             <span class="separator">•</span>
                             <span class="pending-notice">{{ $enrolledCourses->count() }} enrolled</span>
@@ -119,10 +121,10 @@
                                 <i class="fas fa-book-open"></i>
                             </div>
                             <h3 class="empty-title">No courses enrolled yet</h3>
-                            <p class="empty-text">You haven't enrolled in any courses yet. Check out available courses below to get started.</p>
+                            <p class="empty-text">You haven't been enrolled in any courses yet. Please contact the administrator to enroll you in courses.</p>
                             <div class="empty-hint">
-                                <i class="fas fa-lightbulb"></i>
-                                Enroll in courses to start learning and track your progress
+                                <i class="fas fa-info-circle"></i>
+                                Only administrators can enroll students in courses.
                             </div>
                         </div>
                     @else
@@ -247,105 +249,7 @@
                 @endif
             </div>
 
-            <!-- Available Courses Section -->
-            @if($availableCourses->isNotEmpty())
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">
-                        <i class="fas fa-plus-circle"></i>
-                        Available Courses to Enroll
-                    </h2>
-                    <div class="header-actions">
-                        <span class="item-badge badge-info">{{ $availableCourses->count() }} available</span>
-                    </div>
-                </div>
-                
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="courses-table">
-                            <thead>
-                                <tr>
-                                    <th>Course Title</th>
-                                    <th class="hide-on-mobile">Code</th>
-                                    <th class="hide-on-tablet">Teacher</th>
-                                    <th>Credits</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($availableCourses->take(6) as $course)
-                                @php
-                                    $encryptedId = Crypt::encrypt($course->id);
-                                @endphp
-                                <tr>
-                                    <td>
-                                        <div class="course-info-cell">
-                                            <div class="course-icon" style="background: linear-gradient(135deg, var(--info-light), var(--info));">
-                                                <i class="fas fa-graduation-cap"></i>
-                                            </div>
-                                            <div class="course-details">
-                                                <div class="course-name">{{ $course->title }}</div>
-                                                <div class="course-desc">{{ Str::limit($course->description, 50) }}</div>
-                                                <div class="course-mobile-info">
-                                                    <div class="course-code-mobile">{{ $course->course_code }}</div>
-                                                    @if($course->teacher)
-                                                    <div class="teacher-mobile">
-                                                        <i class="fas fa-chalkboard-teacher"></i>
-                                                        {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}
-                                                    </div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="hide-on-mobile">
-                                        <span class="course-code">{{ $course->course_code }}</span>
-                                    </td>
-                                    <td class="hide-on-tablet">
-                                        @if($course->teacher)
-                                        <div class="teacher-info">
-                                            <div class="teacher-avatar" style="background: var(--info);">
-                                                {{ strtoupper(substr($course->teacher->f_name, 0, 1)) }}
-                                            </div>
-                                            <div class="teacher-details">
-                                                <div class="teacher-name">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
-                                            </div>
-                                        </div>
-                                        @else
-                                        <span class="no-teacher">TBD</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="students-count">
-                                            <div class="count-number">{{ $course->credits ?? 0 }}</div>
-                                            <div class="count-label">Credits</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <form action="{{ route('student.courses.enroll', $encryptedId) }}" method="POST" class="enroll-form">
-                                            @csrf
-                                            <button type="submit" class="btn btn-success btn-sm">
-                                                <i class="fas fa-user-plus"></i> Enroll
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    @if($availableCourses->count() > 6)
-                    <div class="view-all-container">
-                        <a href="#" class="btn btn-outline-primary btn-sm">
-                            View All {{ $availableCourses->count() }} Available Courses
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                    @endif
-                </div>
-            </div>
-            @endif
+            {{-- 🔥 REMOVED: Available Courses Section --}}
         </div>
 
         <!-- Right Column - Sidebar Stats -->
@@ -522,8 +426,7 @@
         clickableRows.forEach(row => {
             row.addEventListener('click', function(e) {
                 if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
-                    e.target.closest('a') || e.target.closest('button') || 
-                    e.target.closest('.enroll-form')) {
+                    e.target.closest('a') || e.target.closest('button')) {
                     return;
                 }
                 
@@ -552,17 +455,6 @@
                 });
             });
         }
-
-        // Enroll button confirmation
-        const enrollForms = document.querySelectorAll('.enroll-form');
-        enrollForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.stopPropagation();
-                if (!confirm('Are you sure you want to enroll in this course?')) {
-                    e.preventDefault();
-                }
-            });
-        });
     });
 </script>
 @endpush
