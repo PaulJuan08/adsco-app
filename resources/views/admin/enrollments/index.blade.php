@@ -5,536 +5,7 @@
 @section('title', 'Enrollment Management - Admin Dashboard')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/enrollment.css') }}">
-<style>
-    /* Additional styles for enrollment page */
-    .enrollment-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-top: 1.5rem;
-    }
-    
-    @media (max-width: 1024px) {
-        .enrollment-container {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    .course-selector {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    
-    .course-selector-header {
-        padding: 1.25rem 1.5rem;
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .course-selector-header h3 {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .course-selector-header p {
-        font-size: 0.8125rem;
-        color: #64748b;
-    }
-    
-    .course-selector-body {
-        padding: 1.5rem;
-        max-height: 500px;
-        overflow-y: auto;
-    }
-    
-    .course-item {
-        padding: 1rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        margin-bottom: 0.75rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: white;
-    }
-    
-    .course-item:hover {
-        border-color: #667eea;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-    }
-    
-    .course-item.selected {
-        border-color: #667eea;
-        background: #f5f3ff;
-        border-width: 2px;
-    }
-    
-    .course-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    .course-item-title {
-        font-weight: 700;
-        color: #1e293b;
-        font-size: 0.9375rem;
-    }
-    
-    .course-item-code {
-        font-size: 0.75rem;
-        color: #667eea;
-        background: #e0e7ff;
-        padding: 0.25rem 0.5rem;
-        border-radius: 6px;
-        font-weight: 600;
-    }
-    
-    .course-item-desc {
-        font-size: 0.75rem;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-    
-    .course-item-meta {
-        display: flex;
-        gap: 0.75rem;
-        font-size: 0.6875rem;
-        color: #94a3b8;
-    }
-    
-    .course-item-meta i {
-        margin-right: 0.25rem;
-    }
-    
-    .filters-panel {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .filters-title {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: #334155;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .filter-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.375rem;
-    }
-    
-    .filter-label {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-    
-    .filter-select, .filter-input {
-        padding: 0.625rem 0.875rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 0.8125rem;
-        color: #1e293b;
-        background: white;
-        transition: all 0.2s ease;
-    }
-    
-    .filter-select:focus, .filter-input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    .filter-select:hover, .filter-input:hover {
-        border-color: #cbd5e1;
-    }
-    
-    .search-wrapper {
-        position: relative;
-        width: 100%;
-    }
-    
-    .search-wrapper i {
-        position: absolute;
-        left: 0.875rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 0.8125rem;
-    }
-    
-    .search-wrapper input {
-        padding-left: 2.25rem;
-    }
-    
-    .students-list {
-        max-height: 400px;
-        overflow-y: auto;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        background: white;
-    }
-    
-    .student-item {
-        display: flex;
-        align-items: center;
-        padding: 0.875rem 1rem;
-        border-bottom: 1px solid #edf2f7;
-        transition: background 0.2s ease;
-    }
-    
-    .student-item:last-child {
-        border-bottom: none;
-    }
-    
-    .student-item:hover {
-        background: #f8fafc;
-    }
-    
-    .student-item.disabled {
-        opacity: 0.6;
-        background: #f1f5f9;
-    }
-    
-    .student-checkbox {
-        margin-right: 1rem;
-    }
-    
-    .student-checkbox input {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-        accent-color: #667eea;
-    }
-    
-    .student-checkbox input:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-    
-    .student-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.875rem;
-        margin-right: 1rem;
-        flex-shrink: 0;
-    }
-    
-    .student-info {
-        flex: 1;
-    }
-    
-    .student-name {
-        font-weight: 700;
-        color: #1e293b;
-        font-size: 0.875rem;
-        margin-bottom: 0.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    
-    .student-email {
-        font-size: 0.75rem;
-        color: #64748b;
-        margin-bottom: 0.25rem;
-    }
-    
-    .student-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        font-size: 0.6875rem;
-    }
-    
-    .student-badge {
-        padding: 0.125rem 0.5rem;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    
-    .badge-college {
-        background: #e0f2fe;
-        color: #0369a1;
-    }
-    
-    .badge-program {
-        background: #dcfce7;
-        color: #166534;
-    }
-    
-    .badge-year {
-        background: #fef9c3;
-        color: #854d0e;
-    }
-    
-    .badge-enrolled {
-        background: #e0e7ff;
-        color: #4f46e5;
-    }
-    
-    .student-status {
-        font-size: 0.6875rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 999px;
-        background: #f1f5f9;
-        color: #475569;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-    
-    .student-status.enrolled {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-    
-    .selected-count {
-        background: #667eea;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    
-    .enrolled-students-panel {
-        background: white;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-    
-    .enrolled-header {
-        padding: 1.25rem 1.5rem;
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .enrolled-header h3 {
-        font-size: 0.9375rem;
-        font-weight: 700;
-        color: #1e293b;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .enrolled-count {
-        background: #e2e8f0;
-        color: #334155;
-        padding: 0.25rem 0.75rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    
-    .enrolled-list {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .enrolled-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1.5rem;
-        border-bottom: 1px solid #edf2f7;
-    }
-    
-    .enrolled-item:last-child {
-        border-bottom: none;
-    }
-    
-    .enrolled-item-left {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .enrolled-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-        color: #475569;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.75rem;
-    }
-    
-    .enrolled-info h4 {
-        font-weight: 600;
-        color: #1e293b;
-        font-size: 0.8125rem;
-        margin-bottom: 0.125rem;
-    }
-    
-    .enrolled-info p {
-        font-size: 0.6875rem;
-        color: #64748b;
-    }
-    
-    .enrolled-remove {
-        color: #ef4444;
-        background: none;
-        border: none;
-        font-size: 0.6875rem;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 0.25rem 0.5rem;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-    
-    .enrolled-remove:hover {
-        background: #fef2f2;
-    }
-    
-    .bulk-upload-area {
-        border: 2px dashed #cbd5e1;
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        background: #f8fafc;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-bottom: 1.5rem;
-    }
-    
-    .bulk-upload-area:hover {
-        border-color: #667eea;
-        background: #f5f3ff;
-    }
-    
-    .bulk-upload-area i {
-        font-size: 2rem;
-        color: #94a3b8;
-        margin-bottom: 0.5rem;
-    }
-    
-    .bulk-upload-area p {
-        font-size: 0.8125rem;
-        color: #475569;
-        margin-bottom: 0.25rem;
-    }
-    
-    .bulk-upload-area small {
-        font-size: 0.6875rem;
-        color: #94a3b8;
-    }
-    
-    .bulk-upload-area.has-file {
-        border-color: #48bb78;
-        background: #f0fff4;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 1rem;
-        flex-wrap: wrap;
-    }
-    
-    .loading-spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 1s ease-in-out infinite;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-    
-    .pagination-info {
-        font-size: 0.75rem;
-        color: #64748b;
-        padding: 0.75rem 1.5rem;
-        border-top: 1px solid #edf2f7;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .pagination-controls {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .pagination-btn {
-        padding: 0.25rem 0.5rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        color: #475569;
-        background: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .pagination-btn:hover:not(.disabled) {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-    }
-    
-    .pagination-btn.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    .pagination-btn.active {
-        background: #667eea;
-        color: white;
-        border-color: #667eea;
-    }
-</style>
+<link rel="stylesheet" href="{{ asset('css/enrollment-index.css') }}">
 @endpush
 
 @section('content')
@@ -549,16 +20,16 @@
                 <div class="greeting-text">
                     <h1 class="welcome-title">Enrollment Management</h1>
                     <p class="welcome-subtitle">
-                        <i class="fas fa-user-graduate"></i> Enroll students in courses
+                        <i class="fas fa-user-graduate"></i> Manage course enrollments
                     </p>
                 </div>
             </div>
             <div class="header-actions">
-                <a href="{{ route('admin.courses.index') }}" class="top-action-btn">
-                    <i class="fas fa-book"></i> Manage Courses
+                <a href="{{ route('admin.courses.create') }}" class="top-action-btn">
+                    <i class="fas fa-plus-circle"></i> Create Course
                 </a>
                 <a href="{{ route('admin.users.index') }}?role=4" class="top-action-btn">
-                    <i class="fas fa-users"></i> View Students
+                    <i class="fas fa-users"></i> Manage Students
                 </a>
             </div>
         </div>
@@ -615,177 +86,60 @@
         </div>
     </div>
 
-    <!-- Enrollment Container -->
+    <!-- Courses Grid -->
     <div class="enrollment-container">
-        <!-- Left Column - Course Selection -->
-        <div>
-            <div class="course-selector">
-                <div class="course-selector-header">
+        <div class="courses-grid">
+            @forelse($courses as $course)
+            <div class="course-card" data-course-id="{{ $course->id }}" data-encrypted-id="{{ $course->encrypted_id }}">
+                <div class="course-card-header">
                     <h3>
                         <i class="fas fa-graduation-cap" style="color: #667eea;"></i>
-                        Select a Course
+                        {{ $course->title }}
                     </h3>
-                    <p>Choose a course to manage student enrollments</p>
+                    <span class="course-code">{{ $course->course_code }}</span>
                 </div>
-                <div class="course-selector-body">
-                    @foreach($courses as $course)
-                    <div class="course-item {{ $selectedCourse && $selectedCourse->id == $course->id ? 'selected' : '' }}" 
-                         data-course-id="{{ $course->id }}"
-                         data-course-title="{{ $course->title }}"
-                         data-course-code="{{ $course->course_code }}"
-                         onclick="selectCourse({{ $course->id }}, '{{ addslashes($course->title) }}', '{{ $course->course_code }}')">
-                        <div class="course-item-header">
-                            <span class="course-item-title">{{ $course->title }}</span>
-                            <span class="course-item-code">{{ $course->course_code }}</span>
-                        </div>
-                        <div class="course-item-desc">{{ Str::limit($course->description, 100) }}</div>
-                        <div class="course-item-meta">
-                            <span><i class="fas fa-user-graduate"></i> {{ $course->students_count }} enrolled</span>
-                            <span><i class="fas fa-tag"></i> {{ $course->credits }} credits</span>
-                            <span><i class="fas {{ $course->is_published ? 'fa-check-circle text-success' : 'fa-clock text-warning' }}"></i> 
-                                {{ $course->is_published ? 'Published' : 'Draft' }}
-                            </span>
-                        </div>
-                    </div>
-                    @endforeach
-                    
-                    @if($courses->isEmpty())
-                    <div class="empty-state" style="padding: 2rem; text-align: center;">
-                        <i class="fas fa-book" style="font-size: 2.5rem; color: #cbd5e0;"></i>
-                        <h3 style="margin-top: 1rem; color: #64748b;">No Courses Available</h3>
-                        <p style="color: #94a3b8; font-size: 0.875rem;">Create a course first to manage enrollments.</p>
-                        <a href="{{ route('admin.courses.create') }}" class="btn btn-primary" style="margin-top: 1rem;">
-                            <i class="fas fa-plus"></i> Create Course
-                        </a>
-                    </div>
-                    @endif
-                </div>
-            </div>
-            
-            <!-- Bulk Upload Section -->
-            <div class="bulk-upload-area" id="bulkUploadArea" onclick="document.getElementById('csvFile').click()" style="margin-top: 1.5rem;">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Upload CSV for Bulk Enrollment</p>
-                <small>Click to select a CSV file with student IDs</small>
-                <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleFileSelect(this)">
-                <div id="selectedFileInfo" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: white; border-radius: 6px; font-size: 0.75rem;"></div>
-            </div>
-        </div>
-
-        <!-- Right Column - Student Selection -->
-        <div>
-            <div class="filters-panel">
-                <div class="filters-title">
-                    <i class="fas fa-filter" style="color: #667eea;"></i>
-                    Filter Students
-                </div>
-                
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label class="filter-label">College</label>
-                        <select class="filter-select" id="collegeFilter" onchange="loadPrograms(this.value)">
-                            <option value="all">All Colleges</option>
-                            @foreach($colleges as $college)
-                                <option value="{{ $college->id }}">{{ $college->college_name }}</option>
-                            @endforeach
-                        </select>
+                <div class="course-card-body">
+                    <div class="course-description">
+                        {{ Str::limit($course->description ?? 'No description available', 100) }}
                     </div>
                     
-                    <div class="filter-group">
-                        <label class="filter-label">Program</label>
-                        <select class="filter-select" id="programFilter">
-                            <option value="all">All Programs</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label class="filter-label">Year Level</label>
-                        <select class="filter-select" id="yearFilter">
-                            <option value="all">All Years</option>
-                            @foreach($years as $year)
-                                <option value="{{ $year }}">{{ $year }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="filter-row">
-                    <div class="filter-group" style="grid-column: span 3;">
-                        <label class="filter-label">Search</label>
-                        <div class="search-wrapper">
-                            <i class="fas fa-search"></i>
-                            <input type="text" class="filter-input" id="searchFilter" placeholder="Search by name, email, or student ID...">
+                    <div class="course-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ $course->students_count }}</div>
+                            <div class="stat-label">Enrolled</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ $course->credits }}</div>
+                            <div class="stat-label">Credits</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">
+                                <i class="fas {{ $course->is_published ? 'fa-check-circle text-success' : 'fa-clock text-warning' }}"></i>
+                            </div>
+                            <div class="stat-label">{{ $course->is_published ? 'Published' : 'Draft' }}</div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="filter-row" style="margin-bottom: 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <button class="btn btn-primary btn-sm" onclick="loadStudents()">
-                            <i class="fas fa-search"></i> Apply Filters
+                    
+                    <div class="course-actions">
+                        <button class="btn btn-primary" onclick="openEnrollModal('{{ $course->encrypted_id }}', '{{ addslashes($course->title) }}')">
+                            <i class="fas fa-user-plus"></i> Enroll
                         </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
-                            <i class="fas fa-undo"></i> Reset
+                        <button class="btn btn-info" onclick="openViewStudentsModal('{{ $course->encrypted_id }}', '{{ addslashes($course->title) }}')">
+                            <i class="fas fa-users"></i> View ({{ $course->students_count }})
                         </button>
                     </div>
                 </div>
             </div>
-
-            <div class="dashboard-card" style="margin-top: 0;">
-                <div class="card-header">
-                    <h2 class="card-title">
-                        <i class="fas fa-users" style="color: var(--primary);"></i>
-                        Select Students
-                    </h2>
-                    <div class="header-actions">
-                        <span class="selected-count" id="selectedCount">0 selected</span>
-                    </div>
-                </div>
-                
-                <div class="card-body" style="padding: 0;">
-                    <!-- Students List -->
-                    <div id="studentsList" class="students-list">
-                        <div style="text-align: center; padding: 3rem;">
-                            <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
-                            <p style="color: #64748b; font-size: 0.875rem;">Select a course and apply filters to load students...</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Pagination -->
-                    <div id="pagination" class="pagination-info" style="display: none;">
-                        <span id="paginationInfo"></span>
-                        <div class="pagination-controls" id="paginationControls"></div>
-                    </div>
-                </div>
-                
-                <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <span id="selectedStudentsInfo">No students selected</span>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-outline-secondary btn-sm" onclick="clearSelections()">
-                            <i class="fas fa-times"></i> Clear
-                        </button>
-                        <button class="btn btn-success btn-sm" onclick="enrollStudents()" id="enrollButton" disabled>
-                            <i class="fas fa-user-plus"></i> Enroll Selected
-                        </button>
-                    </div>
-                </div>
+            @empty
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <i class="fas fa-book-open"></i>
+                <h3>No Courses Available</h3>
+                <p>Create a course first to manage enrollments.</p>
+                <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Course
+                </a>
             </div>
-
-            <!-- Enrolled Students Panel -->
-            <div class="enrolled-students-panel" style="margin-top: 1.5rem;" id="enrolledPanel" style="display: none;">
-                <div class="enrolled-header">
-                    <h3>
-                        <i class="fas fa-check-circle" style="color: #48bb78;"></i>
-                        Enrolled Students
-                    </h3>
-                    <span class="enrolled-count" id="enrolledCount">0</span>
-                </div>
-                <div class="enrolled-list" id="enrolledList">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
+            @endforelse
         </div>
     </div>
 
@@ -797,55 +151,249 @@
         </p>
     </footer>
 </div>
+
+<!-- Enroll Students Modal -->
+<div class="modal" id="enrollModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-user-plus" style="color: #667eea;"></i>
+                Enroll Students in <span id="modalCourseTitle"></span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeEnrollModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Student ID</label>
+                        <input type="text" class="filter-input" id="modalStudentIdFilter" placeholder="Enter student ID...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Name</label>
+                        <input type="text" class="filter-input" id="modalNameFilter" placeholder="Search by name...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">College</label>
+                        <select class="filter-select" id="modalCollegeFilter" onchange="modalLoadPrograms(this.value)">
+                            <option value="all">All Colleges</option>
+                            @foreach($colleges as $college)
+                                <option value="{{ $college->id }}">{{ $college->college_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select class="filter-select" id="modalProgramFilter">
+                            <option value="all">All Programs</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Year Level</label>
+                        <select class="filter-select" id="modalYearFilter">
+                            <option value="all">All Years</option>
+                            @foreach($years as $year)
+                                <option value="{{ $year }}">{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected Count -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <span class="selected-count" id="modalSelectedCount">0 selected</span>
+                <button class="btn btn-sm btn-outline" onclick="modalClearSelections()">
+                    <i class="fas fa-times"></i> Clear All
+                </button>
+            </div>
+            
+            <!-- Students List -->
+            <div id="modalStudentsList" class="students-list-modal">
+                <div style="text-align: center; padding: 3rem;">
+                    <div class="loading-spinner loading-spinner-lg" style="margin: 0 auto 1rem;"></div>
+                    <p style="color: #64748b;">Loading students...</p>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div id="modalPagination" class="pagination-info" style="display: none;">
+                <span id="modalPaginationInfo"></span>
+                <div class="pagination-controls" id="modalPaginationControls"></div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeEnrollModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn btn-success" onclick="modalEnrollStudents()" id="modalEnrollButton" disabled>
+                <i class="fas fa-user-plus"></i> Enroll Selected
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- View Enrolled Students Modal -->
+<div class="modal" id="viewStudentsModal">
+    <div class="modal-dialog" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-users" style="color: #48bb78;"></i>
+                Enrolled Students in <span id="viewModalCourseTitle"></span>
+            </h3>
+            <button type="button" class="modal-close" onclick="closeViewStudentsModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Search Filter -->
+            <div class="filters-section" style="margin-bottom: 1rem;">
+                <div class="filter-row" style="margin-bottom: 0;">
+                    <div class="filter-group" style="width: 100%;">
+                        <label class="filter-label">Search Enrolled Students</label>
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="filter-input" id="viewSearchFilter" placeholder="Search by name, email, or student ID..." oninput="debouncedSearchEnrolled()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enrolled Students List -->
+            <div id="viewStudentsList" class="students-list-modal" style="max-height: 400px;">
+                <div style="text-align: center; padding: 3rem;">
+                    <div class="loading-spinner loading-spinner-lg" style="margin: 0 auto 1rem;"></div>
+                    <p style="color: #64748b;">Loading enrolled students...</p>
+                </div>
+            </div>
+            
+            <!-- Enrolled Count -->
+            <div style="margin-top: 1rem; padding: 0.5rem; background: #f8fafc; border-radius: 8px; text-align: center;">
+                <span class="enrolled-count" id="viewEnrolledCount">0</span> students enrolled
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeViewStudentsModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     // ============ GLOBAL VARIABLES ============
-    let selectedCourse = {{ $selectedCourse ? $selectedCourse->id : 'null' }};
-    let selectedCourseTitle = '{{ $selectedCourse ? addslashes($selectedCourse->title) : '' }}';
-    let selectedCourseCode = '{{ $selectedCourse ? $selectedCourse->course_code : '' }}';
-    let selectedStudentIds = [];
-    let currentPage = 1;
-    let lastPage = 1;
-    let totalStudents = 0;
-    let currentFilters = {};
-
-    // ============ COURSE SELECTION ============
-    function selectCourse(courseId, courseTitle, courseCode) {
-        // Remove selected class from all courses
-        document.querySelectorAll('.course-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-        
-        // Add selected class to clicked course
-        const courseItem = document.querySelector(`.course-item[data-course-id="${courseId}"]`);
-        if (courseItem) {
-            courseItem.classList.add('selected');
-        }
-        
-        selectedCourse = courseId;
-        selectedCourseTitle = courseTitle;
-        selectedCourseCode = courseCode;
-        
-        // Clear selections
-        selectedStudentIds = [];
-        updateSelectedCount();
-        
-        // Load enrolled students
-        loadEnrolledStudents(courseId);
-        
-        // Load available students with current filters
-        loadStudents();
-        
-        // Show notification
-        showNotification(`Selected course: ${courseTitle}`, 'info');
+    let currentEncryptedCourseId = null;
+    let currentCourseTitle = '';
+    let modalSelectedStudentIds = [];
+    let modalCurrentPage = 1;
+    let modalLastPage = 1;
+    let modalTotalStudents = 0;
+    let modalEnrolledStudentIds = [];
+    
+    // View modal variables
+    let viewCurrentEncryptedCourseId = null;
+    let viewAllEnrolledStudents = [];
+    let viewFilteredStudents = [];
+    
+    // Debounce function for filters
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 
-    // ============ LOAD PROGRAMS BY COLLEGE ============
-    function loadPrograms(collegeId) {
-        const programSelect = document.getElementById('programFilter');
+    // ============ ENROLL MODAL FUNCTIONS ============
+    function openEnrollModal(encryptedCourseId, courseTitle) {
+        currentEncryptedCourseId = encryptedCourseId;
+        currentCourseTitle = courseTitle;
+        document.getElementById('modalCourseTitle').textContent = courseTitle;
+        document.getElementById('enrollModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+        
+        // Reset selections
+        modalSelectedStudentIds = [];
+        modalUpdateSelectedCount();
+        
+        // Load enrolled students for this course to mark them as disabled
+        loadEnrolledStudentIds(encryptedCourseId).then(() => {
+            // Load students with auto filters
+            modalLoadStudents();
+        });
+        
+        // Set up auto-filter listeners
+        setupAutoFilters();
+    }
+    
+    function closeEnrollModal() {
+        document.getElementById('enrollModal').classList.remove('show');
+        document.body.style.overflow = '';
+        currentEncryptedCourseId = null;
+    }
+    
+    // Load enrolled student IDs for the current course
+    async function loadEnrolledStudentIds(encryptedCourseId) {
+        try {
+            const response = await fetch(`/admin/enrollments/course/${encodeURIComponent(encryptedCourseId)}/student-ids`);
+            const data = await response.json();
+            modalEnrolledStudentIds = data.student_ids || [];
+        } catch (error) {
+            console.error('Error loading enrolled student IDs:', error);
+            modalEnrolledStudentIds = [];
+        }
+    }
+    
+    // Setup auto-filter listeners
+    function setupAutoFilters() {
+        const filters = ['modalStudentIdFilter', 'modalNameFilter', 'modalCollegeFilter', 'modalProgramFilter', 'modalYearFilter'];
+        
+        filters.forEach(filterId => {
+            const element = document.getElementById(filterId);
+            if (element) {
+                // Remove existing listeners to prevent duplicates
+                element.removeEventListener('input', debouncedModalLoadStudents);
+                element.removeEventListener('change', debouncedModalLoadStudents);
+                
+                if (filterId === 'modalCollegeFilter') {
+                    element.addEventListener('change', function(e) {
+                        modalLoadPrograms(e.target.value);
+                        debouncedModalLoadStudents();
+                    });
+                } else if (filterId === 'modalProgramFilter' || filterId === 'modalYearFilter') {
+                    element.addEventListener('change', debouncedModalLoadStudents);
+                } else {
+                    element.addEventListener('input', debouncedModalLoadStudents);
+                }
+            }
+        });
+    }
+    
+    const debouncedModalLoadStudents = debounce(() => {
+        modalLoadStudents(1);
+    }, 500);
+    
+    // Load programs for modal college filter
+    function modalLoadPrograms(collegeId) {
+        const programSelect = document.getElementById('modalProgramFilter');
         
         if (!collegeId || collegeId === 'all') {
             programSelect.innerHTML = '<option value="all">All Programs</option>';
@@ -865,66 +413,55 @@
                 console.error('Error loading programs:', error);
             });
     }
-
-    // ============ LOAD STUDENTS ============
-    function loadStudents(page = 1) {
-        if (!selectedCourse) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Course Selected',
-                text: 'Please select a course first.',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
-            });
-            return;
-        }
+    
+    // Load students for modal with auto filters
+    function modalLoadStudents(page = 1) {
+        if (!currentEncryptedCourseId) return;
         
-        const collegeId = document.getElementById('collegeFilter').value;
-        const programId = document.getElementById('programFilter').value;
-        const year = document.getElementById('yearFilter').value;
-        const search = document.getElementById('searchFilter').value;
+        const studentId = document.getElementById('modalStudentIdFilter').value;
+        const name = document.getElementById('modalNameFilter').value;
+        const collegeId = document.getElementById('modalCollegeFilter').value;
+        const programId = document.getElementById('modalProgramFilter').value;
+        const year = document.getElementById('modalYearFilter').value;
         
-        currentFilters = { collegeId, programId, year, search };
+        const studentsList = document.getElementById('modalStudentsList');
+        studentsList.innerHTML = '<div style="text-align: center; padding: 3rem;"><div class="loading-spinner loading-spinner-lg" style="margin: 0 auto 1rem;"></div><p>Loading students...</p></div>';
         
-        const studentsList = document.getElementById('studentsList');
-        studentsList.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="loading-spinner" style="margin: 0 auto 1rem;"></div><p>Loading students...</p></div>';
-        
-        let url = `/admin/enrollments/students?page=${page}&course_id=${selectedCourse}`;
+        let url = `/admin/enrollments/students?page=${page}&course_id=${encodeURIComponent(currentEncryptedCourseId)}`;
+        if (studentId) url += `&student_id=${encodeURIComponent(studentId)}`;
+        if (name) url += `&name=${encodeURIComponent(name)}`;
         if (collegeId && collegeId !== 'all') url += `&college_id=${collegeId}`;
         if (programId && programId !== 'all') url += `&program_id=${programId}`;
-        if (year && year !== 'all') url += `&college_year=${year}`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (year && year !== 'all') url += `&college_year=${encodeURIComponent(year)}`;
         
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                renderStudents(data);
-                currentPage = data.current_page;
-                lastPage = data.last_page;
-                totalStudents = data.total;
-                updatePagination();
+                modalRenderStudents(data);
+                modalCurrentPage = data.current_page;
+                modalLastPage = data.last_page;
+                modalTotalStudents = data.total;
+                modalUpdatePagination();
             })
             .catch(error => {
                 console.error('Error loading students:', error);
                 studentsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><p>Error loading students. Please try again.</p></div>';
             });
     }
-
-    // ============ RENDER STUDENTS ============
-    function renderStudents(data) {
-        const studentsList = document.getElementById('studentsList');
+    
+    // Render students in modal
+    function modalRenderStudents(data) {
+        const studentsList = document.getElementById('modalStudentsList');
         
         if (data.data.length === 0) {
-            studentsList.innerHTML = '<div class="empty-state" style="padding: 2rem; text-align: center;"><i class="fas fa-users" style="font-size: 2.5rem; color: #cbd5e0;"></i><h3 style="margin-top: 1rem; color: #64748b;">No Students Found</h3><p style="color: #94a3b8;">Try adjusting your filters.</p></div>';
+            studentsList.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h3>No Students Found</h3><p>Try adjusting your filters.</p></div>';
             return;
         }
         
         let html = '';
         data.data.forEach(student => {
-            const isSelected = selectedStudentIds.includes(student.id);
-            const isEnrolled = student.is_enrolled;
+            const isSelected = modalSelectedStudentIds.includes(student.id);
+            const isEnrolled = modalEnrolledStudentIds.includes(student.id);
             
             html += `
                 <div class="student-item ${isEnrolled ? 'disabled' : ''}" data-student-id="${student.id}">
@@ -933,7 +470,7 @@
                                value="${student.id}" 
                                ${isSelected ? 'checked' : ''} 
                                ${isEnrolled ? 'disabled' : ''}
-                               onchange="toggleStudent(${student.id}, this.checked)">
+                               onchange="modalToggleStudent(${student.id}, this.checked)">
                     </div>
                     <div class="student-avatar">
                         ${student.f_name.charAt(0).toUpperCase()}${student.l_name.charAt(0).toUpperCase()}
@@ -956,94 +493,76 @@
         });
         
         studentsList.innerHTML = html;
-        document.getElementById('pagination').style.display = 'flex';
+        document.getElementById('modalPagination').style.display = 'flex';
     }
-
-    // ============ TOGGLE STUDENT SELECTION ============
-    function toggleStudent(studentId, checked) {
+    
+    // Toggle student selection in modal
+    function modalToggleStudent(studentId, checked) {
         if (checked) {
-            if (!selectedStudentIds.includes(studentId)) {
-                selectedStudentIds.push(studentId);
+            if (!modalSelectedStudentIds.includes(studentId)) {
+                modalSelectedStudentIds.push(studentId);
             }
         } else {
-            selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
+            modalSelectedStudentIds = modalSelectedStudentIds.filter(id => id !== studentId);
         }
         
-        updateSelectedCount();
+        modalUpdateSelectedCount();
     }
-
-    // ============ UPDATE SELECTED COUNT ============
-    function updateSelectedCount() {
-        const count = selectedStudentIds.length;
-        document.getElementById('selectedCount').textContent = count + ' selected';
-        document.getElementById('selectedStudentsInfo').textContent = count + ' student(s) selected';
+    
+    // Update selected count in modal
+    function modalUpdateSelectedCount() {
+        const count = modalSelectedStudentIds.length;
+        document.getElementById('modalSelectedCount').textContent = count + ' selected';
         
-        const enrollButton = document.getElementById('enrollButton');
-        if (count > 0 && selectedCourse) {
+        const enrollButton = document.getElementById('modalEnrollButton');
+        if (count > 0 && currentEncryptedCourseId) {
             enrollButton.disabled = false;
         } else {
             enrollButton.disabled = true;
         }
     }
-
-    // ============ CLEAR SELECTIONS ============
-    function clearSelections() {
-        selectedStudentIds = [];
-        updateSelectedCount();
+    
+    // Clear selections in modal
+    function modalClearSelections() {
+        modalSelectedStudentIds = [];
+        modalUpdateSelectedCount();
         
         // Uncheck all checkboxes
-        document.querySelectorAll('.student-checkbox input[type="checkbox"]:not(:disabled)').forEach(checkbox => {
+        document.querySelectorAll('#modalStudentsList .student-checkbox input[type="checkbox"]:not(:disabled)').forEach(checkbox => {
             checkbox.checked = false;
         });
     }
-
-    // ============ LOAD ENROLLED STUDENTS ============
-    function loadEnrolledStudents(courseId) {
-        const enrolledPanel = document.getElementById('enrolledPanel');
-        const enrolledList = document.getElementById('enrolledList');
-        const enrolledCount = document.getElementById('enrolledCount');
+    
+    // Update pagination in modal
+    function modalUpdatePagination() {
+        const pagination = document.getElementById('modalPagination');
+        const paginationInfo = document.getElementById('modalPaginationInfo');
+        const paginationControls = document.getElementById('modalPaginationControls');
         
-        fetch(`/admin/enrollments/course/${courseId}/students`)
-            .then(response => response.json())
-            .then(students => {
-                if (students.length === 0) {
-                    enrolledPanel.style.display = 'none';
-                    return;
-                }
-                
-                enrolledPanel.style.display = 'block';
-                enrolledCount.textContent = students.length;
-                
-                let html = '';
-                students.forEach(student => {
-                    html += `
-                        <div class="enrolled-item">
-                            <div class="enrolled-item-left">
-                                <div class="enrolled-avatar">
-                                    ${student.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div class="enrolled-info">
-                                    <h4>${student.name}</h4>
-                                    <p>${student.email} • ${student.student_id || 'No ID'}</p>
-                                </div>
-                            </div>
-                            <button class="enrolled-remove" onclick="removeStudent(${student.id}, '${student.name}')">
-                                <i class="fas fa-times"></i> Remove
-                            </button>
-                        </div>
-                    `;
-                });
-                
-                enrolledList.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error loading enrolled students:', error);
-            });
+        paginationInfo.textContent = `Page ${modalCurrentPage} of ${modalLastPage} • ${modalTotalStudents} total students`;
+        
+        let controls = '';
+        
+        // Previous button
+        controls += `<button class="pagination-btn" ${modalCurrentPage === 1 ? 'disabled' : ''} onclick="modalLoadStudents(${modalCurrentPage - 1})">Previous</button>`;
+        
+        // Page numbers
+        const start = Math.max(1, modalCurrentPage - 2);
+        const end = Math.min(modalLastPage, modalCurrentPage + 2);
+        
+        for (let i = start; i <= end; i++) {
+            controls += `<button class="pagination-btn ${i === modalCurrentPage ? 'active' : ''}" onclick="modalLoadStudents(${i})">${i}</button>`;
+        }
+        
+        // Next button
+        controls += `<button class="pagination-btn" ${modalCurrentPage === modalLastPage ? 'disabled' : ''} onclick="modalLoadStudents(${modalCurrentPage + 1})">Next</button>`;
+        
+        paginationControls.innerHTML = controls;
     }
-
-    // ============ ENROLL STUDENTS ============
-    function enrollStudents() {
-        if (selectedStudentIds.length === 0) {
+    
+    // Enroll selected students from modal
+    function modalEnrollStudents() {
+        if (modalSelectedStudentIds.length === 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'No Students Selected',
@@ -1054,7 +573,7 @@
         
         Swal.fire({
             title: 'Enroll Students?',
-            html: `You are about to enroll <strong>${selectedStudentIds.length} student(s)</strong> in <strong>${selectedCourseTitle}</strong>.`,
+            html: `You are about to enroll <strong>${modalSelectedStudentIds.length} student(s)</strong> in <strong>${currentCourseTitle}</strong>.`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#48bb78',
@@ -1063,7 +582,7 @@
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                const enrollButton = document.getElementById('enrollButton');
+                const enrollButton = document.getElementById('modalEnrollButton');
                 enrollButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling...';
                 enrollButton.disabled = true;
                 
@@ -1074,8 +593,8 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
-                        course_id: selectedCourse,
-                        student_ids: selectedStudentIds
+                        course_id: currentEncryptedCourseId,
+                        student_ids: modalSelectedStudentIds
                     })
                 })
                 .then(response => response.json())
@@ -1089,13 +608,11 @@
                             showConfirmButton: false
                         });
                         
-                        // Clear selections
-                        selectedStudentIds = [];
-                        updateSelectedCount();
+                        // Close modal
+                        closeEnrollModal();
                         
-                        // Reload students and enrolled list
-                        loadStudents(currentPage);
-                        loadEnrolledStudents(selectedCourse);
+                        // Update the course card count
+                        updateCourseCount(currentEncryptedCourseId, modalSelectedStudentIds.length);
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -1114,14 +631,130 @@
                 })
                 .finally(() => {
                     enrollButton.innerHTML = '<i class="fas fa-user-plus"></i> Enroll Selected';
-                    enrollButton.disabled = selectedStudentIds.length === 0;
+                    enrollButton.disabled = modalSelectedStudentIds.length === 0;
                 });
             }
         });
     }
-
+    
+    // Update course count after enrollment
+    function updateCourseCount(encryptedCourseId, addedCount) {
+        const courseCard = document.querySelector(`.course-card[data-encrypted-id="${encryptedCourseId}"]`);
+        if (courseCard) {
+            const statValue = courseCard.querySelector('.stat-item:first-child .stat-value');
+            const viewButton = courseCard.querySelector('.btn-info');
+            
+            if (statValue) {
+                const currentCount = parseInt(statValue.textContent);
+                statValue.textContent = currentCount + addedCount;
+            }
+            
+            if (viewButton) {
+                const match = viewButton.textContent.match(/\((\d+)\)/);
+                if (match) {
+                    const currentCount = parseInt(match[1]);
+                    viewButton.innerHTML = `<i class="fas fa-users"></i> View (${currentCount + addedCount})`;
+                }
+            }
+        }
+    }
+    
+    // ============ VIEW STUDENTS MODAL FUNCTIONS ============
+    function openViewStudentsModal(encryptedCourseId, courseTitle) {
+        viewCurrentEncryptedCourseId = encryptedCourseId;
+        document.getElementById('viewModalCourseTitle').textContent = courseTitle;
+        document.getElementById('viewStudentsModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+        
+        // Clear search
+        document.getElementById('viewSearchFilter').value = '';
+        
+        // Load enrolled students
+        loadEnrolledStudents(encryptedCourseId);
+    }
+    
+    function closeViewStudentsModal() {
+        document.getElementById('viewStudentsModal').classList.remove('show');
+        document.body.style.overflow = '';
+        viewCurrentEncryptedCourseId = null;
+        viewAllEnrolledStudents = [];
+        viewFilteredStudents = [];
+    }
+    
+    function loadEnrolledStudents(encryptedCourseId) {
+        const viewStudentsList = document.getElementById('viewStudentsList');
+        viewStudentsList.innerHTML = '<div style="text-align: center; padding: 3rem;"><div class="loading-spinner loading-spinner-lg" style="margin: 0 auto 1rem;"></div><p>Loading enrolled students...</p></div>';
+        
+        fetch(`/admin/enrollments/course/${encodeURIComponent(encryptedCourseId)}/students`)
+            .then(response => response.json())
+            .then(students => {
+                viewAllEnrolledStudents = students;
+                viewFilteredStudents = students;
+                renderEnrolledStudents(students);
+                document.getElementById('viewEnrolledCount').textContent = students.length;
+            })
+            .catch(error => {
+                console.error('Error loading enrolled students:', error);
+                viewStudentsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><p>Error loading enrolled students.</p></div>';
+            });
+    }
+    
+    function renderEnrolledStudents(students) {
+        const viewStudentsList = document.getElementById('viewStudentsList');
+        
+        if (students.length === 0) {
+            viewStudentsList.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h3>No Enrolled Students</h3><p>No students are currently enrolled in this course.</p></div>';
+            return;
+        }
+        
+        let html = '';
+        students.forEach(student => {
+            html += `
+                <div class="enrolled-item" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 0.5rem; padding: 0.75rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="enrolled-avatar" style="width: 40px; height: 40px; font-size: 1rem;">
+                                ${student.name ? student.name.charAt(0).toUpperCase() : '?'}
+                            </div>
+                            <div>
+                                <h4 style="font-weight: 600; color: #1e293b; font-size: 0.875rem; margin: 0 0 0.25rem 0;">${student.name}</h4>
+                                <p style="font-size: 0.75rem; color: #64748b; margin: 0;">${student.email}</p>
+                                <p style="font-size: 0.75rem; color: #64748b; margin: 0.125rem 0 0 0;">Student ID: ${student.student_id || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline" style="color: #ef4444; border-color: #ef4444;" onclick="removeStudentFromView(${student.id}, '${student.name}', '${viewCurrentEncryptedCourseId}')">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        viewStudentsList.innerHTML = html;
+    }
+    
+    function searchEnrolledStudents() {
+        const searchTerm = document.getElementById('viewSearchFilter').value.toLowerCase();
+        
+        if (!searchTerm) {
+            viewFilteredStudents = viewAllEnrolledStudents;
+        } else {
+            viewFilteredStudents = viewAllEnrolledStudents.filter(student => 
+                student.name.toLowerCase().includes(searchTerm) ||
+                student.email.toLowerCase().includes(searchTerm) ||
+                (student.student_id && student.student_id.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        renderEnrolledStudents(viewFilteredStudents);
+    }
+    
+    const debouncedSearchEnrolled = debounce(() => {
+        searchEnrolledStudents();
+    }, 300);
+    
     // ============ REMOVE STUDENT ============
-    function removeStudent(studentId, studentName) {
+    function removeStudentFromView(studentId, studentName, encryptedCourseId) {
         Swal.fire({
             title: 'Remove Student?',
             html: `Are you sure you want to remove <strong>${studentName}</strong> from this course?`,
@@ -1140,7 +773,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
-                        course_id: selectedCourse,
+                        course_id: encryptedCourseId,
                         student_id: studentId
                     })
                 })
@@ -1155,13 +788,11 @@
                             showConfirmButton: false
                         });
                         
-                        // Reload students and enrolled list
-                        loadStudents(currentPage);
-                        loadEnrolledStudents(selectedCourse);
+                        // Refresh the enrolled students list
+                        loadEnrolledStudents(encryptedCourseId);
                         
-                        // Remove from selected if present
-                        selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
-                        updateSelectedCount();
+                        // Update the course card count
+                        updateCourseCountAfterRemoval(encryptedCourseId);
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -1181,177 +812,47 @@
             }
         });
     }
-
-    // ============ BULK UPLOAD ============
-    function handleFileSelect(input) {
-        const file = input.files[0];
-        if (!file) return;
-        
-        if (!selectedCourse) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Course Selected',
-                text: 'Please select a course first.'
-            });
-            input.value = '';
-            return;
-        }
-        
-        const bulkArea = document.getElementById('bulkUploadArea');
-        const fileInfo = document.getElementById('selectedFileInfo');
-        
-        bulkArea.classList.add('has-file');
-        fileInfo.style.display = 'block';
-        fileInfo.innerHTML = `<i class="fas fa-check-circle" style="color: #48bb78;"></i> Selected: ${file.name}`;
-        
-        // Ask for confirmation
-        Swal.fire({
-            title: 'Bulk Enroll?',
-            html: `Upload <strong>${file.name}</strong> to bulk enroll students in <strong>${selectedCourseTitle}</strong>?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#48bb78',
-            cancelButtonColor: '#a0aec0',
-            confirmButtonText: 'Yes, Upload',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                uploadBulkFile(file);
-            } else {
-                input.value = '';
-                bulkArea.classList.remove('has-file');
-                fileInfo.style.display = 'none';
-            }
-        });
-    }
-
-    function uploadBulkFile(file) {
-        const formData = new FormData();
-        formData.append('csv_file', file);
-        formData.append('course_id', selectedCourse);
-        
-        Swal.fire({
-            title: 'Uploading...',
-            html: 'Please wait while we process the file.',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        fetch('{{ route("admin.enrollments.bulk") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            Swal.close();
+    
+    function updateCourseCountAfterRemoval(encryptedCourseId) {
+        const courseCard = document.querySelector(`.course-card[data-encrypted-id="${encryptedCourseId}"]`);
+        if (courseCard) {
+            const statValue = courseCard.querySelector('.stat-item:first-child .stat-value');
+            const viewButton = courseCard.querySelector('.btn-info');
             
-            if (data.success) {
-                let message = data.message;
-                if (data.not_found && data.not_found.length > 0) {
-                    message += '<br><br>Not found IDs: ' + data.not_found.join(', ');
-                }
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    html: message
-                });
-                
-                // Reload students and enrolled list
-                loadStudents(currentPage);
-                loadEnrolledStudents(selectedCourse);
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: data.message
-                });
+            if (statValue) {
+                const currentCount = parseInt(statValue.textContent);
+                statValue.textContent = Math.max(0, currentCount - 1);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to upload file. Please try again.'
-            });
-        })
-        .finally(() => {
-            document.getElementById('csvFile').value = '';
-            document.getElementById('bulkUploadArea').classList.remove('has-file');
-            document.getElementById('selectedFileInfo').style.display = 'none';
-        });
-    }
-
-    // ============ PAGINATION ============
-    function updatePagination() {
-        const pagination = document.getElementById('pagination');
-        const paginationInfo = document.getElementById('paginationInfo');
-        const paginationControls = document.getElementById('paginationControls');
-        
-        paginationInfo.textContent = `Page ${currentPage} of ${lastPage} • ${totalStudents} total students`;
-        
-        let controls = '';
-        
-        // Previous button
-        controls += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="loadStudents(${currentPage - 1})">Previous</button>`;
-        
-        // Page numbers
-        const start = Math.max(1, currentPage - 2);
-        const end = Math.min(lastPage, currentPage + 2);
-        
-        for (let i = start; i <= end; i++) {
-            controls += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadStudents(${i})">${i}</button>`;
-        }
-        
-        // Next button
-        controls += `<button class="pagination-btn" ${currentPage === lastPage ? 'disabled' : ''} onclick="loadStudents(${currentPage + 1})">Next</button>`;
-        
-        paginationControls.innerHTML = controls;
-    }
-
-    // ============ RESET FILTERS ============
-    function resetFilters() {
-        document.getElementById('collegeFilter').value = 'all';
-        document.getElementById('programFilter').innerHTML = '<option value="all">All Programs</option>';
-        document.getElementById('yearFilter').value = 'all';
-        document.getElementById('searchFilter').value = '';
-        
-        if (selectedCourse) {
-            loadStudents();
+            
+            if (viewButton) {
+                const match = viewButton.textContent.match(/\((\d+)\)/);
+                if (match) {
+                    const currentCount = parseInt(match[1]);
+                    viewButton.innerHTML = `<i class="fas fa-users"></i> View (${Math.max(0, currentCount - 1)})`;
+                }
+            }
         }
     }
-
-    // ============ SHOW NOTIFICATION ============
-    function showNotification(message, type = 'info') {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            icon: type,
-            title: message
-        });
-    }
-
+    
+    // ============ CLICK OUTSIDE MODAL ============
+    document.addEventListener('click', function(event) {
+        const enrollModal = document.getElementById('enrollModal');
+        const viewModal = document.getElementById('viewStudentsModal');
+        
+        if (event.target === enrollModal) {
+            closeEnrollModal();
+        }
+        if (event.target === viewModal) {
+            closeViewStudentsModal();
+        }
+    });
+    
     // ============ INITIAL LOAD ============
     document.addEventListener('DOMContentLoaded', function() {
-        // If a course is pre-selected, load its enrolled students
-        @if($selectedCourse)
-            loadEnrolledStudents({{ $selectedCourse->id }});
-            loadStudents();
-        @endif
-        
-        // Load programs for initial college if any
-        const collegeFilter = document.getElementById('collegeFilter');
-        if (collegeFilter.value && collegeFilter.value !== 'all') {
-            loadPrograms(collegeFilter.value);
+        // Load programs for initial college if any in modal
+        const collegeFilter = document.getElementById('modalCollegeFilter');
+        if (collegeFilter && collegeFilter.value && collegeFilter.value !== 'all') {
+            modalLoadPrograms(collegeFilter.value);
         }
     });
 </script>

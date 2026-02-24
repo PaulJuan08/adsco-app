@@ -70,10 +70,14 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
     
     // ==================== ADMIN ROUTES ====================
     Route::prefix('admin')->name('admin.')->middleware(['role:admin'])->group(function () {
+        
+        // Cache Clearing Route
+        Route::post('/dashboard/clear-cache', [App\Http\Controllers\Admin\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
+
         // Profile
         Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'show'])->name('profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
@@ -104,24 +108,40 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('quizzes/{encryptedId}/submit', [AdminQuizController::class, 'submit'])->name('quizzes.submit');
         Route::resource('quizzes', AdminQuizController::class)->parameters(['quizzes' => 'encryptedId'])->except(['submit']);
 
-        // College Management
-        Route::resource('colleges', App\Http\Controllers\Admin\CollegeController::class)->parameters(['colleges' => 'encryptedId']);
-        Route::get('/colleges/{id}/years', [App\Http\Controllers\Admin\CollegeController::class, 'getYears'])->name('colleges.years');
+        // College Management - FIXED: Use explicit routes instead of resource
+        Route::get('/colleges', [App\Http\Controllers\Admin\CollegeController::class, 'index'])->name('colleges.index');
+        Route::get('/colleges/create', [App\Http\Controllers\Admin\CollegeController::class, 'create'])->name('colleges.create');
+        Route::post('/colleges', [App\Http\Controllers\Admin\CollegeController::class, 'store'])->name('colleges.store');
+        Route::get('/colleges/{encryptedId}', [App\Http\Controllers\Admin\CollegeController::class, 'show'])->name('colleges.show');
+        Route::get('/colleges/{encryptedId}/edit', [App\Http\Controllers\Admin\CollegeController::class, 'edit'])->name('colleges.edit');
+        Route::put('/colleges/{encryptedId}', [App\Http\Controllers\Admin\CollegeController::class, 'update'])->name('colleges.update');
+        Route::delete('/colleges/{encryptedId}', [App\Http\Controllers\Admin\CollegeController::class, 'destroy'])->name('colleges.destroy');
+        
+        // Additional college routes
         Route::get('/colleges/{encryptedId}/students', [App\Http\Controllers\Admin\CollegeController::class, 'students'])->name('colleges.students');
+        Route::get('/colleges/{encryptedId}/available-programs', [App\Http\Controllers\Admin\CollegeController::class, 'availablePrograms'])->name('colleges.available-programs');
+        Route::post('/colleges/{encryptedId}/add-program', [App\Http\Controllers\Admin\CollegeController::class, 'addProgram'])->name('colleges.add-program');
+        Route::post('/colleges/{encryptedId}/add-programs', [App\Http\Controllers\Admin\CollegeController::class, 'addPrograms'])->name('colleges.add-programs');
+        Route::post('/colleges/{encryptedId}/remove-program', [App\Http\Controllers\Admin\CollegeController::class, 'removeProgram'])->name('colleges.remove-program');
 
-        // Program Management
-        Route::resource('programs', AdminProgramController::class)->parameters(['programs' => 'encryptedId']);
+        // Program Management - FIXED: Use explicit routes instead of resource
+        Route::get('/programs', [AdminProgramController::class, 'index'])->name('programs.index');
+        Route::get('/programs/create', [AdminProgramController::class, 'create'])->name('programs.create');
+        Route::post('/programs', [AdminProgramController::class, 'store'])->name('programs.store');
+        Route::get('/programs/{encryptedId}', [AdminProgramController::class, 'show'])->name('programs.show');
+        Route::get('/programs/{encryptedId}/edit', [AdminProgramController::class, 'edit'])->name('programs.edit');
+        Route::put('/programs/{encryptedId}', [AdminProgramController::class, 'update'])->name('programs.update');
+        Route::delete('/programs/{encryptedId}', [AdminProgramController::class, 'destroy'])->name('programs.destroy');
 
         // ============ ENROLLMENT MANAGEMENT ============
         Route::prefix('enrollments')->name('enrollments.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\EnrollmentController::class, 'index'])->name('index');
             Route::get('/students', [App\Http\Controllers\Admin\EnrollmentController::class, 'getStudents'])->name('students');
-            Route::get('/course/{courseId}/students', [App\Http\Controllers\Admin\EnrollmentController::class, 'getEnrolledStudents'])->name('course.students');
+            Route::get('/course/{encryptedCourseId}/students', [App\Http\Controllers\Admin\EnrollmentController::class, 'getEnrolledStudents'])->name('course.students');
+            Route::get('/course/{encryptedCourseId}/student-ids', [App\Http\Controllers\Admin\EnrollmentController::class, 'getEnrolledStudentIds'])->name('student-ids');
             Route::post('/enroll', [App\Http\Controllers\Admin\EnrollmentController::class, 'enroll'])->name('enroll');
             Route::post('/remove', [App\Http\Controllers\Admin\EnrollmentController::class, 'remove'])->name('remove');
-            Route::post('/bulk', [App\Http\Controllers\Admin\EnrollmentController::class, 'bulkEnroll'])->name('bulk');
             Route::get('/programs/{collegeId}', [App\Http\Controllers\Admin\EnrollmentController::class, 'getProgramsByCollege'])->name('programs');
-            Route::get('/student/{encryptedId}', [App\Http\Controllers\Admin\EnrollmentController::class, 'studentEnrollments'])->name('student');
         });
 
         // ============ TODO MANAGEMENT ============
@@ -150,12 +170,20 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // ==================== REGISTRAR ROUTES ====================
     Route::prefix('registrar')->name('registrar.')->middleware(['role:registrar'])->group(function () {
+
+        // Cache Clearing Route
+        Route::post('/dashboard/clear-cache', [App\Http\Controllers\Registrar\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
+
         Route::resource('users', RegistrarUserController::class)->parameters(['users' => 'encryptedId']);
         Route::post('/users/{encryptedId}/approve', [RegistrarUserController::class, 'approve'])->name('users.approve');
     });
     
     // ==================== TEACHER ROUTES ====================
     Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
+
+        // Cache Clearing Route
+        Route::post('/dashboard/clear-cache', [App\Http\Controllers\Teacher\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
+
         // Profile
         Route::get('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'show'])->name('profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'edit'])->name('profile.edit');
@@ -210,6 +238,10 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     
     // ==================== STUDENT ROUTES ====================
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
+
+        // Cache Clearing Route
+        Route::post('/dashboard/clear-cache', [App\Http\Controllers\Student\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
+
         // Profile
         Route::get('/profile', [App\Http\Controllers\Student\ProfileController::class, 'show'])->name('profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('profile.edit');
@@ -260,4 +292,18 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::get('/test-encrypt/{id}', function($id) {
+    $encrypted = Crypt::encrypt($id);
+    $decrypted = Crypt::decrypt($encrypted);
+    
+    return [
+        'original_id' => $id,
+        'encrypted' => $encrypted,
+        'decrypted' => $decrypted,
+        'matches' => $id == $decrypted,
+        'route_to_college' => route('admin.colleges.show', ['encryptedId' => $encrypted]),
+        'route_to_program' => route('admin.programs.show', ['encryptedId' => $encrypted]),
+    ];
 });

@@ -20,8 +20,8 @@
                 <button type="button" class="top-action-btn delete-btn" id="deleteButton">
                     <i class="fas fa-trash-alt"></i> Delete
                 </button>
-                <a href="{{ $program->college ? route('admin.colleges.show', Crypt::encrypt($program->college->id)) : route('admin.programs.index') }}" class="top-action-btn">
-                    <i class="fas fa-arrow-left"></i> Back
+                <a href="{{ route('admin.colleges.show', ['encryptedId' => Crypt::encrypt($program->college->id)]) }}" style="color:#4f46e5;text-decoration:none;">
+                    {{ $program->college->college_name }}
                 </a>
             </div>
         </div>
@@ -31,13 +31,6 @@
             <form action="{{ route('admin.programs.destroy', Crypt::encrypt($program->id)) }}" method="POST" id="deleteForm" style="display: none;">
                 @csrf
                 @method('DELETE')
-            </form>
-
-            <!-- Hidden Unassign Student Form (reused) -->
-            <form action="{{ route('admin.programs.students.unassign', Crypt::encrypt($program->id)) }}" method="POST" id="unassignForm" style="display: none;">
-                @csrf
-                @method('DELETE')
-                <input type="hidden" name="student_id" id="unassignStudentId">
             </form>
             
             <!-- Program Avatar & Basic Info -->
@@ -100,7 +93,7 @@
                         <div class="detail-label">College</div>
                         <div class="detail-value">
                             @if($program->college)
-                                <a href="{{ route('admin.colleges.show', Crypt::encrypt($program->college->id)) }}" style="color:#4f46e5;text-decoration:none;">
+                                <a href="{{ route('admin.colleges.show', ['encryptedId' => Crypt::encrypt($program->college->id)]) }}" style="color:#4f46e5;text-decoration:none;">
                                     {{ $program->college->college_name }}
                                 </a>
                             @else
@@ -152,25 +145,11 @@
                 </div>
             </div>
             
-            <!-- ═══════════════════════════════════════════════════════════
-                 STUDENTS SECTION — Full CRUD for students in this program
-                 ═══════════════════════════════════════════════════════════ -->
+            <!-- Students Section - Read Only -->
             <div class="detail-section">
-                <div class="detail-section-title" style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <i class="fas fa-users"></i>
-                        Enrolled Students ({{ $program->students_count ?? 0 }} total)
-                    </div>
-                    <div style="display:flex;gap:0.5rem;">
-                        <!-- Assign Existing Student -->
-                        <button type="button" class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.875rem;" id="btnAssignStudent">
-                            <i class="fas fa-user-plus"></i> Assign Existing Student
-                        </button>
-                        <!-- Create & Add New Student -->
-                        <a href="{{ route('admin.users.create') }}?role=4&program_id={{ $program->id }}&college_id={{ $program->college_id }}" class="btn btn-primary" style="padding:0.5rem 1rem;font-size:0.875rem;">
-                            <i class="fas fa-plus-circle"></i> Add New Student
-                        </a>
-                    </div>
+                <div class="detail-section-title">
+                    <i class="fas fa-users"></i>
+                    Enrolled Students ({{ $program->students_count ?? 0 }} total)
                 </div>
 
                 <!-- Search -->
@@ -192,10 +171,7 @@
                     <div class="empty-state">
                         <div class="empty-icon"><i class="fas fa-user-graduate"></i></div>
                         <h3 class="empty-title">No students yet</h3>
-                        <p class="empty-text">This program doesn't have any enrolled students. Add or assign one now.</p>
-                        <a href="{{ route('admin.users.create') }}?role=4&program_id={{ $program->id }}&college_id={{ $program->college_id }}" class="btn btn-primary">
-                            <i class="fas fa-plus-circle"></i> Add First Student
-                        </a>
+                        <p class="empty-text">This program doesn't have any enrolled students.</p>
                     </div>
                 @else
                     <div class="student-list" id="studentList">
@@ -222,24 +198,7 @@
                                 @if($student->college_year)
                                     <span class="student-year-badge">{{ $student->college_year }}</span>
                                 @endif
-                                <div class="student-actions">
-                                    <a href="{{ route('admin.users.show', Crypt::encrypt($student->id)) }}" class="student-action-btn view" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.users.edit', Crypt::encrypt($student->id)) }}" class="student-action-btn edit" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button type="button" class="student-action-btn remove"
-                                            title="Remove from program"
-                                            onclick="confirmUnassign({{ $student->id }}, '{{ $student->f_name }} {{ $student->l_name }}')">
-                                        <i class="fas fa-user-minus"></i>
-                                    </button>
-                                    <button type="button" class="student-action-btn delete-student"
-                                            title="Delete student permanently"
-                                            onclick="confirmDelete('{{ Crypt::encrypt($student->id) }}', '{{ $student->f_name }} {{ $student->l_name }}')">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
+                                <!-- Removed all action buttons -->
                             </div>
                         </div>
                         @endforeach
@@ -265,73 +224,6 @@
             @endif
         </div>
     </div>
-
-    <!-- ═══════════════════════════════════════════
-         ASSIGN EXISTING STUDENT MODAL
-         ═══════════════════════════════════════════ -->
-    <div id="assignModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:white;border-radius:16px;padding:2rem;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;position:relative;">
-            <button onclick="closeAssignModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.25rem;cursor:pointer;color:#6b7280;">
-                <i class="fas fa-times"></i>
-            </button>
-            <h3 style="font-size:1.25rem;font-weight:700;color:#1f2937;margin-bottom:0.5rem;">
-                <i class="fas fa-user-plus" style="color:#4f46e5;margin-right:0.5rem;"></i>
-                Assign Student to Program
-            </h3>
-            <p style="font-size:0.875rem;color:#6b7280;margin-bottom:1.5rem;">
-                Search for an existing student and assign them to <strong>{{ $program->program_name }}</strong>.
-                The student's college will also be updated automatically.
-            </p>
-
-            <form action="{{ route('admin.programs.students.assign', Crypt::encrypt($program->id)) }}" method="POST" id="assignForm">
-                @csrf
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:0.5rem;">Search Student</label>
-                    <input type="text" id="studentSearch" placeholder="Type name, email or student ID..." autocomplete="off"
-                        style="width:100%;padding:0.75rem 1rem;border:1px solid #e5e7eb;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
-                    <div id="studentSuggestions" style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;display:none;"></div>
-                </div>
-
-                <div id="selectedStudentInfo" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.875rem;margin-bottom:1rem;">
-                    <div style="font-weight:600;color:#166534;" id="selectedStudentName"></div>
-                    <div style="font-size:0.8125rem;color:#15803d;" id="selectedStudentMeta"></div>
-                </div>
-
-                <input type="hidden" name="student_id" id="selectedStudentIdInput">
-
-                @if($program->college && $program->college->college_year)
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:0.5rem;">Year Level</label>
-                    <select name="college_year" style="width:100%;padding:0.75rem 1rem;border:1px solid #e5e7eb;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
-                        <option value="">-- Select Year --</option>
-                        @foreach(explode(',', $program->college->college_year) as $year)
-                            @if(trim($year))
-                                <option value="{{ trim($year) }}">{{ trim($year) }}</option>
-                            @endif
-                        @endforeach
-                    </select>
-                </div>
-                @endif
-
-                <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-                    <button type="button" onclick="closeAssignModal()"
-                        style="padding:0.625rem 1.25rem;border:1px solid #e5e7eb;border-radius:8px;background:white;font-size:0.875rem;cursor:pointer;color:#374151;">
-                        Cancel
-                    </button>
-                    <button type="submit" id="assignSubmitBtn" disabled
-                        style="padding:0.625rem 1.25rem;border:none;border-radius:8px;background:#4f46e5;color:white;font-size:0.875rem;font-weight:600;cursor:pointer;opacity:0.5;">
-                        <i class="fas fa-user-plus"></i> Assign Student
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete student form (hidden, submitted by JS) -->
-    <form id="deleteStudentForm" method="POST" style="display:none;">
-        @csrf
-        @method('DELETE')
-    </form>
 @endsection
 
 @push('styles')
@@ -368,16 +260,6 @@
     .student-meta { font-size:0.8125rem;color:#6b7280;margin-top:0.125rem; }
     .student-meta i { margin-right:0.25rem;font-size:0.75rem; }
     .student-year-badge { background:#e5e7eb;padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:600;color:#4b5563;white-space:nowrap; }
-    .student-actions { display:flex;gap:0.5rem;align-items:center; }
-    .student-action-btn { padding:0.375rem 0.75rem;border-radius:6px;font-size:0.75rem;font-weight:500;text-decoration:none;transition:all 0.2s ease;border:none;cursor:pointer; }
-    .student-action-btn.view { background:#4f46e5;color:white; }
-    .student-action-btn.view:hover { background:#4338ca; }
-    .student-action-btn.edit { background:#f59e0b;color:white; }
-    .student-action-btn.edit:hover { background:#d97706; }
-    .student-action-btn.remove { background:#6b7280;color:white; }
-    .student-action-btn.remove:hover { background:#4b5563; }
-    .student-action-btn.delete-student { background:#ef4444;color:white; }
-    .student-action-btn.delete-student:hover { background:#dc2626; }
 
     .search-container { display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem; }
     .search-input { flex:1;min-width:200px;padding:0.75rem 1rem;border:1px solid #e5e7eb;border-radius:8px;font-size:0.875rem; }
@@ -395,35 +277,18 @@
     .btn { display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 1.25rem;border-radius:8px;font-size:0.875rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;transition:all 0.2s ease; }
     .btn-primary { background:#4f46e5;color:white; }
     .btn-primary:hover { background:#4338ca; }
-    .btn-outline { background:white;color:#374151;border:1px solid #e5e7eb; }
-    .btn-outline:hover { background:#f9fafb; }
 
     @media (max-width:768px) {
         .details-grid { grid-template-columns:1fr; }
         .stats-grid-small { grid-template-columns:1fr 1fr; }
         .student-item { flex-direction:column;align-items:flex-start;gap:0.75rem; }
-        .student-actions { width:100%;justify-content:flex-end; }
     }
-
-    /* Suggestion dropdown */
-    #studentSuggestions .suggestion-item {
-        padding: 0.75rem 1rem;
-        cursor: pointer;
-        font-size: 0.875rem;
-        border-bottom: 1px solid #f3f4f6;
-        transition: background 0.15s;
-    }
-    #studentSuggestions .suggestion-item:hover { background: #f3f4f6; }
-    #studentSuggestions .suggestion-item .s-name { font-weight: 600; color: #1f2937; }
-    #studentSuggestions .suggestion-item .s-meta { font-size: 0.8125rem; color: #6b7280; margin-top: 0.125rem; }
 </style>
 @endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-
 // ── Delete program ──────────────────────────────────────────────────────────
 document.getElementById('deleteButton')?.addEventListener('click', function(e) {
     e.preventDefault();
@@ -459,111 +324,6 @@ function filterStudents() {
 }
 searchInput?.addEventListener('input', filterStudents);
 filterYear?.addEventListener('change', filterStudents);
-
-// ── Unassign (remove from program, keep user) ───────────────────────────────
-function confirmUnassign(studentId, studentName) {
-    Swal.fire({
-        title: 'Remove from Program?',
-        html: `<strong>${studentName}</strong> will be removed from this program.<br>The student account will not be deleted.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#6b7280',
-        cancelButtonColor: '#a0aec0',
-        confirmButtonText: 'Yes, Remove',
-        cancelButtonText: 'Cancel',
-        reverseButtons: true
-    }).then(result => {
-        if (result.isConfirmed) {
-            document.getElementById('unassignStudentId').value = studentId;
-            document.getElementById('unassignForm').submit();
-        }
-    });
-}
-
-// ── Delete student permanently ──────────────────────────────────────────────
-function confirmDelete(encryptedId, studentName) {
-    Swal.fire({
-        title: 'Delete Student?',
-        html: `This will permanently delete <strong>${studentName}</strong>.<br>This action cannot be undone.`,
-        icon: 'error',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#a0aec0',
-        confirmButtonText: 'Yes, Delete Permanently',
-        cancelButtonText: 'Cancel',
-        reverseButtons: true
-    }).then(result => {
-        if (result.isConfirmed) {
-            const form = document.getElementById('deleteStudentForm');
-            form.action = `/admin/users/${encryptedId}`;
-            form.submit();
-        }
-    });
-}
-
-// ── Assign existing student modal ───────────────────────────────────────────
-document.getElementById('btnAssignStudent')?.addEventListener('click', function() {
-    const modal = document.getElementById('assignModal');
-    modal.style.display = 'flex';
-});
-
-function closeAssignModal() {
-    document.getElementById('assignModal').style.display = 'none';
-    document.getElementById('studentSearch').value = '';
-    document.getElementById('studentSuggestions').style.display = 'none';
-    document.getElementById('selectedStudentInfo').style.display = 'none';
-    document.getElementById('selectedStudentIdInput').value = '';
-    document.getElementById('assignSubmitBtn').disabled = true;
-    document.getElementById('assignSubmitBtn').style.opacity = '0.5';
-}
-
-document.getElementById('assignModal')?.addEventListener('click', function(e) {
-    if (e.target === this) closeAssignModal();
-});
-
-// Live student search (AJAX)
-let searchTimeout;
-document.getElementById('studentSearch')?.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const query = this.value.trim();
-    if (query.length < 2) {
-        document.getElementById('studentSuggestions').style.display = 'none';
-        return;
-    }
-    searchTimeout = setTimeout(() => {
-        fetch(`{{ route('admin.programs.students.search', Crypt::encrypt($program->id)) }}?q=${encodeURIComponent(query)}`, {
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            const box = document.getElementById('studentSuggestions');
-            if (!data.length) {
-                box.innerHTML = '<div style="padding:0.75rem 1rem;font-size:0.875rem;color:#6b7280;">No students found.</div>';
-                box.style.display = 'block';
-                return;
-            }
-            box.innerHTML = data.map(s => `
-                <div class="suggestion-item" onclick="selectStudent(${s.id}, '${s.f_name} ${s.l_name}', '${s.student_id ?? ''}', '${s.email}')">
-                    <div class="s-name">${s.f_name} ${s.l_name}</div>
-                    <div class="s-meta">${s.student_id ? s.student_id + ' · ' : ''}${s.email}</div>
-                </div>
-            `).join('');
-            box.style.display = 'block';
-        });
-    }, 300);
-});
-
-function selectStudent(id, name, studentId, email) {
-    document.getElementById('selectedStudentIdInput').value = id;
-    document.getElementById('studentSearch').value = name;
-    document.getElementById('studentSuggestions').style.display = 'none';
-    document.getElementById('selectedStudentName').textContent = name;
-    document.getElementById('selectedStudentMeta').textContent = (studentId ? studentId + ' · ' : '') + email;
-    document.getElementById('selectedStudentInfo').style.display = 'block';
-    const btn = document.getElementById('assignSubmitBtn');
-    btn.disabled = false;
-    btn.style.opacity = '1';
-}
 
 // ── Session notifications ───────────────────────────────────────────────────
 @if(session('success'))

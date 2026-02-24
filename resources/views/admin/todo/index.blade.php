@@ -367,16 +367,29 @@
                 </div>
                 <div class="students-grid">
                     @foreach($recentAttempts as $attempt)
-                        <div class="student-chip" title="{{ $attempt->user->full_name }} - {{ $attempt->percentage }}%">
-                            <span class="student-avatar-mini">
-                                {{ strtoupper(substr($attempt->user->f_name, 0, 1)) }}
-                            </span>
-                            <span>{{ Str::limit($attempt->user->f_name, 10) }}</span>
-                            <span class="submission-info">
-                                {{ $attempt->percentage }}%
-                                <span class="status-indicator {{ $attempt->passed ? 'status-graded' : 'status-late' }}"></span>
-                            </span>
-                        </div>
+                        @if($attempt->user)
+                            <div class="student-chip" title="{{ $attempt->user->full_name ?? 'Unknown Student' }} - {{ $attempt->percentage }}%">
+                                <span class="student-avatar-mini">
+                                    {{ strtoupper(substr($attempt->user->f_name ?? '?', 0, 1)) }}
+                                </span>
+                                <span>{{ Str::limit($attempt->user->f_name ?? 'Unknown', 10) }}</span>
+                                <span class="submission-info">
+                                    {{ $attempt->percentage }}%
+                                    <span class="status-indicator {{ $attempt->passed ? 'status-graded' : 'status-late' }}"></span>
+                                </span>
+                            </div>
+                        @else
+                            <div class="student-chip" title="Deleted Student - {{ $attempt->percentage }}%">
+                                <span class="student-avatar-mini">
+                                    <i class="fas fa-user-slash" style="font-size: 0.5rem;"></i>
+                                </span>
+                                <span>Deleted User</span>
+                                <span class="submission-info">
+                                    {{ $attempt->percentage }}%
+                                    <span class="status-indicator {{ $attempt->passed ? 'status-graded' : 'status-late' }}"></span>
+                                </span>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
                 
@@ -511,18 +524,33 @@
                                 default => 'status-pending'
                             };
                         @endphp
-                        <div class="student-chip" title="{{ $submission->student->full_name }} - {{ $submission->status }}">
-                            <span class="student-avatar-mini">
-                                {{ strtoupper(substr($submission->student->f_name, 0, 1)) }}
-                            </span>
-                            <span>{{ Str::limit($submission->student->f_name, 10) }}</span>
-                            <span class="submission-info">
-                                @if($submission->score)
-                                    {{ $submission->score }}/{{ $assignment->points }}
-                                @endif
-                                <span class="status-indicator {{ $statusColor }}"></span>
-                            </span>
-                        </div>
+                        @if($submission->student)
+                            <div class="student-chip" title="{{ $submission->student->full_name ?? 'Unknown Student' }} - {{ $submission->status }}">
+                                <span class="student-avatar-mini">
+                                    {{ strtoupper(substr($submission->student->f_name ?? '?', 0, 1)) }}
+                                </span>
+                                <span>{{ Str::limit($submission->student->f_name ?? 'Unknown', 10) }}</span>
+                                <span class="submission-info">
+                                    @if($submission->score)
+                                        {{ $submission->score }}/{{ $assignment->points }}
+                                    @endif
+                                    <span class="status-indicator {{ $statusColor }}"></span>
+                                </span>
+                            </div>
+                        @else
+                            <div class="student-chip" title="Deleted Student - {{ $submission->status }}">
+                                <span class="student-avatar-mini">
+                                    <i class="fas fa-user-slash" style="font-size: 0.5rem;"></i>
+                                </span>
+                                <span>Deleted User</span>
+                                <span class="submission-info">
+                                    @if($submission->score)
+                                        {{ $submission->score }}/{{ $assignment->points }}
+                                    @endif
+                                    <span class="status-indicator {{ $statusColor }}"></span>
+                                </span>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
                 

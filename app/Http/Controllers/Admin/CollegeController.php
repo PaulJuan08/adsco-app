@@ -79,38 +79,35 @@ class CollegeController extends Controller
 
             $college = College::withCount('students')->with('programs')->findOrFail($id);
 
-            // Load programs with student counts so the view can show per-program tallies
+            // Load programs with student counts
             $programs = $college->programs()
                 ->withCount('students')
                 ->orderBy('program_name')
                 ->get();
 
-            // Only show students that:
-            //  1. Have role = 4 (student)
-            //  2. Are registered under THIS college
-            //  3. Have a program_id that belongs to this college (extra safety)
             $collegeProgramIds = $programs->pluck('id')->toArray();
 
             $students = User::where('role', 4)
                 ->where('college_id', $id)
                 ->when(!empty($collegeProgramIds), function ($q) use ($collegeProgramIds) {
-                    // Only students whose program belongs to this college
                     $q->whereIn('program_id', $collegeProgramIds);
                 })
-                ->with('program') // eager-load for the program name in the list
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_year', 'program_id', 'created_at', 'status'])
+                ->with('program')
+                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_year', 'program_id', 'created_at']) // Removed 'status'
                 ->orderBy('f_name')
                 ->orderBy('l_name')
                 ->paginate(10);
 
             return view('admin.colleges.show', compact('college', 'students', 'programs'));
+
         } catch (\Exception $e) {
             Log::error('Error viewing college', [
-                'error'       => $e->getMessage(),
                 'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
             ]);
+            
             return redirect()->route('admin.colleges.index')
-                ->with('error', 'College not found or invalid link.');
+                ->with('error', 'College not found or invalid link. Error: ' . $e->getMessage());
         }
     }
 
@@ -426,13 +423,13 @@ class CollegeController extends Controller
             $students = User::where('role', 4)
                 ->where('college_id', $id)
                 ->with('program')
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'program_id', 'created_at', 'status'])
+                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'program_id', 'created_at']) // Removed 'status'
                 ->orderBy('f_name')
                 ->orderBy('l_name')
                 ->paginate(15);
 
             $totalStudents  = $students->total();
-            $activeStudents = User::where('role', 4)->where('college_id', $id)->where('status', 1)->count();
+            $activeStudents = User::where('role', 4)->where('college_id', $id)->count(); // Removed status filter
 
             return view('admin.colleges.students', compact(
                 'college', 'students', 'totalStudents', 'activeStudents'

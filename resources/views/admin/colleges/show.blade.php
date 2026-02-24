@@ -136,16 +136,11 @@
                 </div>
             </div>
             
-            <!-- Programs Section -->
+            <!-- Programs Section - Read Only -->
             <div class="detail-section">
-                <div class="detail-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <i class="fas fa-graduation-cap"></i>
-                        Programs ({{ $programs->count() }} total)
-                    </div>
-                    <a href="{{ route('admin.programs.create') }}?college_id={{ $college->id }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                        <i class="fas fa-plus-circle"></i> Add Program
-                    </a>
+                <div class="detail-section-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Programs ({{ $programs->count() }} total)
                 </div>
                 
                 @if($programs->isEmpty())
@@ -153,9 +148,6 @@
                         <div class="empty-icon"><i class="fas fa-graduation-cap"></i></div>
                         <h3 class="empty-title">No Programs Yet</h3>
                         <p class="empty-text">This college doesn't have any programs yet.</p>
-                        <a href="{{ route('admin.programs.create') }}?college_id={{ $college->id }}" class="btn btn-primary">
-                            <i class="fas fa-plus-circle"></i> Add First Program
-                        </a>
                     </div>
                 @else
                     <div class="programs-list">
@@ -181,32 +173,27 @@
                                 </div>
                             </div>
                             <div class="program-actions">
-                                <a href="{{ route('admin.programs.show', Crypt::encrypt($program->id)) }}" class="program-action-btn view">
-                                    <i class="fas fa-eye"></i> View & Manage Students
-                                </a>
-                                <a href="{{ route('admin.programs.edit', Crypt::encrypt($program->id)) }}" class="program-action-btn edit">
-                                    <i class="fas fa-edit"></i>
+                                <a href="{{ route('admin.programs.show', ['encryptedId' => Crypt::encrypt($program->id)]) }}" class="program-action-btn view">
+                                    <i class="fas fa-eye"></i> View Program
                                 </a>
                             </div>
                         </div>
                         @endforeach
                     </div>
 
-                    <!-- Info note: students are managed per program -->
+                    <!-- Updated info note -->
                     <div style="margin-top: 1.25rem; padding: 0.875rem 1.25rem; background: #eff6ff; border-radius: 8px; border-left: 4px solid #3b82f6; font-size: 0.875rem; color: #1e40af; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-info-circle"></i>
-                        <span>Students are managed per program. Click <strong>View &amp; Manage Students</strong> on a program to add, edit, or remove students from that program.</span>
+                        <span>Click <strong>View Program</strong> to see students enrolled in that program.</span>
                     </div>
                 @endif
             </div>
             
-            <!-- All Students Section — read-only overview, filtered by college -->
+            <!-- All Students Section - Read Only -->
             <div class="detail-section">
-                <div class="detail-section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <i class="fas fa-users"></i>
-                        All Students in This College ({{ $college->students_count ?? 0 }} total)
-                    </div>
+                <div class="detail-section-title">
+                    <i class="fas fa-users"></i>
+                    All Students in This College ({{ $college->students_count ?? 0 }} total)
                 </div>
                 
                 <!-- Search and Filter -->
@@ -232,7 +219,7 @@
                     <div class="empty-state">
                         <div class="empty-icon"><i class="fas fa-user-graduate"></i></div>
                         <h3 class="empty-title">No students yet</h3>
-                        <p class="empty-text">No students are enrolled in this college yet. Add students through a program.</p>
+                        <p class="empty-text">No students are enrolled in this college yet.</p>
                     </div>
                 @else
                     <div class="student-list" id="studentList">
@@ -262,14 +249,7 @@
                                 @if($student->college_year)
                                     <span class="student-year-badge">{{ $student->college_year }}</span>
                                 @endif
-                                <div class="student-actions">
-                                    <a href="{{ route('admin.users.show', Crypt::encrypt($student->id)) }}" class="student-action-btn view">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.users.edit', Crypt::encrypt($student->id)) }}" class="student-action-btn edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </div>
+                                <!-- Removed View/Edit action buttons -->
                             </div>
                         </div>
                         @endforeach
@@ -343,8 +323,6 @@
     }
     .program-action-btn.view { background: #4f46e5; color: white; }
     .program-action-btn.view:hover { background: #4338ca; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(79,70,229,0.3); }
-    .program-action-btn.edit { background: #f59e0b; color: white; }
-    .program-action-btn.edit:hover { background: #d97706; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(245,158,11,0.3); }
 
     .years-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
     .year-tag { background: #f3f4f6; padding: 0.375rem 1rem; border-radius: 999px; font-size: 0.8125rem; font-weight: 500; color: #4b5563; border: 1px solid #e5e7eb; }
@@ -368,12 +346,6 @@
     .student-meta { font-size: 0.8125rem; color: #6b7280; margin-top: 0.125rem; }
     .student-meta i { margin-right: 0.25rem; font-size: 0.75rem; }
     .student-year-badge { background: #e5e7eb; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: #4b5563; white-space: nowrap; }
-    .student-actions { display: flex; gap: 0.5rem; align-items: center; }
-    .student-action-btn { padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-decoration: none; transition: all 0.2s ease; }
-    .student-action-btn.view { background: #4f46e5; color: white; }
-    .student-action-btn.view:hover { background: #4338ca; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(79,70,229,0.3); }
-    .student-action-btn.edit { background: #f59e0b; color: white; }
-    .student-action-btn.edit:hover { background: #d97706; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(245,158,11,0.3); }
 
     .search-container { margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .search-input { flex: 1; min-width: 200px; padding: 0.75rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s ease; }
@@ -392,7 +364,6 @@
         .search-container { flex-direction: column; }
         .filter-select { width: 100%; }
         .student-item, .program-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-        .student-actions, .program-actions { width: 100%; justify-content: flex-end; }
     }
 </style>
 @endpush

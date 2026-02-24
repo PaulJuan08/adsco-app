@@ -167,11 +167,18 @@
                                 <tbody>
                                     @foreach($colleges as $college)
                                     @php
-                                        $encryptedId = Crypt::encrypt($college->id);
+                                        try {
+                                            $encryptedId = Crypt::encrypt($college->id);
+                                        } catch (\Exception $e) {
+                                            $encryptedId = '';
+                                            \Log::error('Failed to encrypt college ID: ' . $e->getMessage());
+                                        }
                                     @endphp
                                     <tr class="clickable-row" 
-                                        data-href="{{ route('admin.colleges.show', $encryptedId) }}"
-                                        data-name="{{ strtolower($college->college_name) }}">
+                                        data-href="{{ $encryptedId ? route('admin.colleges.show', ['encryptedId' => $encryptedId]) : '#' }}"
+                                        data-name="{{ strtolower($college->college_name) }}"
+                                        data-college-id="{{ $college->id }}"
+                                        data-encrypted="{{ $encryptedId }}">
                                         <td>
                                             <div class="college-info-cell">
                                                 <div class="college-icon college-{{ ($loop->index % 3) + 1 }}">
@@ -471,9 +478,9 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Make rows clickable
+        // Make rows clickable with debugging
         const clickableRows = document.querySelectorAll('.clickable-row');
-        
+
         clickableRows.forEach(row => {
             row.addEventListener('click', function(e) {
                 // Don't redirect if user clicked on a link or button
@@ -482,12 +489,26 @@
                 }
                 
                 const href = this.dataset.href;
-                if (href) {
+                const encrypted = this.dataset.encrypted;
+                const id = this.dataset.collegeId || this.dataset.programId;
+                
+                // Debug output
+                console.log('Row clicked:', {
+                    element: this,
+                    href: href,
+                    encrypted: encrypted,
+                    id: id,
+                    type: this.dataset.collegeId ? 'college' : 'program'
+                });
+                
+                if (href && href !== '#') {
                     window.location.href = href;
+                } else {
+                    console.error('Invalid href for row:', href);
+                    alert('Unable to navigate: Invalid link. Please check the console for details.');
                 }
             });
             
-            // Add hover effect
             row.style.cursor = 'pointer';
         });
 

@@ -21,17 +21,19 @@ class EnrollmentController extends Controller
      */
     public function index(Request $request)
     {
-        $courses = Course::select(['id', 'title', 'course_code', 'is_published', 'credits'])
+        $courses = Course::select(['id', 'title', 'course_code', 'is_published', 'credits', 'description'])
             ->withCount('students')
             ->orderBy('title')
             ->get();
         
+        // Encrypt course IDs for frontend
+        $courses->each(function($course) {
+            $course->encrypted_id = Crypt::encrypt($course->id);
+        });
+        
         $colleges = College::where('status', 1)
             ->orderBy('college_name')
             ->get(['id', 'college_name']);
-        
-        // Get programs for initial load (optional)
-        $programs = Program::orderBy('program_name')->get(['id', 'program_name', 'college_id']);
         
         // Get years
         $years = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
@@ -40,9 +42,24 @@ class EnrollmentController extends Controller
         $selectedCourse = null;
         if ($request->has('course_id')) {
             $selectedCourse = Course::find($request->course_id);
+            if ($selectedCourse) {
+                $selectedCourse->encrypted_id = Crypt::encrypt($selectedCourse->id);
+            }
         }
         
-        return view('admin.enrollments.index', compact('courses', 'colleges', 'programs', 'years', 'selectedCourse'));
+        return view('admin.enrollments.index', compact('courses', 'colleges', 'years', 'selectedCourse'));
+    }
+    
+    /**
+     * Helper function to decrypt ID
+     */
+    private function decryptId($encryptedId)
+    {
+        try {
+            return Crypt::decrypt(urldecode($encryptedId));
+        } catch (\Exception $e) {
+            abort(404, 'Invalid ID');
+        }
     }
     
     /**
@@ -50,89 +67,128 @@ class EnrollmentController extends Controller
      */
     public function getStudents(Request $request)
     {
-        $collegeId = $request->college_id;
-        $programId = $request->program_id;
-        $collegeYear = $request->college_year;
-        $search = $request->search;
-        $courseId = $request->course_id;
-        
-        $query = User::where('role', 4) // Students only
-            ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_id', 'program_id', 'college_year'])
-            ->with(['college:id,college_name', 'program:id,program_name']);
-        
-        // Apply college filter
-        if ($collegeId && $collegeId !== 'all') {
-            $query->where('college_id', $collegeId);
-        }
-        
-        // Apply program filter
-        if ($programId && $programId !== 'all') {
-            $query->where('program_id', $programId);
-        }
-        
-        // Apply year filter
-        if ($collegeYear && $collegeYear !== 'all') {
-            $query->where('college_year', $collegeYear);
-        }
-        
-        // Apply search
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('f_name', 'like', "%{$search}%")
-                  ->orWhere('l_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('student_id', 'like', "%{$search}%");
+        try {
+            $collegeId = $request->college_id;
+            $programId = $request->program_id;
+            $collegeYear = $request->college_year;
+            $search = $request->search;
+            $encryptedCourseId = $request->course_id;
+            $studentId = $request->student_id;
+            $name = $request->name;
+            
+            $query = User::where('role', 4) // Students only
+                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_id', 'program_id', 'college_year'])
+                ->with(['college:id,college_name', 'program:id,program_name']);
+            
+            // Apply student ID filter
+            if ($studentId) {
+                $query->where('student_id', 'like', "%{$studentId}%");
+            }
+            
+            // Apply name filter
+            if ($name) {
+                $query->where(function($q) use ($name) {
+                    $q->where('f_name', 'like', "%{$name}%")
+                      ->orWhere('l_name', 'like', "%{$name}%");
+                });
+            }
+            
+            // Apply college filter
+            if ($collegeId && $collegeId !== 'all') {
+                $query->where('college_id', $collegeId);
+            }
+            
+            // Apply program filter
+            if ($programId && $programId !== 'all') {
+                $query->where('program_id', $programId);
+            }
+            
+            // Apply year filter
+            if ($collegeYear && $collegeYear !== 'all') {
+                $query->where('college_year', $collegeYear);
+            }
+            
+            // Apply search (backward compatibility)
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('f_name', 'like', "%{$search}%")
+                      ->orWhere('l_name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('student_id', 'like', "%{$search}%");
+                });
+            }
+            
+            // If course_id is provided, mark which students are already enrolled
+            $enrolledStudentIds = [];
+            if ($encryptedCourseId) {
+                $actualCourseId = $this->decryptId($encryptedCourseId);
+                $enrolledStudentIds = Enrollment::where('course_id', $actualCourseId)
+                    ->pluck('student_id')
+                    ->toArray();
+            }
+            
+            $students = $query->orderBy('f_name')->paginate(20);
+            
+            // Add enrolled status to each student
+            $students->getCollection()->transform(function($student) use ($enrolledStudentIds) {
+                $student->is_enrolled = in_array($student->id, $enrolledStudentIds);
+                return $student;
             });
+            
+            return response()->json($students);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-        
-        // If course_id is provided, mark which students are already enrolled
-        $enrolledStudentIds = [];
-        if ($courseId) {
-            $enrolledStudentIds = Enrollment::where('course_id', $courseId)
-                ->pluck('student_id')
-                ->toArray();
-        }
-        
-        $students = $query->orderBy('f_name')->paginate(20);
-        
-        // Add enrolled status to each student
-        $students->getCollection()->transform(function($student) use ($enrolledStudentIds) {
-            $student->is_enrolled = in_array($student->id, $enrolledStudentIds);
-            return $student;
-        });
-        
-        return response()->json($students);
     }
     
     /**
      * Get enrolled students for a course (AJAX)
      */
-    public function getEnrolledStudents($courseId)
+    public function getEnrolledStudents($encryptedCourseId)
     {
         try {
-            $id = Crypt::decrypt(urldecode($courseId));
+            $actualCourseId = $this->decryptId($encryptedCourseId);
             
-            $enrolledStudents = User::whereIn('id', function($query) use ($id) {
+            $enrolledStudents = User::whereIn('id', function($query) use ($actualCourseId) {
                     $query->select('student_id')
                         ->from('enrollments')
-                        ->where('course_id', $id);
+                        ->where('course_id', $actualCourseId);
                 })
                 ->select(['id', 'f_name', 'l_name', 'email', 'student_id'])
-                ->with(['college:id,college_name', 'program:id,program_name'])
                 ->orderBy('f_name')
                 ->get()
                 ->map(function($student) {
                     return [
                         'id' => $student->id,
-                        'name' => $student->full_name,
+                        'name' => $student->f_name . ' ' . $student->l_name,
                         'email' => $student->email,
-                        'student_id' => $student->student_id,
-                        'college' => $student->college->college_name ?? 'N/A',
-                        'program' => $student->program->program_name ?? 'N/A'
+                        'student_id' => $student->student_id
                     ];
                 });
             
             return response()->json($enrolledStudents);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Get enrolled student IDs for a course (AJAX)
+     */
+    public function getEnrolledStudentIds($encryptedCourseId)
+    {
+        try {
+            $actualCourseId = $this->decryptId($encryptedCourseId);
+            
+            $studentIds = Enrollment::where('course_id', $actualCourseId)
+                ->pluck('student_id')
+                ->toArray();
+            
+            return response()->json([
+                'student_ids' => $studentIds
+            ]);
             
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -146,16 +202,16 @@ class EnrollmentController extends Controller
     {
         try {
             $request->validate([
-                'course_id' => 'required|exists:courses,id',
+                'course_id' => 'required',
                 'student_ids' => 'required|array',
                 'student_ids.*' => 'exists:users,id'
             ]);
             
-            $courseId = $request->course_id;
+            $actualCourseId = $this->decryptId($request->course_id);
             $studentIds = $request->student_ids;
             
             // Get already enrolled students
-            $existingEnrollments = Enrollment::where('course_id', $courseId)
+            $existingEnrollments = Enrollment::where('course_id', $actualCourseId)
                 ->whereIn('student_id', $studentIds)
                 ->pluck('student_id')
                 ->toArray();
@@ -175,7 +231,7 @@ class EnrollmentController extends Controller
             foreach ($newStudentIds as $studentId) {
                 $enrollments[] = [
                     'student_id' => $studentId,
-                    'course_id' => $courseId,
+                    'course_id' => $actualCourseId,
                     'enrolled_at' => now(),
                     'status' => 'active',
                     'created_at' => now(),
@@ -186,25 +242,11 @@ class EnrollmentController extends Controller
             DB::table('enrollments')->insert($enrollments);
             
             // Clear caches
-            $this->clearEnrollmentCaches($courseId, $newStudentIds);
-            
-            // Get enrolled students for response
-            $enrolledStudents = User::whereIn('id', $newStudentIds)
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id'])
-                ->get()
-                ->map(function($student) {
-                    return [
-                        'id' => $student->id,
-                        'name' => $student->full_name,
-                        'email' => $student->email,
-                        'student_id' => $student->student_id
-                    ];
-                });
+            $this->clearEnrollmentCaches($actualCourseId, $newStudentIds);
             
             return response()->json([
                 'success' => true,
-                'message' => count($newStudentIds) . ' student(s) enrolled successfully.',
-                'enrolled_students' => $enrolledStudents
+                'message' => count($newStudentIds) . ' student(s) enrolled successfully.'
             ]);
             
         } catch (\Exception $e) {
@@ -222,15 +264,15 @@ class EnrollmentController extends Controller
     {
         try {
             $request->validate([
-                'course_id' => 'required|exists:courses,id',
+                'course_id' => 'required',
                 'student_id' => 'required|exists:users,id'
             ]);
             
-            $courseId = $request->course_id;
+            $actualCourseId = $this->decryptId($request->course_id);
             $studentId = $request->student_id;
             
             // Check if enrollment exists
-            $enrollment = Enrollment::where('course_id', $courseId)
+            $enrollment = Enrollment::where('course_id', $actualCourseId)
                 ->where('student_id', $studentId)
                 ->first();
             
@@ -244,7 +286,7 @@ class EnrollmentController extends Controller
             $enrollment->delete();
             
             // Clear caches
-            $this->clearEnrollmentCaches($courseId, [$studentId]);
+            $this->clearEnrollmentCaches($actualCourseId, [$studentId]);
             
             return response()->json([
                 'success' => true,
@@ -266,11 +308,11 @@ class EnrollmentController extends Controller
     {
         try {
             $request->validate([
-                'course_id' => 'required|exists:courses,id',
+                'course_id' => 'required',
                 'csv_file' => 'required|file|mimes:csv,txt|max:2048'
             ]);
             
-            $courseId = $request->course_id;
+            $actualCourseId = $this->decryptId($request->course_id);
             $file = $request->file('csv_file');
             
             // Parse CSV
@@ -314,7 +356,7 @@ class EnrollmentController extends Controller
             }
             
             // Get already enrolled students
-            $existingEnrollments = Enrollment::where('course_id', $courseId)
+            $existingEnrollments = Enrollment::where('course_id', $actualCourseId)
                 ->whereIn('student_id', $studentIds)
                 ->pluck('student_id')
                 ->toArray();
@@ -334,7 +376,7 @@ class EnrollmentController extends Controller
             foreach ($newStudentIds as $studentId) {
                 $enrollments[] = [
                     'student_id' => $studentId,
-                    'course_id' => $courseId,
+                    'course_id' => $actualCourseId,
                     'enrolled_at' => now(),
                     'status' => 'active',
                     'created_at' => now(),
@@ -345,7 +387,7 @@ class EnrollmentController extends Controller
             DB::table('enrollments')->insert($enrollments);
             
             // Clear caches
-            $this->clearEnrollmentCaches($courseId, $newStudentIds);
+            $this->clearEnrollmentCaches($actualCourseId, $newStudentIds);
             
             $message = count($newStudentIds) . ' student(s) enrolled successfully.';
             if (!empty($notFound)) {
@@ -376,7 +418,10 @@ class EnrollmentController extends Controller
     public function getProgramsByCollege($collegeId)
     {
         try {
-            $programs = Program::where('college_id', $collegeId)
+            // College ID might be encrypted or raw
+            $actualCollegeId = is_numeric($collegeId) ? $collegeId : $this->decryptId($collegeId);
+            
+            $programs = Program::where('college_id', $actualCollegeId)
                 ->orderBy('program_name')
                 ->get(['id', 'program_name', 'program_code']);
             
@@ -398,57 +443,16 @@ class EnrollmentController extends Controller
         
         // Clear student caches
         foreach ($studentIds as $studentId) {
-            // Clear student dashboard
             Cache::forget('student_dashboard_' . $studentId);
             
-            // Clear student courses index pages
             for ($page = 1; $page <= 5; $page++) {
                 Cache::forget('student_courses_index_' . $studentId . '_page_' . $page);
             }
             
-            // Clear student course show
             Cache::forget('student_course_show_' . $courseId);
-            
-            // Clear student overall stats
             Cache::forget('student_overall_stats_' . $studentId);
         }
         
-        // Clear admin dashboard
         Cache::forget('admin_dashboard_' . auth()->id());
-    }
-    
-    /**
-     * Show enrollment for a specific student (from user profile)
-     */
-    public function studentEnrollments($encryptedId)
-    {
-        try {
-            $id = Crypt::decrypt($encryptedId);
-            $student = User::with(['college', 'program'])->findOrFail($id);
-            
-            if ($student->role != 4) {
-                abort(404, 'User is not a student.');
-            }
-            
-            // Get enrolled courses
-            $enrolledCourses = Enrollment::where('student_id', $id)
-                ->with('course')
-                ->orderBy('enrolled_at', 'desc')
-                ->get();
-            
-            // Get available courses (published and not enrolled)
-            $enrolledCourseIds = $enrolledCourses->pluck('course_id')->toArray();
-            
-            $availableCourses = Course::where('is_published', true)
-                ->whereNotIn('id', $enrolledCourseIds)
-                ->orderBy('title')
-                ->get(['id', 'title', 'course_code', 'credits', 'description']);
-            
-            return view('admin.enrollments.student', compact('student', 'enrolledCourses', 'availableCourses'));
-            
-        } catch (\Exception $e) {
-            return redirect()->route('admin.users.index')
-                ->with('error', 'Failed to load student enrollments: ' . $e->getMessage());
-        }
     }
 }

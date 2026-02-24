@@ -114,7 +114,7 @@ class ProgramController extends Controller
             // Only show students that belong to THIS program
             $students = User::where('program_id', $id)
                 ->where('role', 4)
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_year', 'program_id', 'college_id', 'created_at', 'status'])
+                ->select(['id', 'f_name', 'l_name', 'email', 'student_id', 'college_year', 'program_id', 'college_id', 'created_at'])
                 ->orderBy('f_name')
                 ->orderBy('l_name')
                 ->paginate(15);
