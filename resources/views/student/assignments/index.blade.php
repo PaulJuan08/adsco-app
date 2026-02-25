@@ -45,6 +45,11 @@
         color: #c53030;
     }
     
+    .status-overdue {
+        background: #fed7d7;
+        color: #9b2c2c;
+    }
+    
     .grade-chip {
         display: inline-block;
         padding: 0.25rem 0.75rem;
@@ -123,7 +128,7 @@
         padding: 1rem;
         margin: 1rem 0;
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 0.75rem;
         text-align: center;
     }
@@ -151,6 +156,15 @@
         margin-top: 0.5rem;
         padding-top: 0.5rem;
         border-top: 1px dashed #e2e8f0;
+    }
+    
+    .cannot-submit {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .cannot-submit .quiz-icon {
+        filter: grayscale(50%);
     }
     
     @media (max-width: 768px) {
@@ -198,15 +212,18 @@
 
     {{-- Stats Cards --}}
     @php
-        $totalAssignments = $assignments->count();
+        $totalAssignments = $assignments->total();
         $submittedCount = $assignments->filter(function($assignment) {
-            return $assignment->my_submission && $assignment->my_submission->status != 'pending';
+            return in_array($assignment->status_for_student, ['submitted', 'late', 'graded']);
         })->count();
         $gradedCount = $assignments->filter(function($assignment) {
-            return $assignment->my_submission && $assignment->my_submission->status == 'graded';
+            return $assignment->status_for_student == 'graded';
         })->count();
         $pendingCount = $assignments->filter(function($assignment) {
-            return !$assignment->my_submission || $assignment->my_submission->status == 'pending';
+            return $assignment->status_for_student == 'pending' && !$assignment->isOverdue();
+        })->count();
+        $overdueCount = $assignments->filter(function($assignment) {
+            return $assignment->status_for_student == 'overdue';
         })->count();
     @endphp
 
@@ -255,6 +272,18 @@
                 </div>
                 <div class="stat-icon" style="color: #ed8936;">
                     <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-card-danger">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Overdue</div>
+                    <div class="stat-number">{{ $overdueCount }}</div>
+                </div>
+                <div class="stat-icon" style="color: #f56565;">
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
             </div>
         </div>
@@ -308,6 +337,9 @@
                         <a href="{{ route('student.assignments.index', ['filter' => 'graded']) }}" class="filter-tab {{ request('filter') == 'graded' ? 'active' : '' }}">
                             <i class="fas fa-star"></i> Graded
                         </a>
+                        <a href="{{ route('student.assignments.index', ['filter' => 'overdue']) }}" class="filter-tab {{ request('filter') == 'overdue' ? 'active' : '' }}">
+                            <i class="fas fa-exclamation-triangle"></i> Overdue
+                        </a>
                     </div>
 
                     @if($assignments->isEmpty())
@@ -340,36 +372,21 @@
                                     @foreach($assignments as $assignment)
                                         @php
                                             $submission = $assignment->my_submission;
-                                            $isOverdue = $assignment->due_date && $assignment->due_date->isPast() && (!$submission || $submission->status == 'pending');
                                             
-                                            if ($submission) {
-                                                if ($submission->status == 'graded') {
-                                                    $statusClass = 'status-graded';
-                                                    $statusIcon = 'fa-check-circle';
-                                                    $statusText = 'Graded';
-                                                } elseif ($submission->status == 'late') {
-                                                    $statusClass = 'status-late';
-                                                    $statusIcon = 'fa-exclamation-circle';
-                                                    $statusText = 'Late';
-                                                } else {
-                                                    $statusClass = 'status-submitted';
-                                                    $statusIcon = 'fa-paper-plane';
-                                                    $statusText = 'Submitted';
-                                                }
-                                            } else {
-                                                if ($isOverdue) {
-                                                    $statusClass = 'status-late';
-                                                    $statusIcon = 'fa-exclamation-triangle';
-                                                    $statusText = 'Overdue';
-                                                } else {
-                                                    $statusClass = 'status-pending';
-                                                    $statusIcon = 'fa-clock';
-                                                    $statusText = 'Pending';
-                                                }
-                                            }
+                                            $statusClass = 'status-' . $assignment->status_for_student;
+                                            $statusIcon = match($assignment->status_for_student) {
+                                                'graded' => 'fa-check-circle',
+                                                'submitted' => 'fa-paper-plane',
+                                                'late' => 'fa-exclamation-circle',
+                                                'overdue' => 'fa-exclamation-triangle',
+                                                default => 'fa-clock'
+                                            };
+                                            $statusText = ucfirst($assignment->status_for_student);
+                                            
+                                            $isClickable = $assignment->status_for_student != 'overdue' || $submission;
                                         @endphp
-                                        <tr class="clickable-row" 
-                                            data-href="{{ route('student.assignments.show', Crypt::encrypt($assignment->id)) }}"
+                                        <tr class="{{ $isClickable ? 'clickable-row' : '' }} {{ !$assignment->can_submit && !$submission ? 'cannot-submit' : '' }}" 
+                                            data-href="{{ $isClickable ? route('student.assignments.show', Crypt::encrypt($assignment->id)) : '#' }}"
                                             data-title="{{ strtolower($assignment->title) }}">
                                             <td>
                                                 <div class="quiz-info-cell">
@@ -377,17 +394,24 @@
                                                         <i class="fas fa-file-alt"></i>
                                                     </div>
                                                     <div class="quiz-details">
-                                                        <div class="quiz-title">{{ $assignment->title }}</div>
+                                                        <div class="quiz-title">
+                                                            {{ $assignment->title }}
+                                                            @if(!$assignment->can_submit && !$submission)
+                                                                <span style="margin-left: 0.5rem; font-size: 0.7rem; color: #f56565;">
+                                                                    <i class="fas fa-lock"></i> Cannot submit
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                         <div class="quiz-desc">{{ Str::limit($assignment->description, 60) }}</div>
                                                         
                                                         {{-- Mobile Info --}}
                                                         <div class="mobile-info">
-                                                            <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+                                                            <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
                                                                 <span class="points-badge">
                                                                     <i class="fas fa-star"></i> {{ $assignment->points }} pts
                                                                 </span>
                                                                 @if($assignment->due_date)
-                                                                    <span class="due-date {{ $isOverdue ? 'overdue' : '' }}">
+                                                                    <span class="due-date {{ $assignment->isOverdue() && !$submission ? 'overdue' : '' }}">
                                                                         <i class="fas fa-calendar-alt"></i>
                                                                         {{ $assignment->due_date->format('M d, Y') }}
                                                                     </span>
@@ -405,10 +429,10 @@
                                             </td>
                                             <td class="hide-on-tablet">
                                                 @if($assignment->due_date)
-                                                    <div class="due-date {{ $isOverdue ? 'overdue' : '' }}">
+                                                    <div class="due-date {{ $assignment->isOverdue() && !$submission ? 'overdue' : '' }}">
                                                         <i class="fas fa-calendar-alt"></i>
                                                         {{ $assignment->due_date->format('M d, Y') }}
-                                                        @if($isOverdue)
+                                                        @if($assignment->isOverdue() && !$submission)
                                                             <span style="color: #f56565; margin-left: 0.25rem;">(Overdue)</span>
                                                         @endif
                                                     </div>
@@ -515,6 +539,16 @@
                             </div>
                             <div class="stat-number">{{ $pendingCount }}</div>
                         </div>
+
+                        <div class="list-item">
+                            <div class="item-avatar" style="background: #fed7d7; color: #9b2c2c;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">Overdue</div>
+                            </div>
+                            <div class="stat-number">{{ $overdueCount }}</div>
+                        </div>
                     </div>
 
                     @php
@@ -548,23 +582,24 @@
                         @foreach($assignments->take(5) as $assignment)
                             @php
                                 $submission = $assignment->my_submission;
-                                $statusColor = '#718096';
-                                $statusBg = '#f7fafc';
-                                
-                                if ($submission) {
-                                    if ($submission->status == 'graded') {
-                                        $statusColor = '#22543d';
-                                        $statusBg = '#f0fff4';
-                                    } elseif ($submission->status == 'late') {
-                                        $statusColor = '#c53030';
-                                        $statusBg = '#fff5f5';
-                                    } else {
-                                        $statusColor = '#2c7a7b';
-                                        $statusBg = '#e6fffa';
-                                    }
-                                }
+                                $statusColor = match($assignment->status_for_student) {
+                                    'graded' => '#22543d',
+                                    'submitted' => '#2c7a7b',
+                                    'late' => '#c53030',
+                                    'overdue' => '#9b2c2c',
+                                    default => '#c05621'
+                                };
+                                $statusBg = match($assignment->status_for_student) {
+                                    'graded' => '#f0fff4',
+                                    'submitted' => '#e6fffa',
+                                    'late' => '#fff5f5',
+                                    'overdue' => '#fed7d7',
+                                    default => '#fff3e0'
+                                };
                             @endphp
-                            <a href="{{ route('student.assignments.show', Crypt::encrypt($assignment->id)) }}" class="list-item clickable-item">
+                            <a href="{{ $assignment->can_submit || $submission ? route('student.assignments.show', Crypt::encrypt($assignment->id)) : '#' }}" 
+                               class="list-item clickable-item {{ !$assignment->can_submit && !$submission ? 'cannot-submit' : '' }}"
+                               style="{{ !$assignment->can_submit && !$submission ? 'pointer-events: none; opacity: 0.6;' : '' }}">
                                 <div class="item-avatar" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white;">
                                     <i class="fas fa-file-alt"></i>
                                 </div>
@@ -574,6 +609,9 @@
                                         <i class="fas fa-calendar-alt"></i> 
                                         @if($assignment->due_date)
                                             Due {{ $assignment->due_date->format('M d') }}
+                                            @if($assignment->isOverdue() && !$submission)
+                                                <span style="color: #f56565;">(Overdue)</span>
+                                            @endif
                                         @else
                                             No due date
                                         @endif
@@ -586,7 +624,7 @@
                                 @else
                                     <div class="stat-number" style="font-size: 0.875rem; color: {{ $statusColor }};">
                                         <span style="background: {{ $statusBg }}; padding: 0.25rem 0.5rem; border-radius: 12px;">
-                                            {{ $submission ? ucfirst($submission->status) : 'Pending' }}
+                                            {{ ucfirst($assignment->status_for_student) }}
                                         </span>
                                     </div>
                                 @endif
@@ -628,11 +666,11 @@
                         </div>
                         <div class="list-item">
                             <div class="item-avatar" style="background: var(--warning-light); color: var(--warning-dark);">
-                                <i class="fas fa-paperclip"></i>
+                                <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="item-info">
-                                <div class="item-name">Check File Format</div>
-                                <div class="item-meta">Ensure files are in accepted formats</div>
+                                <div class="item-name">Watch Due Dates</div>
+                                <div class="item-meta">Submit before the deadline</div>
                             </div>
                         </div>
                         <div class="list-item">
@@ -663,7 +701,7 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Make rows clickable
+        // Make rows clickable (only those that are clickable)
         const clickableRows = document.querySelectorAll('.clickable-row');
         
         clickableRows.forEach(row => {
@@ -674,7 +712,7 @@
                 }
                 
                 const href = this.dataset.href;
-                if (href) {
+                if (href && href !== '#') {
                     window.location.href = href;
                 }
             });

@@ -10,7 +10,6 @@ class QuizStudentAccess extends Model
 {
     use HasFactory;
 
-    // Explicitly define the table name
     protected $table = 'quiz_student_access';
 
     protected $fillable = [

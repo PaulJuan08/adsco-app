@@ -320,7 +320,7 @@
             $studentCount = $quiz->attempts()->distinct('user_id')->count('user_id');
             $creator = $quiz->creator;
         @endphp
-        <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.quiz.access', Crypt::encrypt($quiz->id)) }}'">
+        <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}'">
             <div class="todo-card-header">
                 <div class="todo-card-icon quiz">
                     <i class="fas fa-brain"></i>
@@ -424,7 +424,7 @@
             @endif
             
             <div class="todo-card-actions" onclick="event.stopPropagation()">
-                <a href="{{ route('admin.todo.quiz.access', Crypt::encrypt($quiz->id)) }}" 
+                <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}" 
                    class="btn-xs btn-xs-primary">
                     <i class="fas fa-user-shield"></i> Manage Access
                 </a>
@@ -466,7 +466,7 @@
             $pendingCount = $assignment->submissions()->whereIn('status', ['submitted', 'late'])->count();
             $creator = $assignment->creator;
         @endphp
-        <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.assignment.access', Crypt::encrypt($assignment->id)) }}'">
+        <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}'">
             <div class="todo-card-header">
                 <div class="todo-card-icon assignment">
                     <i class="fas fa-file-alt"></i>

@@ -463,8 +463,8 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <a href="{{ route('admin.assignments.show', Crypt::encrypt($assignment->id)) }}" 
-                                       class="btn btn-success btn-sm">
+                                    <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}" 
+                                    class="btn btn-success btn-sm">
                                         <i class="fas fa-eye"></i> View
                                     </a>
                                 </div>

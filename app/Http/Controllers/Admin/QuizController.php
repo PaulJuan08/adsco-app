@@ -10,23 +10,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use App\Traits\CacheManager; // 🔥 ADD THIS
+use App\Traits\CacheManager;
 
 class QuizController extends Controller
 {
-    use CacheManager; // 🔥 ADD THIS
+    use CacheManager;
     
-    public function index()
-    {
-        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
-        $quizzes = Quiz::select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_at', 'updated_at'])
-            ->withCount('questions')
-            ->latest()
-            ->paginate(10);
-        
-        return view('admin.quizzes.index', compact('quizzes'));
-    }
-
+    // REMOVED index() method - redirects to todo
+    
     public function create()
     {
         return view('admin.quizzes.create');
@@ -110,53 +101,20 @@ class QuizController extends Controller
             'total_questions' => $validQuestionCount
         ]);
 
-        // 🔥 FIX: Clear ALL quiz caches across all roles
+        // Clear ALL quiz caches across all roles
         $this->clearAllQuizCaches();
         
         \Log::info('New quiz created - ID: ' . $quiz->id . ', Title: ' . $quiz->title);
 
-        return redirect()->route('admin.quizzes.index')
+        // Redirect to To-Do with quiz filter
+        return redirect()->route('admin.todo.index', ['type' => 'quiz'])
             ->with('success', 'Quiz created successfully.');
     }
 
     public function show($encryptedId)
     {
-        try {
-            $id = Crypt::decrypt($encryptedId);
-            
-            // 🔥 Keep caching for show page (it's fine to cache this)
-            $cacheKey = 'admin_quiz_show_' . $id;
-            
-            $quiz = Cache::remember($cacheKey, 600, function() use ($id) {
-                return Quiz::with(['questions.options' => function($query) {
-                        $query->select(['id', 'quiz_question_id', 'option_text', 'is_correct', 'order']);
-                    }])
-                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at', 'updated_at'])
-                    ->withCount('questions')
-                    ->findOrFail($id);
-            });
-            
-            // If there are results in session, pass them to view
-            if (session('results')) {
-                return view('admin.quizzes.show', compact('quiz'))
-                    ->with('results', session('results'))
-                    ->with('score', session('score'))
-                    ->with('totalPoints', session('totalPoints'))
-                    ->with('percentage', session('percentage'))
-                    ->with('passed', session('passed'));
-            }
-            
-            return view('admin.quizzes.show', compact('quiz'));
-            
-        } catch (\Exception $e) {
-            \Log::error('Error showing quiz', [
-                'encryptedId' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('admin.quizzes.index')
-                ->with('error', 'Quiz not found or invalid link.');
-        }
+        // Redirect to the unified todo quiz show page
+        return redirect()->route('admin.todo.quiz.show', $encryptedId);
     }
     
     public function edit($encryptedId)
@@ -164,7 +122,7 @@ class QuizController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             
-            // 🔥 Keep caching for edit page
+            // Keep caching for edit page
             $cacheKey = 'admin_quiz_edit_' . $id;
             
             $quiz = Cache::remember($cacheKey, 300, function() use ($id) {
@@ -182,7 +140,7 @@ class QuizController extends Controller
                 'error' => $e->getMessage()
             ]);
             
-            return redirect()->route('admin.quizzes.index')
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
                 ->with('error', 'Quiz not found or invalid link.');
         }
     }
@@ -279,7 +237,7 @@ class QuizController extends Controller
             
             DB::commit();
             
-            // 🔥 FIX: Clear ALL quiz caches
+            // Clear ALL quiz caches
             $this->clearAllQuizCaches();
             Cache::forget('admin_quiz_show_' . $quiz->id);
             Cache::forget('admin_quiz_edit_' . $quiz->id);
@@ -433,13 +391,13 @@ class QuizController extends Controller
             // Delete quiz (cascade will delete questions and options)
             $quiz->delete();
             
-            // 🔥 FIX: Clear ALL quiz caches
+            // Clear ALL quiz caches
             $this->clearAllQuizCaches();
             Cache::forget('admin_quiz_show_' . $id);
             Cache::forget('admin_quiz_edit_' . $id);
             Cache::forget('admin_quiz_take_' . $id);
 
-            return redirect()->route('admin.quizzes.index')
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
                 ->with('success', 'Quiz deleted successfully.');
                 
         } catch (\Exception $e) {
@@ -448,7 +406,7 @@ class QuizController extends Controller
                 'error' => $e->getMessage()
             ]);
             
-            return redirect()->route('admin.quizzes.index')
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
                 ->with('error', 'Quiz not found or invalid link.');
         }
     }
@@ -479,7 +437,7 @@ class QuizController extends Controller
                 'error' => $e->getMessage()
             ]);
             
-            return redirect()->route('admin.quizzes.index')
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
                 ->with('error', 'Invalid quiz or quiz not found.');
         }
     }
@@ -541,7 +499,7 @@ class QuizController extends Controller
                 'error' => $e->getMessage()
             ]);
             
-            return redirect()->route('admin.quizzes.index')
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
                 ->with('error', 'Error submitting quiz: ' . $e->getMessage());
         }
     }
@@ -556,11 +514,9 @@ class QuizController extends Controller
 
     /**
      * Clear all quiz-related caches
-     * 🔥 UPDATED: Now calls the CacheManager method
      */
     private function clearQuizCaches()
     {
-        // Call the comprehensive cache clearing method from CacheManager
         $this->clearAllQuizCaches();
     }
 
@@ -571,7 +527,62 @@ class QuizController extends Controller
     {
         $this->clearAllQuizCaches();
         
-        return redirect()->route('admin.quizzes.index')
+        return redirect()->route('admin.todo.index', ['type' => 'quiz'])
             ->with('success', 'All quiz caches cleared successfully across all roles!');
+    }
+
+    /**
+     * Publish quiz
+     */
+    public function publish($encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $quiz = Quiz::findOrFail($id);
+            
+            $quiz->update([
+                'is_published' => true
+            ]);
+            
+            // Clear caches
+            $this->clearAllQuizCaches();
+            Cache::forget('admin_quiz_show_' . $id);
+            Cache::forget('admin_quiz_edit_' . $id);
+            
+            return redirect()->route('admin.quizzes.show', $encryptedId)
+                ->with('success', 'Quiz published successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error publishing quiz: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Error publishing quiz: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle quiz publish status
+     */
+    public function togglePublish(Request $request, $encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $quiz = Quiz::findOrFail($id);
+            
+            // Toggle the publish status
+            $quiz->update([
+                'is_published' => !$quiz->is_published
+            ]);
+            
+            $status = $quiz->is_published ? 'published' : 'unpublished';
+            
+            return redirect()->back()->with('success', "Quiz {$status} successfully.");
+            
+        } catch (\Exception $e) {
+            \Log::error('Error toggling quiz publish status: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Failed to update quiz status.');
+        }
     }
 }

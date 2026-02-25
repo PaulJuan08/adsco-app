@@ -66,6 +66,17 @@
         color: var(--primary);
     }
     
+    .overdue-badge-large {
+        display: inline-block;
+        background: #f56565;
+        color: white;
+        padding: 0.25rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+    
     .answer-form {
         background: white;
         border-radius: 16px;
@@ -207,9 +218,14 @@
         transition: all 0.3s ease;
     }
     
-    .btn-submit:hover {
+    .btn-submit:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     
     .btn-outline {
@@ -246,6 +262,30 @@
     .back-link i {
         font-size: 0.75rem;
     }
+    
+    .cannot-submit-message {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .cannot-submit-message i {
+        font-size: 2rem;
+        color: #f56565;
+        margin-bottom: 0.5rem;
+    }
+    
+    .cannot-submit-message h4 {
+        color: #9b2c2c;
+        margin-bottom: 0.5rem;
+    }
+    
+    .cannot-submit-message p {
+        color: #742a2a;
+    }
 </style>
 @endpush
 
@@ -279,8 +319,8 @@
                 @if($assignment->due_date)
                 <span class="meta-badge">
                     <i class="fas fa-calendar-alt"></i> Due: {{ $assignment->due_date->format('M d, Y h:i A') }}
-                    @if($assignment->due_date->isPast() && (!$submission || $submission->status == 'pending'))
-                        <span style="color: #f56565; margin-left: 0.375rem;">(Overdue)</span>
+                    @if($assignment->isOverdue() && (!$submission || $submission->status == 'pending'))
+                        <span class="overdue-badge-large">Overdue</span>
                     @endif
                 </span>
                 @endif
@@ -294,6 +334,15 @@
                 @endif
             </div>
         </div>
+
+        {{-- Cannot Submit Message --}}
+        @if(!$canSubmit && !$submission)
+        <div class="cannot-submit-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>Assignment Overdue</h4>
+            <p>This assignment is overdue and can no longer be submitted. Please contact your instructor if you need an extension.</p>
+        </div>
+        @endif
 
         {{-- Two Column Layout --}}
         <div class="two-column-layout">
@@ -341,35 +390,6 @@
                     </div>
                 </div>
                 @endif
-
-                {{-- Availability Section --}}
-                @if($assignment->available_from || $assignment->available_until)
-                <div class="detail-section">
-                    <h3 class="detail-section-title">
-                        <i class="fas fa-clock"></i> Availability
-                    </h3>
-                    <div class="info-row">
-                        <span class="info-label">Available From</span>
-                        <span class="info-value">
-                            @if($assignment->available_from)
-                                {{ $assignment->available_from->format('M d, Y h:i A') }}
-                            @else
-                                Immediately
-                            @endif
-                        </span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Available Until</span>
-                        <span class="info-value">
-                            @if($assignment->available_until)
-                                {{ $assignment->available_until->format('M d, Y h:i A') }}
-                            @else
-                                No end date
-                            @endif
-                        </span>
-                    </div>
-                </div>
-                @endif
             </div>
 
             {{-- Right Column - Submission Area --}}
@@ -412,7 +432,8 @@
                     </div>
                 @endif
 
-                {{-- Submission Form --}}
+                {{-- Submission Form (only show if can submit or already submitted) --}}
+                @if($canSubmit || $submission)
                 <div class="sidebar-card">
                     <h3 class="sidebar-card-title">
                         <i class="fas fa-{{ $submission ? 'redo' : 'pencil-alt' }}"></i>
@@ -503,7 +524,7 @@
                         </div>
 
                         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                            <button type="submit" class="btn-submit">
+                            <button type="submit" class="btn-submit" {{ !$canSubmit ? 'disabled' : '' }}>
                                 <i class="fas fa-paper-plane"></i> 
                                 {{ $submission ? 'Resubmit Assignment' : 'Submit Assignment' }}
                             </button>
@@ -511,8 +532,16 @@
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                         </div>
+
+                        @if(!$canSubmit)
+                            <p style="margin-top: 1rem; font-size: 0.875rem; color: #f56565; text-align: center;">
+                                <i class="fas fa-exclamation-circle"></i> 
+                                You cannot submit this assignment because it is overdue.
+                            </p>
+                        @endif
                     </form>
                 </div>
+                @endif
 
                 {{-- Tips Card --}}
                 <div class="sidebar-card">
@@ -546,8 +575,8 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div class="tip-content">
-                                <div class="tip-title">Submit Early</div>
-                                <div class="tip-description">Avoid last-minute technical issues</div>
+                                <div class="tip-title">Watch Due Dates</div>
+                                <div class="tip-description">Submit before the deadline</div>
                             </div>
                         </div>
                         
@@ -575,6 +604,7 @@
         const attachmentInput = document.getElementById('attachment');
         const fileInfo = document.getElementById('file-info');
         const fileName = document.getElementById('file-name');
+        const canSubmit = {{ $canSubmit ? 'true' : 'false' }};
         
         // File upload handling
         if (attachmentInput) {
@@ -632,6 +662,17 @@
         const form = document.getElementById('submissionForm');
         if (form) {
             form.addEventListener('submit', function(e) {
+                if (!canSubmit) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Cannot Submit',
+                        text: 'This assignment is overdue and can no longer be submitted.',
+                        icon: 'error',
+                        confirmButtonColor: '#f59e0b'
+                    });
+                    return;
+                }
+                
                 e.preventDefault();
                 
                 const answerText = document.getElementById('answer_text')?.value.trim();

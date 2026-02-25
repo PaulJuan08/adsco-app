@@ -114,7 +114,7 @@
                         </div>
                         <div class="stat-item">
                             <div class="stat-value">
-                                <i class="fas {{ $course->is_published ? 'fa-check-circle text-success' : 'fa-clock text-warning' }}"></i>
+                                <i class="fas fa-{{ $course->is_published ? 'check-circle' : 'clock' }} text-{{ $course->is_published ? 'success' : 'warning' }}"></i>
                             </div>
                             <div class="stat-label">{{ $course->is_published ? 'Published' : 'Draft' }}</div>
                         </div>

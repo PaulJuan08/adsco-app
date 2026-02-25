@@ -28,8 +28,7 @@ class AssignmentController extends Controller
 
         $query = Assignment::whereIn('id', $allowedAssignmentIds)
             ->where('is_published', 1)
-            ->with('course', 'topic')
-            ->withCount('questions');
+            ->with('course', 'topic');
 
         // Apply filters
         switch ($filter) {
@@ -54,6 +53,12 @@ class AssignmentController extends Controller
                       ->where('status', 'graded');
                 });
                 break;
+                
+            case 'overdue':
+                $query->whereDoesntHave('submissions', function($q) use ($studentId) {
+                    $q->where('student_id', $studentId);
+                })->where('due_date', '<', now());
+                break;
         }
 
         $assignments = $query->latest()->paginate(10);
@@ -66,6 +71,8 @@ class AssignmentController extends Controller
                 ->first();
             
             $assignment->my_submission = $submission;
+            $assignment->can_submit = $assignment->canSubmit($studentId);
+            $assignment->status_for_student = $assignment->getStatusForStudent($studentId);
         }
 
         return view('student.assignments.index', compact('assignments'));
@@ -91,16 +98,8 @@ class AssignmentController extends Controller
         $assignment = Assignment::with(['course', 'topic'])
             ->findOrFail($assignmentId);
 
-        // Check if assignment is published and available
+        // Check if assignment is published
         abort_if(!$assignment->is_published, 403, 'This assignment is not available.');
-        
-        $now = now();
-        if ($assignment->available_from && $assignment->available_from > $now) {
-            abort(403, 'This assignment is not yet available.');
-        }
-        if ($assignment->available_until && $assignment->available_until < $now) {
-            abort(403, 'This assignment is no longer available.');
-        }
 
         // Get student's submission
         $submission = AssignmentSubmission::where('assignment_id', $assignmentId)
@@ -108,7 +107,15 @@ class AssignmentController extends Controller
             ->latest()
             ->first();
 
-        return view('student.assignments.show', compact('assignment', 'submission', 'encryptedId'));
+        // Check if student can submit
+        $canSubmit = $assignment->canSubmit($studentId);
+        
+        // If assignment is overdue and no submission exists, show appropriate message
+        if ($assignment->isOverdue() && !$submission) {
+            session()->flash('error', 'This assignment is overdue and can no longer be submitted. Please contact your instructor if you need an extension.');
+        }
+
+        return view('student.assignments.show', compact('assignment', 'submission', 'encryptedId', 'canSubmit'));
     }
 
     /**
@@ -119,6 +126,8 @@ class AssignmentController extends Controller
         $studentId = Auth::id();
         $assignmentId = Crypt::decrypt($encryptedId);
 
+        $assignment = Assignment::findOrFail($assignmentId);
+
         // Check if student has access
         abort_unless(
             AssignmentStudentAccess::where('assignment_id', $assignmentId)
@@ -127,6 +136,14 @@ class AssignmentController extends Controller
                 ->exists(),
             403
         );
+
+        // Check if assignment can be submitted
+        if (!$assignment->canSubmit($studentId)) {
+            if ($assignment->isOverdue()) {
+                return back()->with('error', 'This assignment is overdue and can no longer be submitted. Please contact your instructor if you need an extension.');
+            }
+            return back()->with('error', 'You cannot submit this assignment at this time.');
+        }
 
         $request->validate([
             'answer_text' => 'nullable|string',
@@ -143,7 +160,6 @@ class AssignmentController extends Controller
             $attachmentPath = $request->file('attachment')->store('assignments/submissions', 'public');
         }
 
-        $assignment = Assignment::findOrFail($assignmentId);
         $isLate = $assignment->due_date && now()->isAfter($assignment->due_date);
 
         // Check for existing submission

@@ -5,11 +5,20 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/assignment-form.css') }}">
 <style>
-    /* Additional custom styles if needed */
     :root {
         --primary: #f59e0b;
         --primary-dark: #d97706;
         --primary-light: rgba(245, 158, 11, 0.1);
+    }
+    
+    .due-date-warning {
+        background: #fff3e0;
+        border-left: 4px solid var(--primary);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        color: #744210;
     }
 </style>
 @endpush
@@ -31,7 +40,7 @@
     </div>
 
     {{-- Body --}}
-    <form method="POST" action="{{ route('admin.assignments.store') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('admin.assignments.store') }}">
         @csrf
         
         <div class="card-body">
@@ -49,6 +58,11 @@
                     </ul>
                 </div>
             @endif
+
+            <div class="due-date-warning">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> Once the due date passes, students will no longer be able to submit this assignment unless you extend the due date.
+            </div>
 
             <div class="two-column-layout">
                 {{-- Main Form Column --}}
@@ -112,57 +126,6 @@
                         </div>
                     </div>
 
-                    {{-- Course & Topic Section --}}
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-book"></i>
-                            Course & Topic
-                        </h3>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="course_id" class="form-label required">Course</label>
-                                <select id="course_id" 
-                                        name="course_id" 
-                                        class="form-select @error('course_id') error @enderror" 
-                                        required>
-                                    <option value="">Select a course</option>
-                                    @foreach($courses as $course)
-                                        <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
-                                            {{ $course->course_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('course_id')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="topic_id" class="form-label">Topic (Optional)</label>
-                                <select id="topic_id" 
-                                        name="topic_id" 
-                                        class="form-select @error('topic_id') error @enderror">
-                                    <option value="">Select a topic</option>
-                                    @foreach($topics as $topic)
-                                        <option value="{{ $topic->id }}" {{ old('topic_id') == $topic->id ? 'selected' : '' }}>
-                                            {{ $topic->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('topic_id')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
                     {{-- Assignment Details Section --}}
                     <div class="form-section">
                         <h3 class="form-section-title">
@@ -181,6 +144,10 @@
                                            value="{{ old('due_date') }}">
                                     <i class="fas fa-calendar-alt"></i>
                                 </div>
+                                <span class="form-help">
+                                    <i class="fas fa-info-circle"></i>
+                                    If no due date is set, the assignment will always be available for submission.
+                                </span>
                                 @error('due_date')
                                     <span class="form-error">
                                         <i class="fas fa-exclamation-circle"></i>
@@ -207,44 +174,6 @@
                             </div>
                         </div>
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="available_from" class="form-label">Available From</label>
-                                <div class="date-input-group">
-                                    <input type="datetime-local" 
-                                           id="available_from" 
-                                           name="available_from" 
-                                           class="form-input @error('available_from') error @enderror" 
-                                           value="{{ old('available_from') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                </div>
-                                @error('available_from')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="available_until" class="form-label">Available Until</label>
-                                <div class="date-input-group">
-                                    <input type="datetime-local" 
-                                           id="available_until" 
-                                           name="available_until" 
-                                           class="form-input @error('available_until') error @enderror" 
-                                           value="{{ old('available_until') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                </div>
-                                @error('available_until')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        {{ $message }}
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
                         <div class="checkbox-group">
                             <input type="checkbox" 
                                    id="is_published" 
@@ -260,43 +189,6 @@
                             <i class="fas fa-info-circle"></i>
                             If unchecked, the assignment will be saved as a draft
                         </span>
-                    </div>
-
-                    {{-- Attachment Section --}}
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i class="fas fa-paperclip"></i>
-                            Attachment (Optional)
-                        </h3>
-
-                        <div class="form-group">
-                            <label for="attachment" class="form-label">Attachment File</label>
-                            <div class="file-upload" onclick="document.getElementById('attachment').click()">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <div class="file-upload-text">Click to upload or drag and drop</div>
-                                <div class="file-upload-subtext">PDF, DOC, DOCX, TXT (Max 10MB)</div>
-                            </div>
-                            <input type="file" 
-                                   id="attachment" 
-                                   name="attachment" 
-                                   class="file-input"
-                                   accept=".pdf,.doc,.docx,.txt">
-                            <span class="form-help">
-                                <i class="fas fa-info-circle"></i>
-                                Optional: Upload assignment file, rubric, or resources
-                            </span>
-                            @error('attachment')
-                                <span class="form-error">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    {{ $message }}
-                                </span>
-                            @enderror
-                        </div>
-
-                        <div id="file-name" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #f0fdf4; border-radius: 8px; color: #065f46;">
-                            <i class="fas fa-check-circle"></i>
-                            Selected file: <span id="selected-file-name"></span>
-                        </div>
                     </div>
                 </div>
 
@@ -319,6 +211,15 @@
                                 <span class="assignment-preview-badge" id="preview-status">
                                     <i class="fas fa-pen"></i>
                                     Draft
+                                </span>
+                            </div>
+                            <div class="assignment-preview-meta" style="margin-top: 0.5rem;">
+                                <span class="assignment-preview-badge" style="background: #f7fafc; color: #4a5568;" id="preview-due">
+                                    @if(old('due_date'))
+                                        <i class="fas fa-calendar-alt"></i> Due: {{ old('due_date') }}
+                                    @else
+                                        <i class="fas fa-infinity"></i> No due date
+                                    @endif
                                 </span>
                             </div>
                         </div>
@@ -358,73 +259,31 @@
                                     <div class="tip-description">Include rubric or scoring guide</div>
                                 </div>
                             </div>
-                            <div class="tip-item">
-                                <div class="tip-icon">
-                                    <i class="fas fa-paperclip"></i>
-                                </div>
-                                <div class="tip-content">
-                                    <div class="tip-title">Provide Resources</div>
-                                    <div class="tip-description">Attach templates or examples</div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    {{-- Guidelines Card --}}
+                    {{-- Due Date Guidelines --}}
                     <div class="sidebar-card">
                         <h3 class="sidebar-card-title">
-                            <i class="fas fa-clipboard-check"></i>
-                            Guidelines
+                            <i class="fas fa-clock"></i>
+                            Due Date Guidelines
                         </h3>
                         <div class="guidelines-list">
                             <div class="guideline-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Title should be clear and descriptive</span>
+                                <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                                <span>Set a due date to control submission window</span>
                             </div>
                             <div class="guideline-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Include all necessary instructions</span>
+                                <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                                <span>Leave blank for always-available assignments</span>
                             </div>
                             <div class="guideline-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Set appropriate point value</span>
+                                <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                                <span>After due date, students cannot submit</span>
                             </div>
                             <div class="guideline-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Specify availability dates if needed</span>
-                            </div>
-                            <div class="guideline-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Attach supporting materials</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Info Card --}}
-                    <div class="sidebar-card">
-                        <h3 class="sidebar-card-title">
-                            <i class="fas fa-info-circle"></i>
-                            Quick Info
-                        </h3>
-                        <div class="info-row">
-                            <i class="fas fa-users info-icon"></i>
-                            <div class="info-content">
-                                <div class="info-label">Students</div>
-                                <div class="info-text">Manage access after creation</div>
-                            </div>
-                        </div>
-                        <div class="info-row">
-                            <i class="fas fa-calendar-alt info-icon"></i>
-                            <div class="info-content">
-                                <div class="info-label">Availability</div>
-                                <div class="info-text">Set time restrictions if needed</div>
-                            </div>
-                        </div>
-                        <div class="info-row">
-                            <i class="fas fa-save info-icon"></i>
-                            <div class="info-content">
-                                <div class="info-label">Save as Draft</div>
-                                <div class="info-text">Uncheck publish to save draft</div>
+                                <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                                <span>Extend due date to allow late submissions</span>
                             </div>
                         </div>
                     </div>
@@ -467,67 +326,21 @@ document.getElementById('is_published').addEventListener('change', function() {
     }
 });
 
-// File upload handling
-document.getElementById('attachment').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name;
-    const fileDisplay = document.getElementById('file-name');
-    const selectedFileName = document.getElementById('selected-file-name');
-    
-    if (fileName) {
-        selectedFileName.textContent = fileName;
-        fileDisplay.style.display = 'block';
+document.getElementById('due_date').addEventListener('change', function() {
+    const dueDateEl = document.getElementById('preview-due');
+    if (this.value) {
+        const date = new Date(this.value);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        dueDateEl.innerHTML = '<i class="fas fa-calendar-alt"></i> Due: ' + formattedDate;
     } else {
-        fileDisplay.style.display = 'none';
+        dueDateEl.innerHTML = '<i class="fas fa-infinity"></i> No due date';
     }
 });
-
-// Trigger file input on upload area click
-document.querySelector('.file-upload').addEventListener('click', function() {
-    document.getElementById('attachment').click();
-});
-
-// Drag and drop handling
-const uploadArea = document.querySelector('.file-upload');
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-['dragenter', 'dragover'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight() {
-    uploadArea.style.background = 'linear-gradient(135deg, #f8fafc 0%, #fff 100%)';
-    uploadArea.style.borderColor = '#f59e0b';
-}
-
-function unhighlight() {
-    uploadArea.style.background = '#f8fafc';
-    uploadArea.style.borderColor = '#e2e8f0';
-}
-
-uploadArea.addEventListener('drop', handleDrop, false);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    document.getElementById('attachment').files = files;
-    
-    // Update file display
-    if (files.length > 0) {
-        document.getElementById('selected-file-name').textContent = files[0].name;
-        document.getElementById('file-name').style.display = 'block';
-    }
-}
 </script>
 @endpush

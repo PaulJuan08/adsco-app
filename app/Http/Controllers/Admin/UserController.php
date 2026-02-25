@@ -528,12 +528,22 @@ class UserController extends Controller
             $userCollegeId = $user->college_id;
             $userProgramId = $user->program_id;
             
-            // Delete the user
+            // If student, clean up assignment submission files first
+            if ($userRole == 4) {
+                foreach ($user->assignmentSubmissions as $submission) {
+                    if ($submission->attachment_path && 
+                        Storage::disk('public')->exists($submission->attachment_path)) {
+                        Storage::disk('public')->delete($submission->attachment_path);
+                    }
+                }
+            }
+            
+            // Delete the user - this will trigger:
+            // 1. Model events for file cleanup
+            // 2. Database cascade deletes for all related records (if foreign keys are set)
             $user->delete();
             
-            // ============ THOROUGH CACHE CLEARING ============
-            
-            // Clear user-related caches
+            // Clear caches
             $this->clearUserCaches($id);
             
             // Clear college-specific caches if this was a student
@@ -541,7 +551,6 @@ class UserController extends Controller
                 if ($userCollegeId) {
                     Cache::forget('college_students_' . $userCollegeId);
                     Cache::forget('college_' . $userCollegeId . '_stats');
-                    Cache::forget('college_programs_' . $userCollegeId);
                 }
                 if ($userProgramId) {
                     Cache::forget('program_students_' . $userProgramId);
@@ -549,22 +558,22 @@ class UserController extends Controller
                 }
             }
             
-            // Clear all user index caches aggressively
+            // Clear all user index caches
             $this->clearAllUserIndexCaches();
             
             // Set session flag to bypass cache on next index load
             session()->flash('bypass_cache', true);
             
             // Log the deletion
-            if (class_exists(\App\Helpers\AuditHelper::class)) {
-                \App\Helpers\AuditHelper::log('delete', "Deleted user: {$userEmail}", null, [
-                    'user_id' => $id,
-                    'user_name' => $userName
-                ]);
-            }
+            \Log::info('User deleted', [
+                'user_id' => $id,
+                'email' => $userEmail,
+                'role' => $userRole,
+                'deleted_by' => auth()->id()
+            ]);
             
             return redirect()->route('admin.users.index')
-                ->with('success', "User {$userName} deleted successfully.");
+                ->with('success', "User {$userName} and all related records deleted successfully.");
                 
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');

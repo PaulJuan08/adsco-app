@@ -9,7 +9,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Encryptable;
-use App\Notifications\VerifyEmail; // Add this import
+use App\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\Storage; // Add this
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -93,19 +94,31 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
-    public function attendances()
-    {
-        return $this->hasMany(Attendance::class);
-    }
+    // REMOVE attendances relationship since you don't use it
 
     public function auditLogs()
     {
-        return $this->hasMany(AuditLog::class);
+        return $this->hasMany(AuditLog::class, 'user_id');
     }
 
     public function quizAttempts()
     {
         return $this->hasMany(QuizAttempt::class, 'user_id');
+    }
+
+    public function quizAccess()
+    {
+        return $this->hasMany(QuizStudentAccess::class, 'student_id');
+    }
+
+    public function assignmentSubmissions()
+    {
+        return $this->hasMany(AssignmentSubmission::class, 'student_id');
+    }
+
+    public function assignmentAccess()
+    {
+        return $this->hasMany(AssignmentStudentAccess::class, 'student_id');
     }
 
     public function grades()
@@ -134,6 +147,31 @@ class User extends Authenticatable implements MustVerifyEmail
     public function progress()
     {
         return $this->hasMany(Progress::class, 'student_id');
+    }
+
+    // ── Model Events for Cleanup ─────────────────────────────────────────────
+
+    protected static function booted()
+    {
+        static::deleting(function ($user) {
+            // Only handle file cleanup for assignment submissions
+            // Database will handle record deletions via foreign keys if set
+            if ($user->role == 4) { // Student
+                foreach ($user->assignmentSubmissions as $submission) {
+                    if ($submission->attachment_path && 
+                        Storage::disk('public')->exists($submission->attachment_path)) {
+                        Storage::disk('public')->delete($submission->attachment_path);
+                    }
+                }
+            }
+            
+            // Log the deletion
+            \Log::info('User being deleted with cleanup', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role
+            ]);
+        });
     }
 
     // ── Role helpers ──────────────────────────────────────────────────────────
@@ -198,25 +236,16 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // ── Email Verification ───────────────────────────────────────────────────
 
-    /**
-     * Send the email verification notification.
-     */
     public function sendEmailVerificationNotification()
     {
         $this->notify(new \App\Notifications\VerifyEmail());
     }
 
-    /**
-     * Determine if the user has verified their email address.
-     */
     public function hasVerifiedEmail(): bool
     {
         return !is_null($this->email_verified_at);
     }
 
-    /**
-     * Mark the given user's email as verified.
-     */
     public function markEmailAsVerified(): bool
     {
         return $this->forceFill([
@@ -224,9 +253,6 @@ class User extends Authenticatable implements MustVerifyEmail
         ])->save();
     }
 
-    /**
-     * Get the email address that should be used for verification.
-     */
     public function getEmailForVerification(): string
     {
         return $this->email;

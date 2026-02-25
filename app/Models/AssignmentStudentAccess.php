@@ -1,5 +1,4 @@
 <?php
-// app/Models/AssignmentStudentAccess.php
 
 namespace App\Models;
 
@@ -19,12 +18,10 @@ class AssignmentStudentAccess extends Model
         'status',
         'granted_by',
         'granted_at',
-        'expires_at',
     ];
 
     protected $casts = [
         'granted_at' => 'datetime',
-        'expires_at' => 'datetime',
     ];
 
     public function assignment()

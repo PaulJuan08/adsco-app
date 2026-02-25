@@ -11,12 +11,6 @@ use Illuminate\Support\Facades\Crypt;
 
 class AssignmentController extends Controller
 {
-    public function index()
-    {
-        $assignments = Assignment::with(['course', 'topic'])->latest()->paginate(10);
-        return view('admin.assignments.index', compact('assignments'));
-    }
-
     public function create()
     {
         $courses = Course::all();
@@ -27,35 +21,24 @@ class AssignmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
+            'course_id' => 'nullable|exists:courses,id',
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
-            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
-        Assignment::create($validated);
+        $assignment = Assignment::create($validated);
         
-        return redirect()->route('admin.assignments.index')
+        // Redirect to To-Do with assignment filter
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment created successfully.');
     }
 
-    public function show($encryptedId)
-    {
-        $id = Crypt::decrypt($encryptedId);
-        $assignment = Assignment::with(['course', 'topic', 'submissions.student', 'submissions.gradedBy'])
-            ->withCount(['allowedStudents as allowed_students_count', 'submissions as submissions_count'])
-            ->findOrFail($id);
-        
-        // Pass the encryptedId to the view
-        return view('admin.assignments.show', compact('assignment', 'encryptedId'));
-    }
+    // REMOVED show() method - now handled by TodoController
 
     public function edit($encryptedId)
     {
@@ -64,7 +47,6 @@ class AssignmentController extends Controller
         $courses = Course::all();
         $topics = Topic::all();
         
-        // Pass the encryptedId to the view
         return view('admin.assignments.edit', compact('assignment', 'courses', 'topics', 'encryptedId'));
     }
 
@@ -74,22 +56,19 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
 
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
+            'course_id' => 'nullable|exists:courses,id',
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
-            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
         $assignment->update($validated);
         
-        return redirect()->route('admin.assignments.index')
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment updated successfully.');
     }
 
@@ -99,7 +78,7 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
         $assignment->delete();
         
-        return redirect()->route('admin.assignments.index')
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment deleted successfully.');
     }
 

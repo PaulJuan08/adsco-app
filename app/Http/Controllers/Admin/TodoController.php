@@ -32,24 +32,32 @@ class TodoController extends Controller
         $assignments = collect();
 
         if ($type === 'all' || $type === 'quiz') {
-            $quizQuery = Quiz::withCount(['studentAccess as allowed_students_count' => function ($q) {
-                $q->where('status', 'allowed');
-            }])->withCount('attempts');
+            $quizQuery = Quiz::with(['creator'])
+                ->withCount(['studentAccess as allowed_students_count' => function ($q) {
+                    $q->where('status', 'allowed');
+                }])
+                ->withCount('attempts');
 
             if ($search) {
-                $quizQuery->where('title', 'like', "%{$search}%");
+                $quizQuery->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
             }
 
             $quizzes = $quizQuery->latest()->get();
         }
 
         if ($type === 'all' || $type === 'assignment') {
-            $assignQuery = Assignment::with('course')
+            $assignQuery = Assignment::with(['course', 'creator'])
                 ->withCount(['allowedStudents as allowed_students_count'])
                 ->withCount('submissions');
 
             if ($search) {
-                $assignQuery->where('title', 'like', "%{$search}%");
+                $assignQuery->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
             }
 
             $assignments = $assignQuery->latest()->get();
@@ -83,57 +91,45 @@ class TodoController extends Controller
         $year       = $request->get('year');
         $searchName = $request->get('search_name');
 
-        // DEBUG: Let's see what students exist in the database
-        \Log::info('=== DEBUG: Quiz Access Query ===');
-        \Log::info('Total users with role=4: ' . User::where('role', 4)->count());
-        \Log::info('Total approved students: ' . User::where('role', 4)->where('is_approved', 1)->count());
-        \Log::info('Total verified students: ' . User::where('role', 4)->whereNotNull('email_verified_at')->count());
+        $studentQuery = User::where('role', 4)
+            ->where('is_approved', 1)
+            ->whereNotNull('email_verified_at')
+            ->with(['college', 'program']);
 
-        $studentQuery = User::where('role', 4);
+        if ($collegeId) {
+            $studentQuery->where('college_id', $collegeId);
+        }
         
-        // REMOVE these restrictions temporarily to see all students
-        // ->where('is_approved', 1)
-        // ->whereNotNull('email_verified_at')
+        if ($programId) {
+            $studentQuery->where('program_id', $programId);
+        }
         
-        // Add with counts to see relationships
-        $studentQuery->with(['college', 'program']);
-
-        if ($collegeId) $studentQuery->where('college_id', $collegeId);
-        if ($programId) $studentQuery->where('program_id', $programId);
-        if ($year)      $studentQuery->where('college_year', $year);
+        if ($year) {
+            $studentQuery->where('college_year', $year);
+        }
+        
         if ($searchName) {
             $studentQuery->where(function ($q) use ($searchName) {
                 $q->where('f_name', 'like', "%{$searchName}%")
-                ->orWhere('l_name', 'like', "%{$searchName}%")
-                ->orWhere('student_id', 'like', "%{$searchName}%")
-                ->orWhere('email', 'like', "%{$searchName}%");
+                  ->orWhere('l_name', 'like', "%{$searchName}%")
+                  ->orWhere('student_id', 'like', "%{$searchName}%")
+                  ->orWhere('email', 'like', "%{$searchName}%");
             });
         }
 
-        // Log the SQL query
-        \Log::info('SQL Query: ' . $studentQuery->toSql());
-        \Log::info('Bindings: ' . json_encode($studentQuery->getBindings()));
-
         $students = $studentQuery->orderBy('l_name')->paginate(20)->withQueryString();
-
-        \Log::info('Students found: ' . $students->total());
 
         // Attach access status to each student
         $accessMap = QuizStudentAccess::where('quiz_id', $id)
+            ->where('status', 'allowed')
             ->pluck('status', 'student_id');
 
         foreach ($students as $student) {
             $student->access_status = $accessMap[$student->id] ?? null;
-            
-            // Debug: Log student info
-            \Log::info('Student: ' . $student->id . ' - ' . $student->f_name . ' ' . $student->l_name . 
-                    ' - College: ' . ($student->college->college_name ?? 'None') . 
-                    ' - Approved: ' . ($student->is_approved ? 'Yes' : 'No') . 
-                    ' - Verified: ' . ($student->email_verified_at ? 'Yes' : 'No'));
         }
 
         $colleges = College::where('status', 1)->orderBy('college_name')->get();
-        $programs = $programId
+        $programs = $collegeId
             ? Program::where('college_id', $collegeId)->orderBy('program_name')->get()
             : collect();
         $years    = User::where('role', 4)->whereNotNull('college_year')
@@ -221,57 +217,9 @@ class TodoController extends Controller
 
     public function assignmentAccess(Request $request, string $encryptedId)
     {
-        $id         = Crypt::decrypt($encryptedId);
-        $assignment = Assignment::with('course')
-            ->withCount(['allowedStudents as allowed_count'])
-            ->withCount('submissions')
-            ->findOrFail($id);
-
-        $collegeId  = $request->get('college_id');
-        $programId  = $request->get('program_id');
-        $year       = $request->get('year');
-        $searchName = $request->get('search_name');
-
-        $studentQuery = User::where('role', 4)
-            ->where('is_approved', 1)
-            ->whereNotNull('email_verified_at')
-            ->with(['college', 'program']);
-
-        if ($collegeId)  $studentQuery->where('college_id', $collegeId);
-        if ($programId)  $studentQuery->where('program_id', $programId);
-        if ($year)       $studentQuery->where('college_year', $year);
-        if ($searchName) {
-            $studentQuery->where(function ($q) use ($searchName) {
-                $q->where('f_name', 'like', "%{$searchName}%")
-                  ->orWhere('l_name', 'like', "%{$searchName}%")
-                  ->orWhere('student_id', 'like', "%{$searchName}%");
-            });
-        }
-
-        $students = $studentQuery->orderBy('l_name')->paginate(20)->withQueryString();
-
-        $accessMap = AssignmentStudentAccess::where('assignment_id', $id)
-            ->pluck('status', 'student_id');
-
-        $submissionMap = AssignmentSubmission::where('assignment_id', $id)
-            ->pluck('status', 'student_id');
-
-        foreach ($students as $student) {
-            $student->access_status     = $accessMap[$student->id] ?? null;
-            $student->submission_status = $submissionMap[$student->id] ?? null;
-        }
-
-        $colleges = College::where('status', 1)->orderBy('college_name')->get();
-        $programs = $programId
-            ? Program::where('college_id', $collegeId)->orderBy('program_name')->get()
-            : collect();
-        $years    = User::where('role', 4)->whereNotNull('college_year')
-                        ->distinct()->pluck('college_year')->sort()->values();
-
-        return view('admin.todo.assignment-access', compact(
-            'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
-            'collegeId', 'programId', 'year', 'searchName'
-        ));
+        // Redirect to the unified assignment show page with a flag to open the modal
+        return redirect()->route('admin.todo.assignment.show', $encryptedId)
+            ->with('open_access_modal', true);
     }
 
     public function grantAssignmentAccess(Request $request, string $encryptedId)
@@ -362,9 +310,15 @@ class TodoController extends Controller
             $query = QuizAttempt::with(['user.college', 'user.program', 'quiz'])
                 ->whereHas('user', function ($q) use ($collegeId, $programId, $year, $searchName) {
                     $q->where('role', 4);
-                    if ($collegeId)  $q->where('college_id', $collegeId);
-                    if ($programId)  $q->where('program_id', $programId);
-                    if ($year)       $q->where('college_year', $year);
+                    if ($collegeId) {
+                        $q->where('college_id', $collegeId);
+                    }
+                    if ($programId) {
+                        $q->where('program_id', $programId);
+                    }
+                    if ($year) {
+                        $q->where('college_year', $year);
+                    }
                     if ($searchName) {
                         $q->where(function ($sq) use ($searchName) {
                             $sq->where('f_name', 'like', "%{$searchName}%")
@@ -373,7 +327,9 @@ class TodoController extends Controller
                     }
                 });
 
-            if ($itemId) $query->where('quiz_id', $itemId);
+            if ($itemId) {
+                $query->where('quiz_id', $itemId);
+            }
 
             $quizProgress = $query->latest('completed_at')->paginate(25)->withQueryString();
         }
@@ -382,9 +338,15 @@ class TodoController extends Controller
             $query = AssignmentSubmission::with(['student.college', 'student.program', 'assignment'])
                 ->whereHas('student', function ($q) use ($collegeId, $programId, $year, $searchName) {
                     $q->where('role', 4);
-                    if ($collegeId)  $q->where('college_id', $collegeId);
-                    if ($programId)  $q->where('program_id', $programId);
-                    if ($year)       $q->where('college_year', $year);
+                    if ($collegeId) {
+                        $q->where('college_id', $collegeId);
+                    }
+                    if ($programId) {
+                        $q->where('program_id', $programId);
+                    }
+                    if ($year) {
+                        $q->where('college_year', $year);
+                    }
                     if ($searchName) {
                         $q->where(function ($sq) use ($searchName) {
                             $sq->where('f_name', 'like', "%{$searchName}%")
@@ -393,7 +355,9 @@ class TodoController extends Controller
                     }
                 });
 
-            if ($itemId) $query->where('assignment_id', $itemId);
+            if ($itemId) {
+                $query->where('assignment_id', $itemId);
+            }
 
             $assignmentProgress = $query->latest('submitted_at')->paginate(25)->withQueryString();
         }
@@ -416,38 +380,6 @@ class TodoController extends Controller
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  VIEW single submission (assignment)
-    // ══════════════════════════════════════════════════════════════════
-
-    public function viewSubmission(int $submissionId)
-    {
-        $submission = AssignmentSubmission::with(['student', 'assignment', 'gradedBy'])
-            ->findOrFail($submissionId);
-
-        return view('admin.todo.submission-detail', compact('submission'));
-    }
-
-    public function gradeSubmission(Request $request, int $submissionId)
-    {
-        $submission = AssignmentSubmission::with('assignment')->findOrFail($submissionId);
-
-        $request->validate([
-            'score'    => 'required|integer|min:0|max:' . ($submission->assignment->points ?? 100),
-            'feedback' => 'nullable|string|max:2000',
-        ]);
-
-        $submission->update([
-            'score'      => $request->score,
-            'feedback'   => $request->feedback,
-            'status'     => 'graded',
-            'graded_by'  => auth()->id(),
-            'graded_at'  => now(),
-        ]);
-
-        return back()->with('success', 'Submission graded successfully.');
-    }
-
-    // ══════════════════════════════════════════════════════════════════
     //  AJAX helpers
     // ══════════════════════════════════════════════════════════════════
 
@@ -458,5 +390,329 @@ class TodoController extends Controller
             ->orderBy('program_name')
             ->get(['id', 'program_name']);
         return response()->json($programs);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  GRADE SUBMISSION
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Grade a submission
+     */
+    public function gradeSubmission(Request $request, int $submissionId)
+    {
+        try {
+            $submission = AssignmentSubmission::with('assignment')->findOrFail($submissionId);
+
+            $request->validate([
+                'score'    => 'required|integer|min:0|max:' . ($submission->assignment->points ?? 100),
+                'feedback' => 'nullable|string|max:2000',
+            ]);
+
+            $submission->update([
+                'score'      => $request->score,
+                'feedback'   => $request->feedback,
+                'status'     => 'graded',
+                'graded_by'  => auth()->id(),
+                'graded_at'  => now(),
+            ]);
+
+            // Redirect back to the assignment show page
+            return redirect()->route('admin.todo.assignment.show', Crypt::encrypt($submission->assignment_id))
+                ->with('success', 'Submission graded successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error grading submission: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Failed to grade submission: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle assignment publish status
+     */
+    public function toggleAssignmentPublish(Request $request, string $encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $assignment = Assignment::findOrFail($id);
+            
+            $assignment->update([
+                'is_published' => !$assignment->is_published
+            ]);
+            
+            $status = $assignment->is_published ? 'published' : 'unpublished';
+            
+            return redirect()->back()->with('success', "Assignment {$status} successfully.");
+            
+        } catch (\Exception $e) {
+            \Log::error('Error toggling assignment publish status: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Failed to update assignment status.');
+        }
+    }
+
+    /**
+     * Get assignment access modal content
+     */
+    public function assignmentAccessModal(Request $request, string $encryptedId)
+    {
+        $id         = Crypt::decrypt($encryptedId);
+        $assignment = Assignment::findOrFail($id);
+
+        $collegeId  = $request->get('college_id');
+        $programId  = $request->get('program_id');
+        $year       = $request->get('year');
+        $searchName = $request->get('search_name');
+
+        $studentQuery = User::where('role', 4)
+            ->where('is_approved', 1)
+            ->whereNotNull('email_verified_at')
+            ->with(['college', 'program']);
+
+        if ($collegeId) {
+            $studentQuery->where('college_id', $collegeId);
+        }
+        
+        if ($programId) {
+            $studentQuery->where('program_id', $programId);
+        }
+        
+        if ($year) {
+            $studentQuery->where('college_year', $year);
+        }
+        
+        if ($searchName) {
+            $studentQuery->where(function ($q) use ($searchName) {
+                $q->where('f_name', 'like', "%{$searchName}%")
+                ->orWhere('l_name', 'like', "%{$searchName}%")
+                ->orWhere('student_id', 'like', "%{$searchName}%")
+                ->orWhere('email', 'like', "%{$searchName}%");
+            });
+        }
+
+        $students = $studentQuery->orderBy('l_name')->paginate(10);
+
+        $accessMap = AssignmentStudentAccess::where('assignment_id', $id)
+            ->where('status', 'allowed')
+            ->pluck('status', 'student_id');
+
+        $submissionMap = AssignmentSubmission::where('assignment_id', $id)
+            ->pluck('status', 'student_id');
+
+        foreach ($students as $student) {
+            $student->access_status     = $accessMap[$student->id] ?? null;
+            $student->submission_status = $submissionMap[$student->id] ?? null;
+        }
+
+        $colleges = College::where('status', 1)->orderBy('college_name')->get();
+        $programs = $collegeId
+            ? Program::where('college_id', $collegeId)->orderBy('program_name')->get()
+            : collect();
+        $years    = User::where('role', 4)->whereNotNull('college_year')
+                        ->distinct()->pluck('college_year')->sort()->values();
+
+        if ($request->ajax()) {
+            return view('admin.todo.partials.assignment-access-modal', compact(
+                'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+                'collegeId', 'programId', 'year', 'searchName'
+            ))->render();
+        }
+
+        return view('admin.todo.partials.assignment-access-modal', compact(
+            'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+            'collegeId', 'programId', 'year', 'searchName'
+        ));
+    }
+
+    /**
+     * Show unified assignment details page with access modal
+     */
+    public function assignmentShow(string $encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $assignment = Assignment::with([
+                    'course', 
+                    'topic', 
+                    'submissions.student', 
+                    'submissions.gradedBy',
+                    'creator'
+                ])
+                ->withCount([
+                    'allowedStudents as allowed_students_count' => function($query) {
+                        $query->where('status', 'allowed');
+                    },
+                    'submissions as submissions_count'
+                ])
+                ->findOrFail($id);
+            
+            // Debug - Log the values
+            \Log::info('Assignment Show Debug:', [
+                'assignment_id' => $assignment->id,
+                'allowed_students_count' => $assignment->allowed_students_count,
+                'submissions_count' => $assignment->submissions_count,
+                'raw_allowed_count' => AssignmentStudentAccess::where('assignment_id', $id)
+                    ->where('status', 'allowed')
+                    ->count()
+            ]);
+            
+            return view('admin.todo.assignment-show', compact('assignment', 'encryptedId'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error showing assignment: ' . $e->getMessage());
+            
+            return redirect()->route('admin.todo.index', ['type' => 'assignment'])
+                ->with('error', 'Assignment not found.');
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  QUIZ SHOW — unified quiz details page with access modal
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Show unified quiz details page with access modal
+     */
+    public function quizShow(string $encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            $quiz = Quiz::with([
+                    'questions.options',
+                    'creator',
+                    'attempts.user'
+                ])
+                ->withCount([
+                    'studentAccess as allowed_students_count' => function($query) {
+                        $query->where('status', 'allowed');
+                    },
+                    'attempts as attempts_count'
+                ])
+                ->findOrFail($id);
+            
+            // Calculate total points
+            $totalPoints = $quiz->questions->sum('points');
+            
+            // Get recent attempts
+            $recentAttempts = $quiz->attempts()
+                ->with('user')
+                ->whereNotNull('completed_at')
+                ->latest()
+                ->take(10)
+                ->get();
+            
+            // Calculate stats
+            $avgScore = $quiz->attempts()
+                ->whereNotNull('percentage')
+                ->avg('percentage');
+            
+            $passCount = $quiz->attempts()
+                ->where('passed', true)
+                ->count();
+            
+            $failCount = $quiz->attempts()
+                ->where('passed', false)
+                ->whereNotNull('completed_at')
+                ->count();
+            
+            return view('admin.todo.quiz-show', compact(
+                'quiz', 
+                'encryptedId', 
+                'totalPoints',
+                'recentAttempts',
+                'avgScore',
+                'passCount',
+                'failCount'
+            ));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error showing quiz: ' . $e->getMessage());
+            
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
+                ->with('error', 'Quiz not found.');
+        }
+    }
+
+    /**
+     * Get quiz access modal content
+     */
+    public function quizAccessModal(Request $request, string $encryptedId)
+    {
+        $id         = Crypt::decrypt($encryptedId);
+        $quiz       = Quiz::findOrFail($id);
+
+        $collegeId  = $request->get('college_id');
+        $programId  = $request->get('program_id');
+        $year       = $request->get('year');
+        $searchName = $request->get('search_name');
+
+        $studentQuery = User::where('role', 4)
+            ->where('is_approved', 1)
+            ->whereNotNull('email_verified_at')
+            ->with(['college', 'program']);
+
+        if ($collegeId) {
+            $studentQuery->where('college_id', $collegeId);
+        }
+        
+        if ($programId) {
+            $studentQuery->where('program_id', $programId);
+        }
+        
+        if ($year) {
+            $studentQuery->where('college_year', $year);
+        }
+        
+        if ($searchName) {
+            $studentQuery->where(function ($q) use ($searchName) {
+                $q->where('f_name', 'like', "%{$searchName}%")
+                ->orWhere('l_name', 'like', "%{$searchName}%")
+                ->orWhere('student_id', 'like', "%{$searchName}%")
+                ->orWhere('email', 'like', "%{$searchName}%");
+            });
+        }
+
+        $students = $studentQuery->orderBy('l_name')->paginate(10);
+
+        $accessMap = QuizStudentAccess::where('quiz_id', $id)
+            ->where('status', 'allowed')
+            ->pluck('status', 'student_id');
+
+        $attemptMap = QuizAttempt::where('quiz_id', $id)
+            ->whereNotNull('completed_at')
+            ->get()
+            ->keyBy('user_id');
+
+        foreach ($students as $student) {
+            $student->access_status = $accessMap[$student->id] ?? null;
+            $attempt = $attemptMap[$student->id] ?? null;
+            $student->attempt_status = $attempt ? ($attempt->passed ? 'passed' : 'failed') : null;
+            $student->attempt_score = $attempt ? $attempt->percentage : null;
+            $student->attempt_date = $attempt ? $attempt->completed_at : null;
+        }
+
+        $colleges = College::where('status', 1)->orderBy('college_name')->get();
+        $programs = $collegeId
+            ? Program::where('college_id', $collegeId)->orderBy('program_name')->get()
+            : collect();
+        $years    = User::where('role', 4)->whereNotNull('college_year')
+                        ->distinct()->pluck('college_year')->sort()->values();
+
+        if ($request->ajax()) {
+            return view('admin.todo.partials.quiz-access-modal', compact(
+                'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+                'collegeId', 'programId', 'year', 'searchName'
+            ))->render();
+        }
+
+        return view('admin.todo.partials.quiz-access-modal', compact(
+            'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+            'collegeId', 'programId', 'year', 'searchName'
+        ));
     }
 }

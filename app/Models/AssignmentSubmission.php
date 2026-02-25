@@ -5,12 +5,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage; // Add this
 
 class AssignmentSubmission extends Model
 {
     use HasFactory;
 
-    // Explicitly define the table name
     protected $table = 'assignment_submissions';
 
     protected $fillable = [
@@ -30,6 +30,17 @@ class AssignmentSubmission extends Model
         'graded_at' => 'datetime',
         'submitted_at' => 'datetime',
     ];
+
+    protected static function booted()
+    {
+        static::deleting(function ($submission) {
+            // Delete attachment file when submission is deleted
+            if ($submission->attachment_path && 
+                Storage::disk('public')->exists($submission->attachment_path)) {
+                Storage::disk('public')->delete($submission->attachment_path);
+            }
+        });
+    }
 
     public function assignment()
     {
