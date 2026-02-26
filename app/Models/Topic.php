@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Topic extends Model
 {
@@ -59,7 +60,13 @@ class Topic extends Model
     // Scope for published topics
     public function scopePublished($query)
     {
-        return $query->where('is_published', 1);
+        return $query->where('is_published', true);
+    }
+    
+    // Scope for draft topics
+    public function scopeDraft($query)
+    {
+        return $query->where('is_published', false);
     }
     
     // Check if topic has video
@@ -72,6 +79,12 @@ class Topic extends Model
     public function hasAttachment()
     {
         return !empty($this->attachment);
+    }
+    
+    // Check if topic has PDF
+    public function hasPdf()
+    {
+        return !empty($this->pdf_file);
     }
     
     // Get formatted estimated time
@@ -93,5 +106,28 @@ class Topic extends Model
             ->first();
             
         return $pivot ? $pivot->order : 0;
+    }
+    
+    // Get PDF URL helper
+    public function getPdfUrlAttribute()
+    {
+        if (empty($this->pdf_file)) {
+            return null;
+        }
+        
+        // If it's already a full URL or old storage path
+        if (str_contains($this->pdf_file, '/storage/')) {
+            // Extract just the filename
+            $filename = basename($this->pdf_file);
+            return asset('pdf/' . $filename);
+        }
+        
+        // If it's just a filename (new format)
+        if (!str_contains($this->pdf_file, '/')) {
+            return asset('pdf/' . $this->pdf_file);
+        }
+        
+        // If it's some other path, return as is
+        return asset($this->pdf_file);
     }
 }

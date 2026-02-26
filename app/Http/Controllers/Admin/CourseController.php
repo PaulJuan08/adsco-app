@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\Topic;
+use App\Models\College;
+use App\Models\Program;
+use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -15,462 +18,530 @@ use App\Traits\CacheManager;
 class CourseController extends Controller
 {
     use CacheManager;
-    
+
+    // ============================================================
+    // INDEX
+    // ============================================================
+
     public function index()
     {
-        // OPTION 1: REMOVE CACHING COMPLETELY (RECOMMENDED FOR NOW)
-        // This will immediately solve your problem
-        
-        // Get courses with specific columns only
         $courses = Course::select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at'])
             ->withCount('students')
-            ->with(['teacher' => function($query) {
+            ->with(['teacher' => function ($query) {
                 $query->select(['id', 'f_name', 'l_name', 'employee_id']);
             }])
             ->latest()
             ->paginate(10);
-        
-        // Get all statistics in ONE optimized query
+
         $stats = Course::selectRaw('
             COUNT(*) as total_courses,
             SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
-            SUM(CASE WHEN teacher_id IS NOT NULL THEN 1 ELSE 0 END) as assigned_teachers,
+            COUNT(DISTINCT teacher_id) as assigned_teachers,
             SUM(CASE WHEN MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as courses_this_month
         ', [now()->month, now()->year])
         ->first();
-        
-        // Get average students per course
-        $avgStudents = Course::withCount('students')
-            ->get()
-            ->avg('students_count') ?? 0;
-        
-        // Get total students count
-        $totalStudents = User::where('role', 4)->count();
-        
-        // Get draft count
-        $draftCount = Course::where('is_published', false)->count();
-        
+
+        $avgStudents   = Course::withCount('students')->get()->avg('students_count') ?? 0;
+        $totalStudents = Enrollment::distinct('student_id')->count('student_id');
+        $draftCount    = Course::where('is_published', false)->count();
+
         return view('admin.courses.index', [
-            'courses' => $courses,
-            'activeCourses' => $stats->active_courses ?? 0,
+            'courses'          => $courses,
+            'activeCourses'    => $stats->active_courses    ?? 0,
             'assignedTeachers' => $stats->assigned_teachers ?? 0,
-            'totalStudents' => $totalStudents,
+            'totalStudents'    => $totalStudents,
             'coursesThisMonth' => $stats->courses_this_month ?? 0,
-            'avgStudents' => round($avgStudents, 1),
-            'draftCount' => $draftCount,
-            'totalCourses' => $stats->total_courses ?? 0
+            'avgStudents'      => round($avgStudents, 1),
+            'draftCount'       => $draftCount,
+            'totalCourses'     => $stats->total_courses ?? 0,
         ]);
     }
-    
+
+    // ============================================================
+    // CREATE / STORE
+    // ============================================================
+
     public function create()
     {
-        // Cache teachers for 10 minutes
-        $teachers = Cache::remember('all_teachers', 600, function() {
+        $teachers = Cache::remember('all_teachers', 600, function () {
             return User::where('role', 3)
                 ->select(['id', 'f_name', 'l_name', 'employee_id'])
                 ->orderBy('f_name')
                 ->get();
         });
-        
+
         return view('admin.courses.create', compact('teachers'));
     }
-    
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'course_code' => 'required|string|max:50|unique:courses',
-            'description' => 'nullable|string',
-            'teacher_id' => 'nullable|exists:users,id',
+            'title'        => 'required|string|max:255',
+            'course_code'  => 'required|string|max:50|unique:courses',
+            'description'  => 'nullable|string',
+            'teacher_id'   => 'nullable|exists:users,id',
             'is_published' => 'nullable|boolean',
-            'credits' => 'nullable|integer|min:1',
-            'status' => 'nullable|string|in:active,inactive',
+            'credits'      => 'nullable|integer|min:1',
+            'status'       => 'nullable|string|in:active,inactive',
+            'max_students' => 'nullable|integer|min:1',
+            'start_date'   => 'nullable|date',
+            'end_date'     => 'nullable|date|after_or_equal:start_date',
         ]);
-        
-        // Create the course
+
         $course = Course::create([
-            'title' => $validated['title'],
-            'course_code' => $validated['course_code'],
-            'description' => $validated['description'] ?? null,
-            'teacher_id' => $validated['teacher_id'] ?? null,
+            'title'        => $validated['title'],
+            'course_code'  => $validated['course_code'],
+            'description'  => $validated['description'] ?? null,
+            'teacher_id'   => $validated['teacher_id']  ?? null,
             'is_published' => $validated['is_published'] ?? false,
-            'credits' => $validated['credits'] ?? 3,
-            'status' => $validated['status'] ?? 'active',
+            'credits'      => $validated['credits']      ?? 3,
+            'status'       => $validated['status']       ?? 'active',
+            'max_students' => $validated['max_students'] ?? null,
+            'start_date'   => $validated['start_date']   ?? null,
+            'end_date'     => $validated['end_date']     ?? null,
+            'created_by'   => auth()->id(),
         ]);
-        
-        // Clear all course-related caches
+
         $this->clearAdminCourseCaches();
-        
-        // Also clear teacher caches if a teacher was assigned
+
         if ($course->teacher_id) {
             $this->clearTeacherCourseCaches($course->teacher_id);
         }
-        
-        // ADD DEBUG LOGGING
-        \Log::info('New course created - ID: ' . $course->id . ', Title: ' . $course->title);
-        \Log::info('Admin course caches cleared at: ' . now());
-        
+
+        Log::info('New course created — ID: ' . $course->id . ', Title: ' . $course->title);
+
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course created successfully!');
     }
-    
-    public function show($course)
+
+    // ============================================================
+    // SHOW
+    // ============================================================
+
+    public function show($encryptedId)
     {
         try {
-            // Decode first
-            $encryptedId = urldecode($course);
+            $encryptedId = urldecode($encryptedId);
+            $id          = Crypt::decrypt($encryptedId);
 
-            // Decrypt the decoded value
-            $id = Crypt::decrypt($encryptedId);
-
-            $cacheKey = 'course_show_' . $id;
-            $course = Cache::remember($cacheKey, 600, function () use ($id) {
+            $course = Cache::remember('course_show_' . $id, 600, function () use ($id) {
                 return Course::with([
-                        'teacher:id,f_name,l_name,employee_id,email',
-                        'students:id,f_name,l_name,email',
-                        'topics:id,title,content,is_published,order,created_at'
-                    ])
-                    ->withCount('students')
-                    ->findOrFail($id);
+                    'teacher:id,f_name,l_name,employee_id,email',
+                    'students:id,f_name,l_name,email,student_id',
+                    'topics:id,title,content,is_published,order,created_at,description',
+                    'creator:id,f_name,l_name',
+                ])
+                ->withCount('students')
+                ->withCount('topics')
+                ->findOrFail($id);
             });
+
+            $course->published_topics_count = $course->topics()->where('is_published', true)->count();
 
             return view('admin.courses.show', compact('course', 'encryptedId'));
 
         } catch (\Exception $e) {
-            Log::error('Error showing course', [
-                'encryptedId' => $course,
-                'error' => $e->getMessage()
-            ]);
-
-            return redirect()->route('admin.courses.index')
-                ->with('error', 'Course not found or invalid link.');
+            Log::error('Error showing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return redirect()->route('admin.courses.index')->with('error', 'Course not found or invalid link.');
         }
     }
-    
+
+    // ============================================================
+    // EDIT / UPDATE
+    // ============================================================
+
     public function edit($encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            
-            // Cache course for edit (5 minutes for fresh data)
-            $cacheKey = 'course_edit_' . $id;
-            $course = Cache::remember($cacheKey, 300, function() use ($id) {
+            $id          = Crypt::decrypt($encryptedId);
+
+            $course = Cache::remember('course_edit_' . $id, 300, function () use ($id) {
                 return Course::findOrFail($id);
             });
-            
-            // Cache teachers
-            $teachers = Cache::remember('all_teachers', 600, function() {
+
+            $teachers = Cache::remember('all_teachers', 600, function () {
                 return User::where('role', 3)
                     ->select(['id', 'f_name', 'l_name', 'employee_id'])
                     ->orderBy('f_name')
                     ->get();
             });
-            
+
             return view('admin.courses.edit', compact('course', 'teachers', 'encryptedId'));
-            
+
         } catch (\Exception $e) {
-            Log::error('Error editing course', [
-                'encryptedId' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('admin.courses.index')
-                ->with('error', 'Course not found or invalid link.');
+            Log::error('Error editing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return redirect()->route('admin.courses.index')->with('error', 'Course not found or invalid link.');
         }
     }
-    
+
     public function update(Request $request, $encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            $course = Course::findOrFail($id);
-            
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'course_code' => 'required|string|max:50|unique:courses,course_code,' . $course->id,
-                'description' => 'nullable|string',
-                'teacher_id' => 'nullable|exists:users,id',
+                'title'        => 'required|string|max:255',
+                'course_code'  => 'required|string|max:50|unique:courses,course_code,' . $course->id,
+                'description'  => 'nullable|string',
+                'teacher_id'   => 'nullable|exists:users,id',
                 'is_published' => 'nullable|boolean',
-                'credits' => 'nullable|integer|min:1',
-                'status' => 'nullable|string|in:active,inactive',
+                'credits'      => 'nullable|integer|min:1',
+                'status'       => 'nullable|string|in:active,inactive',
+                'max_students' => 'nullable|integer|min:1',
+                'start_date'   => 'nullable|date',
+                'end_date'     => 'nullable|date|after_or_equal:start_date',
             ]);
-            
+
             $course->update([
-                'title' => $validated['title'],
-                'course_code' => $validated['course_code'],
-                'description' => $validated['description'] ?? null,
-                'teacher_id' => $validated['teacher_id'] ?? null,
-                'is_published' => $validated['is_published'] ?? false,
-                'credits' => $validated['credits'] ?? $course->credits,
-                'status' => $validated['status'] ?? $course->status,
+                'title'        => $validated['title'],
+                'course_code'  => $validated['course_code'],
+                'description'  => $validated['description'] ?? null,
+                'teacher_id'   => $validated['teacher_id']  ?? null,
+                'is_published' => $validated['is_published'] ?? $course->is_published,
+                'credits'      => $validated['credits']      ?? $course->credits,
+                'status'       => $validated['status']       ?? $course->status,
+                'max_students' => $validated['max_students'] ?? $course->max_students,
+                'start_date'   => $validated['start_date']   ?? $course->start_date,
+                'end_date'     => $validated['end_date']     ?? $course->end_date,
             ]);
-            
-            // Clear all course-related caches
+
             $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
-            
-            // Clear student caches for this course
             $this->clearStudentCachesForCourse($id);
-            
+
             return redirect()->route('admin.courses.show', urlencode(Crypt::encrypt($course->id)))
                 ->with('success', 'Course updated successfully!');
-            
+
         } catch (\Exception $e) {
-            Log::error('Error updating course', [
-                'encryptedId' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('admin.courses.index')
-                ->with('error', 'Failed to update course.');
+            Log::error('Error updating course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return redirect()->route('admin.courses.index')->with('error', 'Failed to update course.');
         }
     }
-    
+
+    // ============================================================
+    // DESTROY
+    // ============================================================
+
     public function destroy($encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            $course = Course::findOrFail($id);
-            
-            // Check if course has students before deleting
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
             if ($course->students()->exists()) {
                 return redirect()->route('admin.courses.index')
                     ->with('error', 'Cannot delete course with enrolled students.');
             }
-            
+
             $course->delete();
-            
-            // Clear all course-related caches
+
             $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
-            
-            return redirect()->route('admin.courses.index')
-                ->with('success', 'Course deleted successfully!');
-                
+
+            return redirect()->route('admin.courses.index')->with('success', 'Course deleted successfully!');
+
         } catch (\Exception $e) {
-            Log::error('Error deleting course', [
-                'encryptedId' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('admin.courses.index')
-                ->with('error', 'Failed to delete course.');
+            Log::error('Error deleting course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return redirect()->route('admin.courses.index')->with('error', 'Failed to delete course.');
         }
     }
-    
-    // ============ OPTIMIZED TOPIC MANAGEMENT METHODS ============
-    
+
+    // ============================================================
+    // PUBLISH / UNPUBLISH
+    // ============================================================
+
+    public function publish($encryptedId)
+    {
+        try {
+            $encryptedId = urldecode($encryptedId);
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $course->update(['is_published' => !$course->is_published]);
+            $status = $course->is_published ? 'published' : 'unpublished';
+
+            $this->clearAdminCourseCaches();
+            Cache::forget('course_show_' . $id);
+
+            return redirect()->route('admin.courses.show', $encryptedId)
+                ->with('success', "Course {$status} successfully!");
+
+        } catch (\Exception $e) {
+            Log::error('Error publishing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return redirect()->route('admin.courses.index')
+                ->with('error', 'Failed to update course status. ' . $e->getMessage());
+        }
+    }
+
+    // ============================================================
+    // ACCESS MANAGEMENT
+    // ============================================================
+
+    public function accessModal($encryptedId)
+    {
+        try {
+            $encryptedId = urldecode($encryptedId);
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $students = User::where('role', 4)
+                ->with(['program', 'college'])
+                ->orderBy('f_name')
+                ->paginate(20);
+
+            $enrolledStudentIds = $course->students()->pluck('users.id')->toArray();
+
+            $colleges = College::where('status', 1)
+                ->orderBy('college_name')
+                ->get();
+
+            $encryptedCourseId = $encryptedId;
+
+            return view('admin.courses.partials.access-modal', compact(
+                'course', 'students', 'enrolledStudentIds', 'colleges', 'encryptedCourseId'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Error loading access modal', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to load access modal'], 500);
+        }
+    }
+
+    public function toggleEnrollment(Request $request, $encryptedId)
+    {
+        try {
+            $encryptedId = urldecode($encryptedId);
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $request->validate(['student_id' => 'required|exists:users,id']);
+
+            $studentId = $request->student_id;
+            $enrolled  = $this->isEnrolled($course, $studentId);
+
+            if ($enrolled) {
+                $course->enrollments()->where('student_id', $studentId)->delete();
+                $message  = 'Student removed from course.';
+                $enrolled = false;
+            } else {
+                if ($this->isCourseFull($course)) {
+                    return response()->json(['success' => false, 'message' => 'Course is already full.'], 400);
+                }
+                $course->enrollments()->create([
+                    'student_id'  => $studentId,
+                    'enrolled_at' => now(),
+                    'status'      => 'active',
+                ]);
+                $message  = 'Student enrolled successfully.';
+                $enrolled = true;
+            }
+
+            Cache::forget('course_show_' . $id);
+            $this->clearStudentCachesForCourse($id);
+
+            return response()->json(['success' => true, 'message' => $message, 'enrolled' => $enrolled]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation error: ' . $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error toggling enrollment', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update enrollment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // ============================================================
+    // TOPIC MANAGEMENT
+    // ============================================================
+
+    /**
+     * Return topics that are NOT yet attached to this course.
+     * Includes is_published so the modal status badge works.
+     * NOT cached — must always reflect the live state.
+     */
     public function availableTopics($encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            
-            // Cache available topics for 5 minutes
-            $cacheKey = 'available_topics_' . $id;
-            $availableTopics = Cache::remember($cacheKey, 300, function() use ($id) {
-                $course = Course::findOrFail($id);
-                
-                // Get all topics with specific columns
-                $allTopics = Topic::select(['id', 'title', 'content', 'created_at'])
-                    ->orderBy('title')
-                    ->get();
-                
-                // Get current topic IDs
-                $currentTopicIds = $course->topics->pluck('id')->toArray();
-                
-                // Filter out topics already in the course
-                return $allTopics->filter(function($topic) use ($currentTopicIds) {
-                    return !in_array($topic->id, $currentTopicIds);
-                })->values();
-            });
-            
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $currentTopicIds = $course->topics()->pluck('topics.id')->toArray();
+
+            $availableTopics = Topic::select(['id', 'title', 'content', 'description', 'is_published', 'created_at'])
+                ->whereNotIn('id', $currentTopicIds)
+                ->orderBy('title')
+                ->get();
+
             return response()->json($availableTopics);
-            
+
         } catch (\Exception $e) {
-            Log::error('Error in availableTopics', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'error' => 'Failed to load topics',
-                'message' => $e->getMessage()
-            ], 500);
+            Log::error('Error in availableTopics', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to load topics', 'message' => $e->getMessage()], 500);
         }
     }
-    
+
+    /**
+     * Attach a single topic to the course.
+     * Returns the topic with encrypted_id so the JS publish button
+     * works immediately — no page reload required.
+     */
     public function addTopic(Request $request, $encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            $course = Course::findOrFail($id);
-            
-            $request->validate([
-                'topic_id' => 'required|exists:topics,id'
-            ]);
-            
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $request->validate(['topic_id' => 'required|exists:topics,id']);
+
             $topicId = $request->input('topic_id');
-            
-            // Check if topic is already attached
+
             if ($course->topics()->where('topics.id', $topicId)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Topic is already added to this course'
-                ]);
+                return response()->json(['success' => false, 'message' => 'Topic is already added to this course']);
             }
-            
-            // Attach the topic
+
             $course->topics()->attach($topicId);
-            
-            // Get the added topic
-            $topic = Topic::find($topicId);
-            
-            // Clear relevant caches
-            Cache::forget('available_topics_' . $id);
+
+            $topic               = Topic::findOrFail($topicId);
+            $topic->encrypted_id = urlencode(Crypt::encrypt($topic->id));
+
             Cache::forget('course_show_' . $id);
-            
-            // 🔥 IMPORTANT: Clear student caches for this course
             $this->clearStudentCachesForCourse($id);
-            
-            return response()->json([
-                'success' => true,
-                'topic' => $topic
-            ]);
-            
+
+            return response()->json(['success' => true, 'topic' => $topic]);
+
         } catch (\Exception $e) {
-            Log::error('Error in addTopic', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add topic: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error in addTopic', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to add topic: ' . $e->getMessage()], 500);
         }
     }
 
+    /**
+     * Attach multiple topics to the course at once.
+     * Returns each topic with encrypted_id so publish buttons work immediately.
+     */
     public function addTopics(Request $request, $encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            $course = Course::findOrFail($id);
-            
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
             $request->validate([
-                'topic_ids' => 'required|array',
-                'topic_ids.*' => 'exists:topics,id'
+                'topic_ids'   => 'required|array',
+                'topic_ids.*' => 'exists:topics,id',
             ]);
-            
-            $topicIds = $request->input('topic_ids');
-            
-            // Filter out topics already attached
-            $existingTopicIds = $course->topics->pluck('id')->toArray();
-            $newTopicIds = array_diff($topicIds, $existingTopicIds);
-            
+
+            $topicIds         = $request->input('topic_ids');
+            $existingTopicIds = $course->topics()->pluck('topics.id')->toArray();
+            $newTopicIds      = array_values(array_diff($topicIds, $existingTopicIds));
+
             if (empty($newTopicIds)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'All selected topics are already added to this course'
+                    'message' => 'All selected topics are already added to this course',
                 ]);
             }
-            
-            // Attach the topics
+
             $course->topics()->attach($newTopicIds);
-            
-            // Get the added topics
-            $topics = Topic::whereIn('id', $newTopicIds)->get();
-            
-            // Clear relevant caches
-            Cache::forget('available_topics_' . $id);
+
+            $topics = Topic::whereIn('id', $newTopicIds)
+                ->get(['id', 'title', 'description', 'content', 'is_published'])
+                ->map(function ($topic) {
+                    $topic->encrypted_id = urlencode(Crypt::encrypt($topic->id));
+                    return $topic;
+                });
+
             Cache::forget('course_show_' . $id);
-            
-            // 🔥 IMPORTANT: Clear student caches for this course
             $this->clearStudentCachesForCourse($id);
-            
+
             return response()->json([
                 'success' => true,
-                'topics' => $topics,
-                'message' => count($newTopicIds) . ' topic(s) added successfully'
+                'topics'  => $topics,
+                'message' => count($newTopicIds) . ' topic(s) added successfully',
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Error in addTopics', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add topics: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error in addTopics', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to add topics: ' . $e->getMessage()], 500);
         }
     }
 
+    /**
+     * Detach a topic from the course.
+     */
     public function removeTopic(Request $request, $encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
-            $id = Crypt::decrypt($encryptedId);
-            $course = Course::findOrFail($id);
-            
-            $request->validate([
-                'topic_id' => 'required|exists:topics,id'
-            ]);
-            
+            $id          = Crypt::decrypt($encryptedId);
+            $course      = Course::findOrFail($id);
+
+            $request->validate(['topic_id' => 'required|exists:topics,id']);
+
             $topicId = $request->input('topic_id');
-            
-            // Check if topic is attached
+
             if (!$course->topics()->where('topics.id', $topicId)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Topic is not attached to this course'
-                ]);
+                return response()->json(['success' => false, 'message' => 'Topic is not attached to this course']);
             }
-            
-            // Detach the topic
+
             $course->topics()->detach($topicId);
-            
-            // Get the removed topic for response
-            $topic = Topic::find($topicId);
-            
-            // Clear relevant caches
-            Cache::forget('available_topics_' . $id);
+
+            $topic = Topic::find($topicId, ['id', 'title', 'description', 'content', 'is_published']);
+
             Cache::forget('course_show_' . $id);
-            
-            // 🔥 IMPORTANT: Clear student caches for this course
             $this->clearStudentCachesForCourse($id);
-            
-            return response()->json([
-                'success' => true,
-                'topic' => $topic,
-                'message' => 'Topic removed successfully'
-            ]);
-            
+
+            return response()->json(['success' => true, 'topic' => $topic, 'message' => 'Topic removed successfully']);
+
         } catch (\Exception $e) {
-            Log::error('Error in removeTopic', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to remove topic: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error in removeTopic', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to remove topic: ' . $e->getMessage()], 500);
         }
     }
-    
-    /**
-     * Manual cache clearing endpoint
-     */
+
+    // ============================================================
+    // CACHE HELPERS
+    // ============================================================
+
+    private function clearStudentCachesForCourse($courseId)
+    {
+        $course = Course::find($courseId);
+        if ($course) {
+            $studentIds = $course->students()->pluck('users.id')->toArray();
+            foreach ($studentIds as $studentId) {
+                Cache::forget('student_courses_'     . $studentId);
+                Cache::forget('student_enrollments_' . $studentId);
+                Cache::forget('student_progress_'    . $studentId . '_' . $courseId);
+            }
+        }
+        Cache::forget('course_students_'    . $courseId);
+        Cache::forget('course_enrollments_' . $courseId);
+        Cache::forget('available_topics_'   . $courseId);
+    }
+
+    private function isEnrolled($course, $studentId): bool
+    {
+        return $course->enrollments()->where('student_id', $studentId)->exists();
+    }
+
+    private function isCourseFull($course): bool
+    {
+        if (!$course->max_students) {
+            return false;
+        }
+        return $course->students()->count() >= $course->max_students;
+    }
+
     public function clearCache()
     {
         $this->clearAdminCourseCaches();
-        
-        return redirect()->route('admin.courses.index')
-            ->with('success', 'Course caches cleared successfully.');
+        return redirect()->route('admin.courses.index')->with('success', 'Course caches cleared successfully.');
     }
 }

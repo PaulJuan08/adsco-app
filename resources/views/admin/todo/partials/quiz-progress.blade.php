@@ -1,3 +1,7 @@
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/progress.css') }}">
+@endpush
+
 <div class="table-responsive">
     <table class="progress-table">
         <thead>
@@ -36,8 +40,8 @@
                         </div>
                     </td>
                     <td>
-                        <div style="font-weight: 600;">{{ $attempt->quiz->title ?? 'Unknown Quiz' }}</div>
-                        <div style="font-size: 0.75rem; color: #718096;">
+                        <div class="fw-600">{{ $attempt->quiz->title ?? 'Unknown Quiz' }}</div>
+                        <div class="text-muted small">
                             <i class="fas fa-question-circle"></i> {{ $attempt->total_questions ?? 0 }} Questions
                             @if($attempt->quiz)
                                 <br><i class="fas fa-trophy"></i> Pass: {{ $attempt->quiz->passing_score ?? 70 }}%
@@ -48,47 +52,47 @@
                         <span class="score-badge {{ $scoreClass }}">
                             {{ $percentage }}%
                         </span>
-                        <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
+                        <div class="text-muted extra-small mt-1">
                             {{ $attempt->score }}/{{ $attempt->total_points }} points
                         </div>
                     </td>
                     <td>
                         @if($passed)
-                            <span class="status-badge status-passed" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; background: #f0fff4; color: #22543d; border: 1px solid #9ae6b4; border-radius: 20px; font-weight: 600;">
-                                <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                            <span class="status-badge status-passed">
+                                <i class="fas fa-check-circle"></i>
                                 <span>PASSED</span>
                                 @if($percentage >= $passingScore + 20)
-                                    <span style="background: #48bb78; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.65rem; margin-left: 0.25rem;">EXCELLENT</span>
+                                    <span class="excellent-badge">EXCELLENT</span>
                                 @elseif($percentage >= $passingScore + 10)
-                                    <span style="background: #48bb78; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.65rem; margin-left: 0.25rem;">GOOD</span>
+                                    <span class="good-badge">GOOD</span>
                                 @endif
                             </span>
                         @else
-                            <span class="status-badge status-failed" style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; border-radius: 20px; font-weight: 600;">
-                                <i class="fas fa-times-circle" style="color: #f56565;"></i>
+                            <span class="status-badge status-failed">
+                                <i class="fas fa-times-circle"></i>
                                 <span>FAILED</span>
                                 @if($percentage < $passingScore - 20)
-                                    <span style="background: #f56565; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.65rem; margin-left: 0.25rem;">NEEDS IMPROVEMENT</span>
+                                    <span class="needs-improvement-badge">NEEDS IMPROVEMENT</span>
                                 @endif
                             </span>
                         @endif
-                        <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem; text-align: center;">
+                        <div class="text-muted extra-small text-center mt-1">
                             Passing: {{ $passingScore }}%
                         </div>
                     </td>
                     <td>
                         <div>{{ $attempt->completed_at ? $attempt->completed_at->format('M d, Y') : 'N/A' }}</div>
-                        <div style="font-size: 0.7rem; color: #718096;">
+                        <div class="text-muted extra-small">
                             {{ $attempt->completed_at ? $attempt->completed_at->diffForHumans() : '' }}
                         </div>
                         @if($attempt->time_taken)
-                            <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
+                            <div class="text-muted extra-small mt-1">
                                 <i class="fas fa-clock"></i> {{ gmdate('i:s', $attempt->time_taken) }} mins
                             </div>
                         @endif
                     </td>
                     <td>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <div class="action-group">
                             <a href="{{ route('admin.users.show', Crypt::encrypt($attempt->user->id)) }}" 
                                class="view-btn" 
                                title="View Student">
@@ -140,16 +144,16 @@
 @endif
 
 {{-- Answers Modal --}}
-<div id="answersModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 16px; max-width: 600px; width: 90%; max-height: 80vh; overflow: hidden;">
-        <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+<div id="answersModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>
                 <i class="fas fa-list-check"></i>
                 Detailed Answers
             </h3>
-            <button onclick="closeModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <button onclick="closeModal()" class="modal-close">&times;</button>
         </div>
-        <div id="answersContent" style="padding: 1.5rem; overflow-y: auto; max-height: calc(80vh - 80px);">
+        <div id="answersContent" class="modal-body">
             Loading...
         </div>
     </div>
@@ -158,14 +162,12 @@
 @push('scripts')
 <script>
     function showAnswers(attemptId) {
-        // You'll need to create a route to fetch attempt answers
-        // For now, we'll show a placeholder
         const modal = document.getElementById('answersModal');
         const content = document.getElementById('answersContent');
         
-        content.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #667eea;"></i><p style="margin-top: 1rem;">Loading answers...</p></div>';
+        content.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin spinner"></i><p class="mt-3">Loading answers...</p></div>';
         
-        modal.style.display = 'flex';
+        modal.classList.add('show');
         
         // Fetch answers via AJAX
         fetch(`/admin/todo/quiz-attempt/${attemptId}/answers`)
@@ -173,11 +175,12 @@
             .then(data => {
                 let html = '';
                 data.answers.forEach((answer, index) => {
+                    const resultClass = answer.is_correct ? 'correct' : 'incorrect';
                     html += `
-                        <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
-                            <div style="font-weight: 600; margin-bottom: 0.5rem;">Question ${index + 1}:</div>
-                            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem;">${answer.question}</div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem; ${answer.is_correct ? 'color: #48bb78;' : 'color: #f56565;'}">
+                        <div class="answer-item">
+                            <div class="answer-question">Question ${index + 1}:</div>
+                            <div class="answer-box">${answer.question}</div>
+                            <div class="answer-result ${resultClass}">
                                 <i class="fas ${answer.is_correct ? 'fa-check-circle' : 'fa-times-circle'}"></i>
                                 <span>Your answer was ${answer.is_correct ? 'correct' : 'incorrect'}</span>
                             </div>
@@ -187,19 +190,19 @@
                 content.innerHTML = html;
             })
             .catch(error => {
-                content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #f56565;"><i class="fas fa-exclamation-circle" style="font-size: 2rem;"></i><p style="margin-top: 1rem;">Error loading answers</p></div>';
+                content.innerHTML = '<div class="text-center p-4 text-danger"><i class="fas fa-exclamation-circle fa-3x"></i><p class="mt-3">Error loading answers</p></div>';
             });
     }
 
     function closeModal() {
-        document.getElementById('answersModal').style.display = 'none';
+        document.getElementById('answersModal').classList.remove('show');
     }
 
     // Close modal when clicking outside
     window.onclick = function(event) {
         const modal = document.getElementById('answersModal');
         if (event.target === modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('show');
         }
     }
 </script>

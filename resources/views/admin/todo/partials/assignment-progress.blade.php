@@ -30,8 +30,8 @@
                         </div>
                     </td>
                     <td>
-                        <div style="font-weight: 600;">{{ $submission->assignment->title ?? 'Unknown Assignment' }}</div>
-                        <div style="font-size: 0.75rem; color: #718096;">
+                        <div class="fw-600">{{ $submission->assignment->title ?? 'Unknown Assignment' }}</div>
+                        <div class="text-muted small">
                             <i class="fas fa-star"></i> {{ $submission->assignment->points ?? 0 }} points
                             @if($submission->assignment->due_date)
                                 · <i class="fas fa-calendar-alt"></i> Due {{ $submission->assignment->due_date->format('M d, Y') }}
@@ -49,7 +49,7 @@
                             <span class="score-badge {{ $scoreClass }}">
                                 {{ $percentage }}%
                             </span>
-                            <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
+                            <div class="text-muted extra-small mt-1">
                                 {{ $submission->score }}/{{ $submission->assignment->points }} points
                             </div>
                         @else
@@ -80,29 +80,30 @@
                     </td>
                     <td>
                         <div>{{ $submission->submitted_at ? $submission->submitted_at->format('M d, Y') : 'N/A' }}</div>
-                        <div style="font-size: 0.7rem; color: #718096;">
+                        <div class="text-muted extra-small">
                             {{ $submission->submitted_at ? $submission->submitted_at->diffForHumans() : '' }}
                         </div>
                     </td>
                     <td>
-                        <a href="{{ route('admin.users.show', Crypt::encrypt($submission->student->id)) }}" 
-                           class="view-btn" 
-                           title="View Student">
-                            <i class="fas fa-user"></i>
-                        </a>
-                        <a href="{{ route('admin.todo.submission.view', $submission->id) }}" 
-                           class="view-btn" 
-                           title="View Submission">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        @if($submission->status !== 'graded')
-                            <a href="{{ route('admin.todo.submission.view', $submission->id) }}#grade" 
+                        <div class="action-group">
+                            <a href="{{ route('admin.users.show', Crypt::encrypt($submission->student->id)) }}" 
                                class="view-btn" 
-                               style="background: #48bb78; color: white; border-color: #48bb78;"
-                               title="Grade">
-                                <i class="fas fa-star"></i>
+                               title="View Student">
+                                <i class="fas fa-user"></i>
                             </a>
-                        @endif
+                            <a href="{{ route('admin.todo.submission.grade', $submission->id) }}" 
+                               class="view-btn" 
+                               title="View/Grade Submission">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            @if($submission->status !== 'graded')
+                                <a href="{{ route('admin.todo.submission.grade', $submission->id) }}#grade" 
+                                   class="view-btn grade-btn" 
+                                   title="Grade">
+                                    <i class="fas fa-star"></i>
+                                </a>
+                            @endif
+                        </div>
                     </td>
                 </tr>
             @empty

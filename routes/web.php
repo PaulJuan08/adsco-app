@@ -112,13 +112,24 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
 
         // ============ COURSE MANAGEMENT ============
         Route::resource('courses', AdminCourseController::class)->parameters(['courses' => 'encryptedId']);
-        Route::get('/courses/{encryptedId}/available-topics', [AdminCourseController::class, 'availableTopics'])->name('courses.availableTopics');
-        Route::post('/courses/{encryptedId}/add-topic', [AdminCourseController::class, 'addTopic'])->name('courses.addTopic');
-        Route::post('/courses/{encryptedId}/add-topics', [AdminCourseController::class, 'addTopics'])->name('courses.addTopics');
-        Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])->name('courses.removeTopic');
+        
+        // Publish/Unpublish
+        Route::patch('/courses/{encryptedId}/publish', [AdminCourseController::class, 'publish'])->name('courses.publish');
+        
+        // Access management (individual toggle only - NO BULK)
+        Route::get('/courses/{encryptedId}/access-modal', [AdminCourseController::class, 'accessModal'])->name('courses.access.modal');
+        Route::post('/courses/{encryptedId}/toggle-enrollment', [AdminCourseController::class, 'toggleEnrollment'])->name('courses.toggle-enrollment');
+        
+        // Topic management
+        Route::get('/courses/{encryptedId}/available-topics', [AdminCourseController::class, 'availableTopics'])->name('courses.available-topics');
+        Route::post('/courses/{encryptedId}/add-topic', [AdminCourseController::class, 'addTopic'])->name('courses.add-topic');
+        Route::post('/courses/{encryptedId}/add-topics', [AdminCourseController::class, 'addTopics'])->name('courses.add-topics');
+        Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])->name('courses.remove-topic');
 
         // ============ TOPIC MANAGEMENT ============
         Route::resource('topics', AdminTopicController::class)->parameters(['topics' => 'encryptedId']);
+        // Topic publish/unpublish
+        Route::patch('/topics/{encryptedId}/publish', [AdminTopicController::class, 'publish'])->name('topics.publish');
 
         // ============ ASSIGNMENT MANAGEMENT ============
         // REMOVED INDEX - redirect to todo

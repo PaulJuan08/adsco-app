@@ -223,9 +223,17 @@
                             <span class="info-label"><i class="fas fa-check-circle"></i> Status</span>
                             <span class="info-value">
                                 @if($topic->is_published)
-                                    <span style="color:#48bb78;font-weight:700;">Published</span>
+                                    <button type="button" 
+                                            class="top-action-btn unpublish-btn"
+                                            onclick="confirmUnpublish('{{ Crypt::encrypt($topic->id) }}')">
+                                        <i class="fas fa-eye-slash"></i> Unpublish
+                                    </button>
                                 @else
-                                    <span style="color:#ed8936;font-weight:700;">Draft</span>
+                                    <button type="button" 
+                                            class="top-action-btn publish-btn"
+                                            onclick="confirmPublish('{{ Crypt::encrypt($topic->id) }}')">
+                                        <i class="fas fa-eye"></i> Publish
+                                    </button>
                                 @endif
                             </span>
                         </div>
@@ -661,6 +669,74 @@ function _extractDriveId(url) {
     const m2 = url.match(/[?&]id=([^&]+)/);
     if (m2) return m2[1];
     return null;
+}
+
+// ============ PUBLISH/UNPUBLISH FUNCTIONS ============
+
+function confirmPublish(encryptedId) {
+    Swal.fire({
+        title: 'Publish Topic?',
+        text: 'Once published, this topic will be visible to students in all assigned courses.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#48bb78',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Publish',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/topics/${encryptedId}/publish`;
+            form.style.display = 'none';
+            
+            const csrf = document.createElement('input');
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            
+            const method = document.createElement('input');
+            method.name = '_method';
+            method.value = 'PATCH';
+            
+            form.appendChild(csrf);
+            form.appendChild(method);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+function confirmUnpublish(encryptedId) {
+    Swal.fire({
+        title: 'Unpublish Topic?',
+        text: 'This topic will be hidden from students until you publish it again.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f56565',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Unpublish',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/topics/${encryptedId}/publish`;
+            form.style.display = 'none';
+            
+            const csrf = document.createElement('input');
+            csrf.name = '_token';
+            csrf.value = '{{ csrf_token() }}';
+            
+            const method = document.createElement('input');
+            method.name = '_method';
+            method.value = 'PATCH';
+            
+            form.appendChild(csrf);
+            form.appendChild(method);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
 }
 </script>
 @endpush

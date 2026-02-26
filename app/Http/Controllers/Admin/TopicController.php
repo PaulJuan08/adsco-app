@@ -365,4 +365,47 @@ class TopicController extends Controller
         
         return 'File';
     }
+
+    /**
+     * Publish or unpublish a topic
+     * 
+     * @param string $encryptedId
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function publish($encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $topic = Topic::findOrFail($id);
+            
+            // Toggle publish status
+            $topic->update([
+                'is_published' => !$topic->is_published
+            ]);
+            
+            $status = $topic->is_published ? 'published' : 'unpublished';
+            
+            // Clear caches
+            $this->clearAdminTopicCaches();
+            Cache::forget('admin_topic_show_' . $id);
+            
+            // Clear course caches for all courses this topic belongs to
+            foreach ($topic->courses as $course) {
+                Cache::forget('course_show_' . $course->id);
+                $this->clearStudentCachesForCourse($course->id);
+            }
+            
+            return redirect()->route('admin.topics.show', $encryptedId)
+                ->with('success', "Topic {$status} successfully!");
+                
+        } catch (\Exception $e) {
+            Log::error('Error publishing topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Failed to update topic status. ' . $e->getMessage());
+        }
+    }
 }
