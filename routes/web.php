@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Auth\VerificationController;
+use App\Http\Controllers\PDFController;
 
 // ==================== ADMIN CONTROLLERS ====================
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -390,6 +391,12 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// PDF viewing routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/pdf/view/{filename}', [PDFController::class, 'view'])->name('pdf.view');
+    Route::get('/pdf/download/{filename}', [PDFController::class, 'download'])->name('pdf.download');
 });
 
 // ==================== TEST ROUTE (REMOVE IN PRODUCTION) ====================

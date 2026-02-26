@@ -20,7 +20,7 @@
                     <i class="fas fa-edit"></i> Edit
                 </a>
                 <form action="{{ route('admin.topics.destroy', Crypt::encrypt($topic->id)) }}"
-                      method="POST" id="deleteForm" style="display:inline;">
+                      method="POST" id="deleteForm" class="inline-form">
                     @csrf @method('DELETE')
                     <button type="submit" class="top-action-btn delete-btn" id="deleteButton">
                         <i class="fas fa-trash-alt"></i> Delete
@@ -88,7 +88,7 @@
                         {{-- ════ PDF FILE ════ --}}
                         @if($topic->pdf_file)
                         @php
-                            $pdfUrl      = App\Http\Controllers\Admin\TopicController::getPdfUrl($topic->pdf_file);
+                            $pdfUrl = App\Http\Controllers\Admin\TopicController::getPdfUrl($topic->pdf_file);
                             $pdfFilename = $topic->pdf_file;
                         @endphp
                         <div class="resource-card">
@@ -109,16 +109,22 @@
                                             class="resource-action-btn primary">
                                         <i class="fas fa-eye"></i> View PDF
                                     </button>
-                                    <a href="{{ $pdfUrl }}" download
-                                       class="resource-action-btn secondary">
-                                        <i class="fas fa-download"></i> Download
-                                    </a>
                                 </div>
                             </div>
                             <div class="resource-content">
                                 <div class="resource-description">
-                                    Stored via <code>pdf_disk</code> &rarr;
-                                    <code>public/pdf/{{ $pdfFilename }}</code>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        <span>File stored in: <code>public/pdf/{{ $pdfFilename }}</code></span>
+                                        @if(file_exists(public_path('pdf/' . $pdfFilename)))
+                                            <span class="pdf-disk-badge" style="background: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem;">
+                                                <i class="fas fa-check-circle"></i> File exists
+                                            </span>
+                                        @else
+                                            <span class="pdf-disk-badge" style="background: #ef4444; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem;">
+                                                <i class="fas fa-exclamation-triangle"></i> File missing
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -161,16 +167,11 @@
                                             class="resource-action-btn primary">
                                         <i class="fas fa-play"></i> Play Video
                                     </button>
-                                    <a href="{{ $vUrl }}" target="_blank"
-                                       class="resource-action-btn secondary">
-                                        <i class="fas fa-external-link-alt"></i> Open Link
-                                    </a>
                                 </div>
                             </div>
                             <div class="resource-content">
                                 <div class="resource-description">
-                                    <div style="color:#4a5568;margin-bottom:.4rem;">Video URL:</div>
-                                    <div class="url-box">{{ $vUrl }}</div>
+                                    Click "Play Video" to watch in modal
                                 </div>
                             </div>
                         </div>
@@ -183,7 +184,7 @@
                     @if(!$topic->is_published)
                     <div class="publish-section">
                         <form action="{{ route('admin.topics.publish', Crypt::encrypt($topic->id)) }}"
-                              method="POST" id="publishForm" style="display:inline-block;">
+                              method="POST" id="publishForm" class="inline-form">
                             @csrf
                             <button type="submit" class="publish-btn" id="publishButton">
                                 <i class="fas fa-upload"></i> Publish Topic
@@ -207,14 +208,14 @@
                         </div>
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-calendar-alt"></i> Created</span>
-                            <div style="text-align:right;">
+                            <div class="info-value-wrapper">
                                 <span class="info-value">{{ $topic->created_at->format('M d, Y') }}</span>
                                 <div class="info-subvalue">{{ $topic->created_at->diffForHumans() }}</div>
                             </div>
                         </div>
                         <div class="info-row">
                             <span class="info-label"><i class="fas fa-clock"></i> Last Updated</span>
-                            <div style="text-align:right;">
+                            <div class="info-value-wrapper">
                                 <span class="info-value">{{ $topic->updated_at->format('M d, Y') }}</span>
                                 <div class="info-subvalue">{{ $topic->updated_at->diffForHumans() }}</div>
                             </div>
@@ -257,16 +258,15 @@
                             <i class="fas fa-book"></i> Assigned Courses
                         </div>
                         @if($topic->courses && $topic->courses->count() > 0)
-                            <div style="margin-bottom:.75rem;">
+                            <div class="info-row">
                                 <span class="info-label">
                                     <i class="fas fa-layer-group"></i> Total Courses
                                 </span>
-                                <span class="info-value"
-                                      style="display:block;margin-top:.25rem;font-size:1.25rem;">
+                                <span class="course-count">
                                     {{ $topic->courses->count() }}
                                 </span>
                             </div>
-                            <div style="margin-top:.5rem;">
+                            <div class="assigned-courses">
                                 @foreach($topic->courses as $course)
                                     <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}"
                                        class="course-tag">
@@ -275,17 +275,13 @@
                                 @endforeach
                             </div>
                         @else
-                            <div class="empty-state" style="padding:1.5rem .5rem;">
-                                <i class="fas fa-book-open" style="font-size:2rem;"></i>
-                                <h3 style="margin-top:.5rem;">No Courses Assigned</h3>
-                                <p style="font-size:.75rem;">This topic is not used in any courses yet.</p>
+                            <div class="empty-state">
+                                <i class="fas fa-book-open"></i>
+                                <h3>No Courses Assigned</h3>
+                                <p>This topic is not used in any courses yet.</p>
                                 <a href="{{ route('admin.topics.edit', Crypt::encrypt($topic->id)) }}"
-                                   style="display:inline-block;margin-top:.75rem;padding:.5rem 1rem;
-                                          background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-                                          color:white;border-radius:8px;text-decoration:none;
-                                          font-size:.75rem;font-weight:600;">
-                                    <i class="fas fa-plus" style="margin-right:.375rem;"></i>
-                                    Assign to Course
+                                   class="btn">
+                                    <i class="fas fa-plus"></i> Assign to Course
                                 </a>
                             </div>
                         @endif
@@ -298,105 +294,129 @@
 
 
     {{-- ══════════════════════════════════════════════════════════════
-         MODALS  —  PDF + VIDEO only
+         MODALS  —  PDF + VIDEO only with fullscreen toggle
     ══════════════════════════════════════════════════════════════════ --}}
 
-    {{-- PDF Modal --}}
+    {{-- PDF Modal with fullscreen toggle --}}
     <div class="modal-overlay" id="pdfModal">
-        <div class="modal-box modal-box--pdf">
+        <div class="modal-box modal-box--pdf" id="pdfModalBox">
             <div class="modal-header modal-header--pdf">
                 <span class="modal-header__title">
-                    <i class="fas fa-file-pdf"></i> PDF Preview
+                    <i class="fas fa-file-pdf"></i>
+                    <span>PDF Viewer</span>
                 </span>
-                <button class="modal-close" onclick="closePdfModal()" aria-label="Close">&times;</button>
+                <div class="modal-header-actions">
+                    <button class="modal-fullscreen" onclick="togglePdfFullscreen()" title="Toggle fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="modal-close" onclick="closePdfModal()" title="Close">&times;</button>
+                </div>
             </div>
-            <div class="modal-body modal-body--iframe">
+            <div class="modal-body" style="padding: 0; overflow: hidden; background: #525659;">
                 <div class="modal-loading" id="pdfLoading">
                     <div class="spinner"></div>
-                    <p>Loading PDF…</p>
+                    <p>Loading PDF...</p>
                 </div>
-                <iframe id="pdfIframe" class="modal-iframe" src=""></iframe>
-            </div>
-            <div class="modal-footer modal-footer--dark" id="pdfFooter"></div>
-        </div>
-    </div>
-
-    {{-- Unified Video Modal (YouTube / Vimeo iframe + native <video>) --}}
-    <div class="modal-overlay" id="videoModal">
-        <div class="modal-box modal-box--video">
-            <div class="modal-header modal-header--video">
-                <span class="modal-header__title" id="videoModalTitle">
-                    <i class="fas fa-play-circle"></i> Video Player
-                </span>
-                <button class="modal-close" onclick="closeVideoModal()" aria-label="Close">&times;</button>
-            </div>
-
-            {{-- Panel A: iframe embed (YouTube, Vimeo) --}}
-            <div id="videoIframeWrap" class="modal-body modal-body--video" style="display:none;">
-                <div class="video-ratio-box">
-                    <iframe id="videoIframe"
-                            class="video-ratio-iframe"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media;
-                                   gyroscope; picture-in-picture"
-                            allowfullscreen src=""></iframe>
-                    <div class="modal-loading video-dark-loading" id="videoIframeLoading">
-                        <div class="spinner spinner--light"></div>
-                        <p>Loading video…</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Panel B: native <video> (direct mp4/webm/etc.) --}}
-            <div id="videoNativeWrap" class="modal-body modal-body--video" style="display:none;">
-                <div class="native-video-wrap">
-                    <div class="modal-loading video-dark-loading" id="videoNativeLoading">
-                        <div class="spinner spinner--light"></div>
-                        <p>Loading video…</p>
-                    </div>
-                    <video id="nativeVideoPlayer"
-                           controls preload="metadata"
-                           class="native-video-player"
-                           style="display:none;">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div id="videoNativeError" class="video-error-state" style="display:none;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>Could not load this video file.</p>
-                        <p class="video-error-hint">
-                            The format may not be supported by your browser,
-                            or the file is still processing.
-                        </p>
-                        <a id="videoNativeDownload" href="#" download
-                           class="resource-action-btn primary"
-                           style="margin-top:1rem;font-size:.875rem;">
-                            <i class="fas fa-download"></i> Download to Play
+                <div id="pdfContainer" style="width: 100%; height: 100%;">
+                    <embed id="pdfEmbed" 
+                        type="application/pdf"
+                        style="width: 100%; height: 100%; display: none;"
+                        src="">
+                    <iframe id="pdfIframe" 
+                            style="width: 100%; height: 100%; border: none; background: white; display: none;"
+                            src=""></iframe>
+                    <div id="pdfFallback" style="display: none; text-align: center; padding: 3rem; background: white; height: 100%;">
+                        <i class="fas fa-file-pdf" style="font-size: 4rem; color: #dc2626; margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 1rem;">PDF Cannot Be Displayed</h3>
+                        <p style="margin-bottom: 1.5rem; color: #6b7280;">Your browser cannot display this PDF directly.</p>
+                        <a href="#" id="downloadLink" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-download"></i> Download PDF
                         </a>
                     </div>
                 </div>
             </div>
-
-            <div class="modal-footer modal-footer--dark" id="videoFooter"></div>
+            <div class="modal-footer" id="pdfFooter"></div>
         </div>
     </div>
 
-    {{-- Google Drive Modal --}}
+    {{-- Video Modal - NO fullscreen toggle --}}
+    <div class="modal-overlay" id="videoModal">
+        <div class="modal-box modal-box--video" id="videoModalBox">
+            <div class="modal-header modal-header--video">
+                <span class="modal-header__title" id="videoModalTitle">
+                    <i class="fas fa-play-circle"></i>
+                    <span>Video Player</span>
+                </span>
+                <div class="modal-header-actions">
+                    <button class="modal-close" onclick="closeVideoModal()" title="Close">&times;</button>
+                </div>
+            </div>
+
+            {{-- Iframe embed (YouTube, Vimeo) --}}
+            <div id="videoIframeWrap" class="modal-body modal-body--video" style="display: none;">
+                <div class="modal-loading video-dark-loading" id="videoIframeLoading">
+                    <div class="spinner"></div>
+                    <p>Loading video player...</p>
+                </div>
+                <iframe id="videoIframe"
+                        class="video-ratio-iframe"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        allowfullscreen
+                        src=""></iframe>
+            </div>
+
+            {{-- Native video player --}}
+            <div id="videoNativeWrap" class="modal-body modal-body--video" style="display: none;">
+                <div class="modal-loading video-dark-loading" id="videoNativeLoading">
+                    <div class="spinner"></div>
+                    <p>Loading video...</p>
+                </div>
+                <div class="native-video-wrap">
+                    <video id="nativeVideoPlayer"
+                        controls
+                        controlslist="nodownload"
+                        preload="metadata"
+                        class="native-video-player">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div id="videoNativeError" class="video-error-state" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Could not load this video file.</p>
+                        <p class="video-error-hint">
+                            The format may not be supported by your browser.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" id="videoFooter"></div>
+        </div>
+    </div>
+
+    {{-- Google Drive Modal - NO fullscreen toggle --}}
     <div class="modal-overlay" id="driveModal">
-        <div class="modal-box modal-box--drive">
+        <div class="modal-box modal-box--drive" id="driveModalBox">
             <div class="modal-header modal-header--video">
                 <span class="modal-header__title">
-                    <i class="fab fa-google-drive"></i> Google Drive Viewer
+                    <i class="fab fa-google-drive"></i>
+                    <span>Google Drive Viewer</span>
                 </span>
-                <button class="modal-close" onclick="closeDriveModal()" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body modal-body--iframe modal-body--dark">
-                <div class="modal-loading video-dark-loading" id="driveLoading">
-                    <div class="spinner spinner--light"></div>
-                    <p>Loading file…</p>
+                <div class="modal-header-actions">
+                    <button class="modal-close" onclick="closeDriveModal()" title="Close">&times;</button>
                 </div>
-                <iframe id="driveIframe" class="modal-iframe"
-                        src="" allow="autoplay" allowfullscreen></iframe>
             </div>
-            <div class="modal-footer modal-footer--dark" id="driveFooter"></div>
+            <div class="modal-body modal-body--dark">
+                <div class="modal-loading video-dark-loading" id="driveLoading">
+                    <div class="spinner"></div>
+                    <p>Loading file from Google Drive...</p>
+                </div>
+                <iframe id="driveIframe" 
+                        class="modal-iframe"
+                        src=""
+                        allow="autoplay; fullscreen"
+                        allowfullscreen></iframe>
+            </div>
+            <div class="modal-footer" id="driveFooter"></div>
         </div>
     </div>
 
@@ -471,14 +491,17 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ════════════════════════════════════════════════════════════════
-// TOAST
+// TOAST NOTIFICATION
 // ════════════════════════════════════════════════════════════════
 function showNotification(message, type = 'info') {
     Swal.fire({
-        toast: true, position: 'top-end',
+        toast: true,
+        position: 'top-end',
         showConfirmButton: false,
-        timer: 4000, timerProgressBar: true,
-        icon: type, title: message,
+        timer: 4000,
+        timerProgressBar: true,
+        icon: type,
+        title: message,
         didOpen: toast => {
             toast.addEventListener('mouseenter', Swal.stopTimer);
             toast.addEventListener('mouseleave', Swal.resumeTimer);
@@ -489,25 +512,18 @@ function showNotification(message, type = 'info') {
 // ════════════════════════════════════════════════════════════════
 // MODAL HELPERS
 // ════════════════════════════════════════════════════════════════
-function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function openModal(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
 
-function closeAllModals() {
-    ['pdfModal', 'videoModal', 'driveModal'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-    const pdfIframe = document.getElementById('pdfIframe');
-    if (pdfIframe) pdfIframe.src = '';
-
-    const videoIframe = document.getElementById('videoIframe');
-    if (videoIframe) { videoIframe.src = ''; videoIframe.style.opacity = '0'; }
-
-    const driveIframe = document.getElementById('driveIframe');
-    if (driveIframe) { driveIframe.src = ''; driveIframe.style.opacity = '0'; }
-
-    const vid = document.getElementById('nativeVideoPlayer');
-    if (vid) { vid.pause(); vid.src = ''; vid.style.display = 'none'; }
+function closeModal(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 function setupModalDismiss() {
@@ -516,46 +532,290 @@ function setupModalDismiss() {
             if (e.target === this) closeAllModals();
         });
     });
+    
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeAllModals();
     });
 }
 
+function closeAllModals() {
+    // Close all modals
+    const modalIds = ['pdfModal', 'videoModal', 'driveModal'];
+    
+    modalIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.display = 'none';
+        }
+    });
+
+    // Reset PDF elements
+    resetPdfElements();
+    
+    // Reset video elements
+    resetVideoElements();
+}
+
+function resetPdfElements() {
+    const pdfEmbed = document.getElementById('pdfEmbed');
+    const pdfIframe = document.getElementById('pdfIframe');
+    const pdfFallback = document.getElementById('pdfFallback');
+    const pdfLoading = document.getElementById('pdfLoading');
+    const modalBox = document.getElementById('pdfModalBox');
+    
+    if (pdfEmbed) {
+        pdfEmbed.src = '';
+        pdfEmbed.style.display = 'none';
+    }
+    if (pdfIframe) {
+        pdfIframe.src = '';
+        pdfIframe.style.display = 'none';
+    }
+    if (pdfFallback) {
+        pdfFallback.style.display = 'none';
+    }
+    if (pdfLoading) {
+        pdfLoading.style.display = 'flex';
+    }
+    if (modalBox && modalBox.classList.contains('fullscreen')) {
+        modalBox.classList.remove('fullscreen');
+        const icon = document.querySelector('#pdfModalBox .modal-fullscreen i');
+        if (icon) {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+    }
+}
+
+function resetVideoElements() {
+    // Reset video iframe
+    const videoIframe = document.getElementById('videoIframe');
+    if (videoIframe) { 
+        videoIframe.src = ''; 
+    }
+
+    // Reset Drive iframe
+    const driveIframe = document.getElementById('driveIframe');
+    if (driveIframe) { 
+        driveIframe.src = ''; 
+    }
+
+    // Reset native video player
+    const vid = document.getElementById('nativeVideoPlayer');
+    if (vid) { 
+        vid.pause(); 
+        vid.src = ''; 
+        vid.style.display = 'none';
+        vid.load();
+    }
+    
+    // Reset video displays
+    const videoIframeWrap = document.getElementById('videoIframeWrap');
+    const videoNativeWrap = document.getElementById('videoNativeWrap');
+    const videoNativeError = document.getElementById('videoNativeError');
+    const videoIframeLoading = document.getElementById('videoIframeLoading');
+    const videoNativeLoading = document.getElementById('videoNativeLoading');
+    
+    if (videoIframeWrap) videoIframeWrap.style.display = 'none';
+    if (videoNativeWrap) videoNativeWrap.style.display = 'none';
+    if (videoNativeError) videoNativeError.style.display = 'none';
+    if (videoIframeLoading) videoIframeLoading.style.display = 'none';
+    if (videoNativeLoading) videoNativeLoading.style.display = 'flex';
+}
+
 // ════════════════════════════════════════════════════════════════
 // PDF MODAL
-// Served via pdf_disk: public/pdf/{filename} → /pdf/{filename}
 // ════════════════════════════════════════════════════════════════
 function openPdfModal(pdfUrl) {
+    console.log('Opening PDF URL:', pdfUrl);
+    
     closeAllModals();
     openModal('pdfModal');
 
-    const iframe  = document.getElementById('pdfIframe');
+    const pdfEmbed = document.getElementById('pdfEmbed');
+    const pdfIframe = document.getElementById('pdfIframe');
     const loading = document.getElementById('pdfLoading');
-    const footer  = document.getElementById('pdfFooter');
+    const footer = document.getElementById('pdfFooter');
+    const modalBox = document.getElementById('pdfModalBox');
+    const downloadLink = document.getElementById('downloadLink');
+    const pdfFallback = document.getElementById('pdfFallback');
 
-    loading.style.display = 'flex';
-    iframe.style.opacity  = '0';
-    iframe.src            = pdfUrl;
-    footer.textContent    = 'Source: ' + pdfUrl;
+    // Reset any previous fullscreen state
+    if (modalBox && modalBox.classList.contains('fullscreen')) {
+        modalBox.classList.remove('fullscreen');
+        const icon = document.querySelector('#pdfModalBox .modal-fullscreen i');
+        if (icon) {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+    }
 
-    iframe.onload  = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
-    iframe.onerror = () => {
-        loading.style.display = 'none';
-        showNotification('Failed to load PDF. Try downloading instead.', 'error');
-        closeModal('pdfModal');
-    };
+    // Reset displays
+    if (loading) loading.style.display = 'flex';
+    if (pdfEmbed) pdfEmbed.style.display = 'none';
+    if (pdfIframe) pdfIframe.style.display = 'none';
+    if (pdfFallback) pdfFallback.style.display = 'none';
+    
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const separator = pdfUrl.includes('?') ? '&' : '?';
+    const finalUrl = pdfUrl + separator + 't=' + timestamp;
+    
+    // Set download link
+    if (downloadLink) downloadLink.href = pdfUrl;
+    if (footer) footer.textContent = 'Source: ' + pdfUrl;
+
+    // Try embed tag first (best PDF support)
+    if (pdfEmbed) {
+        pdfEmbed.src = finalUrl;
+        pdfEmbed.style.display = 'block';
+    }
+    
+    let loadTimer = setTimeout(function() {
+        if (loading && loading.style.display !== 'none') {
+            console.warn('PDF load timeout - trying iframe');
+            tryFallback();
+        }
+    }, 5000);
+
+    function tryFallback() {
+        clearTimeout(loadTimer);
+        if (pdfEmbed) pdfEmbed.style.display = 'none';
+        if (pdfIframe) {
+            pdfIframe.src = finalUrl;
+            pdfIframe.style.display = 'block';
+        }
+        
+        if (pdfIframe) {
+            pdfIframe.onload = function() {
+                console.log('PDF iframe loaded');
+                if (loading) loading.style.display = 'none';
+            };
+            
+            pdfIframe.onerror = function() {
+                console.log('PDF iframe failed');
+                if (loading) loading.style.display = 'none';
+                if (pdfIframe) pdfIframe.style.display = 'none';
+                if (pdfFallback) pdfFallback.style.display = 'block';
+            };
+        }
+        
+        // Final timeout for iframe
+        setTimeout(function() {
+            if (loading && loading.style.display !== 'none') {
+                if (loading) loading.style.display = 'none';
+                if (pdfIframe) pdfIframe.style.display = 'none';
+                if (pdfFallback) pdfFallback.style.display = 'block';
+            }
+        }, 5000);
+    }
+
+    // Handle embed load
+    if (pdfEmbed) {
+        pdfEmbed.onload = function() {
+            console.log('PDF embed loaded');
+            clearTimeout(loadTimer);
+            if (loading) loading.style.display = 'none';
+        };
+    }
+    
+    // Check after delay
+    setTimeout(function() {
+        if (loading && loading.style.display !== 'none') {
+            tryFallback();
+        }
+    }, 2000);
 }
+
 function closePdfModal() {
     closeModal('pdfModal');
-    document.getElementById('pdfIframe').src = '';
+    resetPdfElements();
+}
+
+// ════════════════════════════════════════════════════════════════
+// PDF FULLSCREEN TOGGLE
+// ════════════════════════════════════════════════════════════════
+function togglePdfFullscreen() {
+    const modalBox = document.getElementById('pdfModalBox');
+    const fullscreenIcon = document.querySelector('#pdfModalBox .modal-fullscreen i');
+    
+    if (!modalBox || !fullscreenIcon) return;
+    
+    modalBox.classList.toggle('fullscreen');
+    
+    if (modalBox.classList.contains('fullscreen')) {
+        fullscreenIcon.classList.remove('fa-expand');
+        fullscreenIcon.classList.add('fa-compress');
+        
+        // Force resize of PDF elements
+        const pdfEmbed = document.getElementById('pdfEmbed');
+        const pdfIframe = document.getElementById('pdfIframe');
+        if (pdfEmbed) {
+            pdfEmbed.style.height = window.innerHeight - 120 + 'px';
+        }
+        if (pdfIframe) {
+            pdfIframe.style.height = window.innerHeight - 120 + 'px';
+        }
+    } else {
+        fullscreenIcon.classList.remove('fa-compress');
+        fullscreenIcon.classList.add('fa-expand');
+        
+        // Reset size
+        const pdfEmbed = document.getElementById('pdfEmbed');
+        const pdfIframe = document.getElementById('pdfIframe');
+        if (pdfEmbed) {
+            pdfEmbed.style.height = '100%';
+        }
+        if (pdfIframe) {
+            pdfIframe.style.height = '100%';
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
+// VIDEO MODAL FUNCTIONS
+// ════════════════════════════════════════════════════════════════
+function closeVideoModal() {
+    closeModal('videoModal');
+    
+    const iframe = document.getElementById('videoIframe');
+    if (iframe) {
+        iframe.src = '';
+    }
+    
+    const vid = document.getElementById('nativeVideoPlayer');
+    if (vid) {
+        vid.pause();
+        vid.src = '';
+        vid.style.display = 'none';
+        vid.load();
+    }
+    
+    const videoNativeError = document.getElementById('videoNativeError');
+    const videoNativeLoading = document.getElementById('videoNativeLoading');
+    const videoIframeLoading = document.getElementById('videoIframeLoading');
+    const videoIframeWrap = document.getElementById('videoIframeWrap');
+    const videoNativeWrap = document.getElementById('videoNativeWrap');
+    
+    if (videoNativeError) videoNativeError.style.display = 'none';
+    if (videoNativeLoading) videoNativeLoading.style.display = 'flex';
+    if (videoIframeLoading) videoIframeLoading.style.display = 'flex';
+    if (videoIframeWrap) videoIframeWrap.style.display = 'none';
+    if (videoNativeWrap) videoNativeWrap.style.display = 'none';
+}
+
+function closeDriveModal() {
+    closeModal('driveModal');
+    const iframe = document.getElementById('driveIframe');
+    if (iframe) {
+        iframe.src = '';
+    }
+    const loading = document.getElementById('driveLoading');
+    if (loading) loading.style.display = 'flex';
 }
 
 // ════════════════════════════════════════════════════════════════
 // SMART VIDEO ROUTER
-// YouTube → embed iframe
-// Vimeo   → embed iframe
-// Google Drive → Drive modal iframe
-// Direct file  → native <video>
 // ════════════════════════════════════════════════════════════════
 function openSmartVideoModal(url) {
     closeAllModals();
@@ -580,99 +840,137 @@ function openSmartVideoModal(url) {
     if (url.match(/\.(mp4|webm|mov|mkv|avi|wmv|flv|ogg|ogv|3gp|m4v)(\?.*)?$/i))
         return _openNativePanel(url);
 
-    // 5. Unknown — try native, error-states gracefully
+    // 5. Unknown — try native
     _openNativePanel(url);
 }
 
-// ── Embed iframe panel (YouTube / Vimeo) ─────────────────────────
+// Embed iframe panel (YouTube / Vimeo)
 function _openEmbedPanel(embedUrl, sourceUrl, label) {
     openModal('videoModal');
-    document.getElementById('videoModalTitle').innerHTML =
-        `<i class="fas fa-play-circle"></i> ${label} Player`;
-    document.getElementById('videoIframeWrap').style.display = 'block';
-    document.getElementById('videoNativeWrap').style.display = 'none';
+    
+    const titleElement = document.getElementById('videoModalTitle');
+    if (titleElement) {
+        titleElement.innerHTML = `<i class="fas fa-play-circle"></i> <span>${label} Player</span>`;
+    }
+    
+    const iframeWrap = document.getElementById('videoIframeWrap');
+    const nativeWrap = document.getElementById('videoNativeWrap');
+    
+    if (iframeWrap) iframeWrap.style.display = 'block';
+    if (nativeWrap) nativeWrap.style.display = 'none';
 
-    const iframe  = document.getElementById('videoIframe');
+    const iframe = document.getElementById('videoIframe');
     const loading = document.getElementById('videoIframeLoading');
-    loading.style.display = 'flex';
-    iframe.style.opacity  = '0';
-    iframe.src = embedUrl;
-    iframe.onload = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
-    document.getElementById('videoFooter').textContent = 'Source: ' + sourceUrl;
+    
+    if (loading) loading.style.display = 'flex';
+    if (iframe) {
+        iframe.src = embedUrl;
+        iframe.onload = () => { 
+            if (loading) loading.style.display = 'none'; 
+        };
+    }
+    
+    const footer = document.getElementById('videoFooter');
+    if (footer) footer.textContent = 'Source: ' + sourceUrl;
 }
 
-// ── Google Drive iframe panel ────────────────────────────────────
+// Google Drive iframe panel
 function _openDrivePanel(embedUrl, sourceUrl) {
     openModal('driveModal');
-    const iframe  = document.getElementById('driveIframe');
+    
+    const iframe = document.getElementById('driveIframe');
     const loading = document.getElementById('driveLoading');
-    loading.style.display = 'flex';
-    iframe.style.opacity  = '0';
-    iframe.src = embedUrl;
-    iframe.onload  = () => { loading.style.display = 'none'; iframe.style.opacity = '1'; };
-    iframe.onerror = () => {
-        loading.style.display = 'none';
-        showNotification('Could not load Google Drive file. Try opening the link directly.', 'error');
-    };
-    document.getElementById('driveFooter').textContent = 'Source: ' + sourceUrl;
-}
-function closeDriveModal() {
-    closeModal('driveModal');
-    const i = document.getElementById('driveIframe');
-    i.src = ''; i.style.opacity = '0';
+    const footer = document.getElementById('driveFooter');
+    
+    if (loading) loading.style.display = 'flex';
+    if (iframe) {
+        iframe.src = embedUrl;
+        iframe.onload = () => { 
+            if (loading) loading.style.display = 'none'; 
+        };
+        iframe.onerror = () => {
+            if (loading) loading.style.display = 'none';
+            showNotification('Could not load Google Drive file.', 'error');
+        };
+    }
+    
+    if (footer) footer.textContent = 'Source: ' + sourceUrl;
 }
 
-// ── Native <video> panel ─────────────────────────────────────────
+// Native <video> panel
 function _openNativePanel(url) {
     openModal('videoModal');
-    document.getElementById('videoModalTitle').innerHTML =
-        '<i class="fas fa-film"></i> Video Player';
-    document.getElementById('videoIframeWrap').style.display = 'none';
-    document.getElementById('videoNativeWrap').style.display = 'block';
+    
+    const titleElement = document.getElementById('videoModalTitle');
+    if (titleElement) {
+        titleElement.innerHTML = '<i class="fas fa-film"></i> <span>Video Player</span>';
+    }
+    
+    const iframeWrap = document.getElementById('videoIframeWrap');
+    const nativeWrap = document.getElementById('videoNativeWrap');
+    
+    if (iframeWrap) iframeWrap.style.display = 'none';
+    if (nativeWrap) nativeWrap.style.display = 'block';
 
-    const vid     = document.getElementById('nativeVideoPlayer');
-    const loading = document.getElementById('videoNativeLoading');
-    const errBox  = document.getElementById('videoNativeError');
-    const dlBtn   = document.getElementById('videoNativeDownload');
-
-    vid.style.display     = 'none';
-    errBox.style.display  = 'none';
-    loading.style.display = 'flex';
-    dlBtn.href            = url;
-
-    vid.src = url;
-    vid.load();
-
-    vid.onloadedmetadata = () => { loading.style.display = 'none'; vid.style.display = 'block'; };
-    vid.oncanplay        = () => { loading.style.display = 'none'; vid.style.display = 'block'; };
-    vid.onerror          = () => { loading.style.display = 'none'; errBox.style.display = 'flex'; };
-
-    document.getElementById('videoFooter').textContent = 'Source: ' + url;
-}
-
-// ── Close video modal ────────────────────────────────────────────
-function closeVideoModal() {
-    closeModal('videoModal');
-    const iframe = document.getElementById('videoIframe');
-    iframe.src = ''; iframe.style.opacity = '0';
     const vid = document.getElementById('nativeVideoPlayer');
-    vid.pause(); vid.src = ''; vid.style.display = 'none';
-    document.getElementById('videoNativeError').style.display   = 'none';
-    document.getElementById('videoNativeLoading').style.display = 'flex';
-    document.getElementById('videoIframeLoading').style.display = 'flex';
+    const loading = document.getElementById('videoNativeLoading');
+    const errBox = document.getElementById('videoNativeError');
+    const footer = document.getElementById('videoFooter');
+
+    if (vid) {
+        vid.style.display = 'none';
+        vid.src = '';
+    }
+    if (errBox) errBox.style.display = 'none';
+    if (loading) loading.style.display = 'flex';
+    
+    if (vid) {
+        vid.src = url;
+        vid.load();
+
+        vid.onloadedmetadata = () => { 
+            if (loading) loading.style.display = 'none'; 
+            vid.style.display = 'block'; 
+            
+            // Try to autoplay
+            vid.play().catch(e => {
+                console.log('Autoplay prevented:', e);
+            });
+        };
+        
+        vid.oncanplay = () => { 
+            if (loading) loading.style.display = 'none'; 
+            vid.style.display = 'block'; 
+        };
+        
+        vid.onerror = () => { 
+            if (loading) loading.style.display = 'none'; 
+            if (errBox) errBox.style.display = 'flex'; 
+            vid.style.display = 'none';
+        };
+    }
+
+    if (footer) footer.textContent = 'Source: ' + url;
 }
 
-// ── Drive ID extractor ───────────────────────────────────────────
+// Drive ID extractor
 function _extractDriveId(url) {
-    const m1 = url.match(/\/file\/d\/([^\/?#&]+)/);
-    if (m1) return m1[1];
-    const m2 = url.match(/[?&]id=([^&]+)/);
-    if (m2) return m2[1];
+    const patterns = [
+        /\/file\/d\/([^\/?#&]+)/,
+        /[?&]id=([^&]+)/,
+        /\/open\?id=([^&]+)/,
+        /\/d\/([^\/?#&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    
     return null;
 }
 
 // ============ PUBLISH/UNPUBLISH FUNCTIONS ============
-
 function confirmPublish(encryptedId) {
     Swal.fire({
         title: 'Publish Topic?',
