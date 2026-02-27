@@ -120,9 +120,14 @@
                     <div class="detail-section">
                         <h3 class="detail-section-title">
                             <i class="fas fa-list"></i> Course Topics
-                            <span style="margin-left:auto; font-size:0.75rem; color:#718096;">
-                                {{ $topicsCount }} total &bull; {{ $publishedTopics }} published
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                                <span style="font-size:0.75rem; color:#718096;">
+                                    {{ $topicsCount }} total &bull; {{ $publishedTopics }} published
+                                </span>
+                                <button onclick="openAddTopicModal()" class="action-btn-small action-btn-success">
+                                    <i class="fas fa-plus-circle"></i> Add Topic
+                                </button>
+                            </div>
                         </h3>
 
                         @if($course->topics && $course->topics->count() > 0)

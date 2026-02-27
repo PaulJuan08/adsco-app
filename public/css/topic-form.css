@@ -1,11 +1,11 @@
 /* ============================================
    TOPIC CREATE/EDIT FORMS - Reusable Styles
    For Admin & Teacher Topic Form Pages
-   Consistent with Course Form Design Pattern
+   Mirroring Course Form Design Pattern
    ============================================ */
 
 /* ==========================================================================
-   1. Form Container - Consistent with Course Form
+   1. Form Container - Exact match with Course Form
    ========================================================================== */
 .form-container {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -25,12 +25,12 @@
 }
 
 /* ==========================================================================
-   2. Card Header - Consistent with Course Form
+   2. Card Header - Exact match with Course Form
    ========================================================================== */
 .card-header {
     padding: 1.25rem 1.75rem;
     border-bottom: 1px solid #e2e8f0;
-    background: linear-gradient(135deg, #552b20 0%, #8a6603 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     position: relative;
     overflow: hidden;
@@ -125,7 +125,7 @@
 }
 
 /* ==========================================================================
-   3. Two Column Layout - Consistent with Course Form
+   3. Two Column Layout - Exact match with Course Form
    ========================================================================== */
 .two-column-layout {
     display: grid;
@@ -150,29 +150,29 @@
 }
 
 /* ==========================================================================
-   4. Topic Preview - Topic specific
+   4. Topic Preview - Adapted from Course Preview
    ========================================================================== */
 .topic-preview {
     background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
     border-radius: 14px;
-    padding: 1.5rem;
+    padding: 1.25rem;
     margin-bottom: 1.25rem;
     border: 1px solid #e2e8f0;
     text-align: center;
 }
 
 .topic-preview-avatar {
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin: 0 auto 1rem;
+    margin: 0 auto 0.75rem;
     border: 4px solid white;
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
@@ -181,31 +181,44 @@
     font-size: 1.25rem;
     font-weight: 700;
     color: #2d3748;
+    margin-bottom: 0.125rem;
+}
+
+.topic-preview-code {
+    font-size: 0.875rem;
+    color: #718096;
     margin-bottom: 0.5rem;
 }
 
-.topic-preview-meta {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
-
-.topic-preview-badge {
+/* FIXED: Remove the default background that's causing the issue */
+.topic-preview-status {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1.25rem;
-    border-radius: 50px;
-    font-size: 0.8125rem;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 20px;
+    font-size: 0.6875rem;
     font-weight: 600;
+    border: 1px solid transparent; /* Changed from solid border to transparent */
+    /* REMOVED: background: #edf2f7; */
+    /* REMOVED: color: #4a5568; */
+    /* REMOVED: border: 1px solid #e2e8f0; */
+}
+
+.topic-preview-status.status-published {
     background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    border-color: transparent;
+}
+
+.topic-preview-status.status-draft {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: white;
+    border-color: transparent;
 }
 
 /* ==========================================================================
-   5. Form Sections - Consistent with Course Form
+   5. Form Sections - Exact match with Course Form
    ========================================================================== */
 .form-section {
     background: white;
@@ -231,7 +244,6 @@
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    border-radius: 3px 3px 0 0;
 }
 
 .form-section-title {
@@ -254,10 +266,10 @@
 }
 
 /* ==========================================================================
-   6. Form Elements - Consistent with Course Form
+   6. Form Elements - Exact match with Course Form
    ========================================================================== */
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
     position: relative;
 }
 
@@ -272,9 +284,9 @@
     gap: 0.25rem;
 }
 
-.form-label.required::after {
-    content: " *";
+.form-label .required {
     color: #f56565;
+    margin-left: 0.25rem;
 }
 
 .form-input,
@@ -334,12 +346,9 @@ textarea.is-invalid {
     font-size: 0.75rem;
     color: #f56565;
     font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
 }
 
-.form-help {
+.form-hint {
     font-size: 0.6875rem;
     color: #718096;
     margin-top: 0.25rem;
@@ -348,8 +357,26 @@ textarea.is-invalid {
     gap: 0.25rem;
 }
 
+.input-with-unit {
+    position: relative;
+}
+
+.input-with-unit .form-input {
+    padding-right: 4rem;
+}
+
+.input-unit {
+    position: absolute;
+    right: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
 /* ==========================================================================
-   7. File Input - Topic specific
+   7. File Input - Topic specific but matching course style
    ========================================================================== */
 .form-file {
     display: block;
@@ -439,7 +466,7 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   8. Sidebar Card - Consistent with Course Form
+   8. Sidebar Card - Exact match with Course Form
    ========================================================================== */
 .sidebar-card {
     background: white;
@@ -488,17 +515,17 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   9. Tips Grid - Topic specific
+   9. Guidelines List - Exact match with Course Form
    ========================================================================== */
-.tips-grid {
+.guidelines-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.tip-item {
+.guideline-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
     padding: 0.75rem;
     background: #f8fafc;
@@ -507,77 +534,146 @@ textarea.is-invalid {
     transition: all 0.2s ease;
 }
 
-.tip-item:hover {
+.guideline-item:hover {
     background: white;
     border-color: #e2e8f0;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
 }
 
-.tip-icon {
-    width: 40px;
-    height: 40px;
+.guideline-icon {
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1rem;
+    font-size: 0.875rem;
     flex-shrink: 0;
 }
 
-.tip-content {
+.guideline-content {
     flex: 1;
     min-width: 0;
 }
 
-.tip-title {
+.guideline-title {
     font-weight: 600;
     color: #2d3748;
     font-size: 0.8125rem;
     margin-bottom: 0.125rem;
 }
 
-.tip-description {
+.guideline-text {
     font-size: 0.6875rem;
     color: #718096;
     line-height: 1.4;
 }
 
 /* ==========================================================================
-   10. Status Badge - Topic specific
+   10. Quick Actions Grid - Exact match with Course Form
    ========================================================================== */
-.status-badge {
-    display: inline-flex;
+.quick-actions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.action-card {
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1.25rem;
-    border-radius: 50px;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: #f8fafc;
 }
 
-.status-published {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+.action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
 }
 
-.status-draft {
-    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+.action-card:hover::before {
+    transform: scaleX(1);
 }
 
-.status-auto {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e0;
+    background: white;
+}
+
+.action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
     color: white;
-    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover .action-icon {
+    transform: rotate(8deg) scale(1.08);
+}
+
+.action-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.action-title {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 0.875rem;
+    margin-bottom: 0.125rem;
+}
+
+.action-subtitle {
+    font-size: 0.6875rem;
+    color: #718096;
+    line-height: 1.3;
+}
+
+.action-arrow {
+    color: #a0aec0;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover .action-arrow {
+    color: #667eea;
+    transform: translateX(4px);
 }
 
 /* ==========================================================================
-   11. Info Rows - Consistent with Course Form
+   11. Info Rows - Exact match with Course Form
    ========================================================================== */
 .info-row {
     display: flex;
@@ -611,7 +707,7 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   12. Summary Stats - Topic specific
+   12. Summary Stats - Topic specific but matching course style
    ========================================================================== */
 .summary-stats {
     display: flex;
@@ -643,9 +739,214 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   13. Auto-publish Notice - Topic specific
+   13. Publish Toggle - Exact match with Course Form
    ========================================================================== */
-.auto-publish-notice {
+.publish-toggle-container {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.publish-toggle-container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e0;
+}
+
+.publish-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.publish-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+}
+
+.publish-text h4 {
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.publish-text p {
+    font-size: 0.8125rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.toggle-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    min-width: 80px;
+}
+
+.toggle-status i {
+    font-size: 0.875rem;
+}
+
+.toggle-status .status-draft {
+    color: #dd6b20;
+}
+
+.toggle-status .status-published {
+    color: #38a169;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e0;
+    transition: .3s;
+    border-radius: 34px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background-color: #48bb78;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+}
+
+/* ==========================================================================
+   14. Publish Info Card - Exact match with Course Form
+   ========================================================================== */
+.publish-info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.publish-info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f7fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #718096;
+    font-size: 1rem;
+}
+
+.publish-info-content {
+    flex: 1;
+}
+
+.publish-info-label {
+    font-size: 0.6875rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.125rem;
+}
+
+.publish-info-value {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.publish-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.publish-badge.published {
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #9ae6b4;
+}
+
+.publish-badge.draft {
+    background: #fffaf0;
+    color: #744210;
+    border: 1px solid #fbd38d;
+}
+
+/* ==========================================================================
+   15. Status Notice - Exact match with Course Form
+   ========================================================================== */
+.status-notice {
     background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
     border: 1px solid #bae6fd;
     color: #075985;
@@ -657,30 +958,30 @@ textarea.is-invalid {
     gap: 0.75rem;
 }
 
-.auto-publish-notice i {
+.status-notice i {
     color: #0284c7;
     font-size: 1rem;
     margin-top: 0.125rem;
 }
 
-.auto-publish-notice-content {
+.status-notice-content {
     flex: 1;
 }
 
-.auto-publish-notice-title {
+.status-notice-title {
     font-weight: 700;
     margin-bottom: 0.25rem;
     font-size: 0.875rem;
 }
 
-.auto-publish-notice-text {
+.status-notice-text {
     font-size: 0.8125rem;
     opacity: 0.9;
     line-height: 1.5;
 }
 
 /* ==========================================================================
-   14. Buttons - Consistent with Course Form
+   16. Buttons - Exact match with Course Form
    ========================================================================== */
 .btn {
     display: inline-flex;
@@ -717,6 +1018,22 @@ textarea.is-invalid {
     left: 100%;
 }
 
+.btn-secondary,
+.btn-outline {
+    background: white;
+    border-color: #cbd5e0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    color: #2d3748;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -727,20 +1044,6 @@ textarea.is-invalid {
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: white;
-    border-color: #cbd5e0;
-    color: #4a5568;
-}
-
-.btn-secondary:hover {
-    background: #f7fafc;
-    border-color: #a0aec0;
-    color: #2d3748;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .btn-danger {
@@ -761,7 +1064,7 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   15. Alerts - Consistent with Course Form
+   17. Alerts - Exact match with Course Form
    ========================================================================== */
 .alert {
     padding: 1rem 1.25rem;
@@ -782,25 +1085,30 @@ textarea.is-invalid {
     margin-top: 0.125rem;
 }
 
-.alert-success {
+.alert-success,
+.success-alert {
     background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
     color: #276749;
     border-left-color: #48bb78;
 }
 
-.alert-error {
+.alert-error,
+.validation-alert {
     background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
     color: #c53030;
     border-left-color: #f56565;
 }
 
-.alert-error ul {
+.alert-error ul,
+.validation-alert ul {
     margin: 0.5rem 0 0 1.25rem;
     padding: 0;
 }
 
-.alert-error li {
+.alert-error li,
+.validation-alert li {
     margin-bottom: 0.25rem;
+    font-size: 0.75rem;
 }
 
 @keyframes slideIn {
@@ -815,7 +1123,59 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   16. Loading Spinner - Consistent with Course Form
+   18. Toast Notifications - Exact match with Course Form
+   ========================================================================== */
+.custom-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    background: white;
+    color: #2d3748;
+    z-index: 10000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 400px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-left: 4px solid;
+}
+
+.custom-toast.success {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #276749;
+    border-left-color: #48bb78;
+}
+
+.custom-toast.error {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    color: #c53030;
+    border-left-color: #f56565;
+}
+
+.custom-toast.info {
+    background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+    color: #2c5282;
+    border-left-color: #4299e1;
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* ==========================================================================
+   19. Loading Spinner - Exact match with Course Form
    ========================================================================== */
 .loading-spinner {
     animation: spin 1s linear infinite;
@@ -826,7 +1186,16 @@ textarea.is-invalid {
 }
 
 /* ==========================================================================
-   17. Responsive Design - Consistent with Course Form
+   20. Form Actions - Exact match with Course Form
+   ========================================================================== */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+/* ==========================================================================
+   21. Responsive Design - Exact match with Course Form
    ========================================================================== */
 @media (max-width: 768px) {
     .form-container {
@@ -881,17 +1250,43 @@ textarea.is-invalid {
     .topic-preview-avatar {
         width: 70px;
         height: 70px;
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
 
-    .tip-item {
-        padding: 0.625rem;
+    .publish-toggle-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .publish-info {
+        width: 100%;
+    }
+    
+    .toggle-wrapper {
+        width: 100%;
+        justify-content: space-between;
     }
 
-    .tip-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 0.875rem;
+    .custom-toast {
+        max-width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}
+
+@media (max-width: 640px) {
+    .publish-toggle-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .toggle-wrapper {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .publish-info {
+        width: 100%;
     }
 }
 
@@ -917,11 +1312,11 @@ textarea.is-invalid {
     .topic-preview-avatar {
         width: 60px;
         height: 60px;
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
 
     .topic-preview-title {
-        font-size: 1.125rem;
+        font-size: 1rem;
     }
 
     .sidebar-card {
@@ -939,16 +1334,55 @@ textarea.is-invalid {
         align-items: flex-start;
         gap: 0.25rem;
     }
+    
+    .publish-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .publish-text {
+        text-align: center;
+    }
+    
+    .publish-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .publish-text h4 {
+        font-size: 0.9375rem;
+    }
+    
+    .publish-text p {
+        font-size: 0.75rem;
+    }
+    
+    .toggle-switch {
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-slider:before {
+        height: 20px;
+        width: 20px;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
 }
 
 /* ==========================================================================
-   18. Print Styles
+   22. Print Styles - Exact match with Course Form
    ========================================================================== */
 @media print {
     .no-print,
     .view-all-link,
     .btn,
-    .card-footer-modern {
+    .card-footer-modern,
+    .publish-toggle-container,
+    .publish-info-card {
         display: none !important;
     }
     
@@ -972,7 +1406,8 @@ textarea.is-invalid {
     
     .topic-preview-avatar,
     .topic-preview-badge,
-    .status-badge {
+    .status-badge,
+    .publish-badge {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

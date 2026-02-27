@@ -29,10 +29,38 @@
                     New Quiz
                 </div>
                 <div class="quiz-preview-meta">
-                    <span class="quiz-preview-badge">
-                        <i class="fas fa-check-circle"></i> 
+                    <span class="quiz-preview-badge draft" id="previewStatus">
+                        <i class="fas fa-clock"></i> 
                         Draft
                     </span>
+                </div>
+            </div>
+
+            <!-- Publish Toggle Section -->
+            <div class="publish-section">
+                <div class="publish-toggle">
+                    <div class="publish-label">
+                        <i class="fas fa-globe"></i>
+                        <span>Publish Status</span>
+                    </div>
+                    
+                    <label class="toggle-switch">
+                        <input type="checkbox" 
+                            id="publish-toggle" 
+                            name="is_published" 
+                            value="1"
+                            {{ old('is_published') ? 'checked' : '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    
+                    <div class="toggle-status" id="publish-status">
+                        <span class="draft">Draft</span>
+                    </div>
+                    
+                    <div class="publish-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Published quizzes are visible to students with access</span>
+                    </div>
                 </div>
             </div>
 
@@ -97,36 +125,7 @@
                                 </span>
                             </div>
                             
-                            <!-- Quiz Settings -->
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="passing_score" class="form-label required">
-                                        <i class="fas fa-trophy"></i> Passing Score (%)
-                                    </label>
-                                    <input type="number" 
-                                           id="passing_score" 
-                                           name="passing_score" 
-                                           value="{{ old('passing_score', 70) }}" 
-                                           min="0"
-                                           max="100"
-                                           required
-                                           class="form-input">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="duration" class="form-label required">
-                                        <i class="fas fa-clock"></i> Duration (minutes)
-                                    </label>
-                                    <input type="number" 
-                                           id="duration" 
-                                           name="duration" 
-                                           value="{{ old('duration', 30) }}" 
-                                           min="1"
-                                           max="180"
-                                           required
-                                           class="form-input">
-                                </div>
-                            </div>
+                            <!-- REMOVED: Passing Score and Duration Fields -->
                         </div>
                         
                         <!-- Questions Section -->
@@ -187,13 +186,15 @@
                                 </div>
                             </div>
                             
+                            <!-- REMOVED: Set Passing Score tip -->
+                            
                             <div class="tip-item">
                                 <div class="tip-icon">
-                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-globe"></i>
                                 </div>
                                 <div class="tip-content">
-                                    <div class="tip-title">Set Passing Score</div>
-                                    <div class="tip-description">Define minimum score to pass</div>
+                                    <div class="tip-title">Publish Toggle</div>
+                                    <div class="tip-description">Control quiz visibility to students</div>
                                 </div>
                             </div>
                         </div>
@@ -229,6 +230,10 @@
                             <div class="guideline-item">
                                 <i class="fas fa-check-circle"></i>
                                 <span>All questions require text and options</span>
+                            </div>
+                            <div class="guideline-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Published quizzes are immediately accessible</span>
                             </div>
                         </div>
                     </div>
@@ -315,6 +320,9 @@
         const titleInput = document.getElementById('title');
         const previewTitle = document.getElementById('previewTitle');
         const previewAvatar = document.getElementById('previewAvatar');
+        const publishToggle = document.getElementById('publish-toggle');
+        const publishStatus = document.getElementById('publish-status');
+        const previewStatus = document.getElementById('previewStatus');
         
         // Live preview update
         function updatePreview() {
@@ -328,8 +336,30 @@
             }
         }
         
+        // Update publish status in preview
+        function updatePublishStatus() {
+            const isPublished = publishToggle.checked;
+            
+            if (isPublished) {
+                publishStatus.innerHTML = '<span class="published">Published</span>';
+                previewStatus.innerHTML = '<i class="fas fa-check-circle"></i> Published';
+                previewStatus.className = 'quiz-preview-badge published';
+            } else {
+                publishStatus.innerHTML = '<span class="draft">Draft</span>';
+                previewStatus.innerHTML = '<i class="fas fa-clock"></i> Draft';
+                previewStatus.className = 'quiz-preview-badge draft';
+            }
+        }
+        
+        // Initialize publish status (default to draft)
+        updatePublishStatus();
+        
         if (titleInput) {
             titleInput.addEventListener('input', updatePreview);
+        }
+        
+        if (publishToggle) {
+            publishToggle.addEventListener('change', updatePublishStatus);
         }
 
         const questionsContainer = document.getElementById('questions-list');
@@ -528,8 +558,6 @@
                 
                 const title = document.getElementById('title').value.trim();
                 const description = document.getElementById('description').value.trim();
-                const passingScore = document.getElementById('passing_score').value;
-                const duration = document.getElementById('duration').value;
                 const questionCards = document.querySelectorAll('.question-card');
                 
                 let isValid = true;
@@ -544,16 +572,6 @@
                 if (!description) {
                     isValid = false;
                     errorMessages.push('Quiz description is required.');
-                }
-                
-                if (!passingScore || passingScore < 0 || passingScore > 100) {
-                    isValid = false;
-                    errorMessages.push('Passing score must be between 0 and 100.');
-                }
-                
-                if (!duration || duration < 1 || duration > 180) {
-                    isValid = false;
-                    errorMessages.push('Duration must be between 1 and 180 minutes.');
                 }
                 
                 // Validate questions
@@ -602,10 +620,12 @@
                     return false;
                 }
                 
-                // Show confirmation
+                // Show confirmation with publish status
+                const publishStatus = publishToggle.checked ? 'Published' : 'Draft';
+                
                 Swal.fire({
                     title: 'Create Quiz?',
-                    text: `You are about to create a quiz with ${questionCards.length} question(s).`,
+                    html: `You are about to create a quiz with ${questionCards.length} question(s).<br><strong>Status: ${publishStatus}</strong>`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#667eea',

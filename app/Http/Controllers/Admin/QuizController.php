@@ -40,7 +40,9 @@ class QuizController extends Controller
         $quizData = [
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'is_published' => 1,
+            // Use the checkbox value - if not present, default to 0 (draft)
+            'is_published' => $request->has('is_published') ? 1 : 0,
+            'created_by' => auth()->id(), // <-- ADD THIS LINE
             'duration' => 60,
             'total_questions' => 0,
             'passing_score' => 70,
@@ -49,7 +51,16 @@ class QuizController extends Controller
         ];
 
         $quiz = Quiz::create($quizData);
+        
+        // Log to confirm creator is set
+        \Log::info('Quiz created:', [
+            'quiz_id' => $quiz->id,
+            'title' => $quiz->title,
+            'created_by' => $quiz->created_by,
+            'creator_name' => auth()->user()->f_name . ' ' . auth()->user()->l_name
+        ]);
 
+        // Rest of your code remains the same...
         // Save questions if provided
         $validQuestionCount = 0;
         if ($request->has('questions')) {
@@ -105,6 +116,7 @@ class QuizController extends Controller
         $this->clearAllQuizCaches();
         
         \Log::info('New quiz created - ID: ' . $quiz->id . ', Title: ' . $quiz->title);
+        \Log::info('Published status: ' . ($quiz->is_published ? 'Published' : 'Draft'));
 
         // Redirect to To-Do with quiz filter
         return redirect()->route('admin.todo.index', ['type' => 'quiz'])
@@ -163,10 +175,11 @@ class QuizController extends Controller
                 'available_until' => 'nullable|date|after:available_from',
             ]);
             
-            // Update quiz basic info
+            // Update quiz basic info - INCLUDING is_published
             $quiz->update([
                 'title' => $request->title,
                 'description' => $request->description,
+                'is_published' => $request->has('is_published') ? 1 : 0, // THIS WAS MISSING
                 'duration' => $request->duration ?? $quiz->duration,
                 'total_questions' => $request->total_questions ?? $quiz->total_questions,
                 'passing_score' => $request->passing_score ?? $quiz->passing_score,
@@ -174,7 +187,7 @@ class QuizController extends Controller
                 'available_until' => $request->available_until,
             ]);
             
-            // Process questions
+            // Process questions (rest of your code remains the same)
             if ($request->has('questions')) {
                 $processedQuestionIds = [];
                 

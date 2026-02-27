@@ -1,13 +1,97 @@
 /* ============================================
    COURSE INDEX - Reusable Styles
-   For Admin & Registrar Course List Pages
+   For Admin Course List Pages - Following Programs Pattern
    ============================================ */
 
-/* Additional styles specific to courses index */
+/* CSS Variables (inherited from programs-index.css, adding course-specific) */
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #818cf8;
+    --success: #10b981;
+    --success-dark: #059669;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-dark: #d97706;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-light: #fee2e2;
+    --info: #3b82f6;
+    --info-dark: #2563eb;
+    --info-light: #dbeafe;
+    --info-lighter: #eff6ff;
+    
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    --white: #ffffff;
+    --black: #000000;
+    
+    /* Spacing */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    
+    /* Typography */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    
+    /* Font weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+    
+    /* Line heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    
+    /* Borders */
+    --radius-sm: 0.25rem;
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    /* Transitions */
+    --transition-base: 0.2s ease-in-out;
+    --transition-fast: 0.1s ease-in-out;
+}
+
+/* Header Actions - Exact match with programs-index.css */
 .header-actions {
     display: flex;
     gap: 1rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .search-container {
@@ -41,10 +125,32 @@
     box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-/* Compact Stats Cards */
+.filter-container {
+    min-width: 150px;
+}
+
+.form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    background: var(--white);
+    cursor: pointer;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Stats Cards - Exact match with programs-index.css */
 .stats-grid-compact {
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stats-grid-compact .stat-card {
@@ -76,7 +182,7 @@
     font-size: var(--font-size-xs);
 }
 
-/* Clickable Cards */
+/* Clickable Cards - Exact match with programs-index.css */
 .clickable-card {
     display: block;
     text-decoration: none;
@@ -109,32 +215,7 @@
     opacity: 0.05;
 }
 
-/* Clickable items in lists */
-.clickable-item {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.clickable-item:hover {
-    background: var(--gray-50);
-    transform: translateX(4px);
-    border-color: var(--primary);
-}
-
-/* Ensure links within clickable cards don't interfere */
-.clickable-card a {
-    position: relative;
-    z-index: 1;
-}
-
-/* Make stat cards look interactive */
-.stat-card {
-    transition: all 0.3s ease;
-}
-
+/* Table Styles - Exact match with programs-index.css */
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -168,7 +249,7 @@
     vertical-align: middle;
 }
 
-/* Clickable row styling */
+/* Clickable row styling - Exact match with programs-index.css */
 .clickable-row {
     cursor: pointer;
     transition: all var(--transition-base);
@@ -180,6 +261,7 @@
     box-shadow: -4px 0 0 var(--primary-light);
 }
 
+/* Course Info Cell - Following program pattern */
 .course-info-cell {
     display: flex;
     gap: 1rem;
@@ -244,16 +326,29 @@
     margin-right: 1rem;
 }
 
+.program-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 1rem;
+}
+
+.program-mobile i {
+    font-size: 0.75rem;
+}
+
 .teacher-mobile {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    margin-right: 1rem;
 }
 
 .teacher-mobile i {
     font-size: 0.75rem;
 }
 
+/* Course Code Badge - Following program pattern */
 .course-code {
     display: inline-block;
     padding: 0.375rem 0.75rem;
@@ -266,6 +361,44 @@
     border: 1px solid var(--gray-300);
 }
 
+/* Program Info - Following college pattern from programs */
+.program-info {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.program-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-weight: var(--font-semibold);
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+}
+
+.program-details {
+    min-width: 0;
+}
+
+.program-name {
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+    font-size: var(--font-size-sm);
+}
+
+.no-program {
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
+/* Teacher Info - Following program pattern */
 .teacher-info {
     display: flex;
     gap: 0.75rem;
@@ -275,7 +408,7 @@
 .teacher-avatar {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -308,6 +441,7 @@
     font-style: italic;
 }
 
+/* Students Count - Exact match with programs-index.css */
 .students-count {
     text-align: center;
     min-width: 60px;
@@ -328,6 +462,33 @@
     letter-spacing: 0.05em;
 }
 
+/* Status Badges - Exact match with programs-index.css */
+.item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-medium);
+}
+
+.badge-success {
+    background: var(--success-light);
+    color: var(--success-dark);
+}
+
+.badge-warning {
+    background: var(--warning-light);
+    color: var(--warning-dark);
+}
+
+.item-date {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+/* Alert Styles - Exact match with programs-index.css */
 .alert {
     margin: 0 0 1.5rem 0;
     padding: 0.875rem 1rem;
@@ -356,6 +517,34 @@
     margin-top: 0.125rem;
 }
 
+/* Empty State - Exact match with programs-index.css */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--gray-400);
+    margin-bottom: 1rem;
+}
+
+.empty-title {
+    font-size: 1.125rem;
+    font-weight: var(--font-bold);
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.empty-text {
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .empty-hint {
     margin-top: 1rem;
     color: var(--gray-500);
@@ -370,50 +559,260 @@
     color: var(--warning);
 }
 
-.action-content {
-    flex: 1;
-}
-
-.action-title {
+/* Action Buttons - Following programs pattern */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-semibold);
-    font-size: var(--font-size-base);
-    margin-bottom: 0.25rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    line-height: 1.5;
+    white-space: nowrap;
 }
 
-.action-subtitle {
+.btn-primary {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+}
+
+.btn-secondary:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+/* Header Actions Bar - New addition following programs pattern */
+.header-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+/* Card Footer / Pagination - Exact match with programs-index.css */
+.card-footer {
+    padding: 1.25rem 1.75rem;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
     font-size: var(--font-size-sm);
     color: var(--gray-600);
 }
 
-.action-arrow {
-    font-size: var(--font-size-lg);
-    opacity: 0.8;
-    transition: transform var(--transition-fast);
+.pagination-links {
+    display: flex;
+    gap: 0.375rem;
 }
 
-.action-card:hover .action-arrow {
-    transform: translateX(4px);
+.pagination-btn {
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+    background: var(--white);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-decoration: none;
+    display: inline-block;
 }
 
-.action-info {
-    background: linear-gradient(135deg, var(--info-lighter), var(--info-light));
-    border-color: var(--info);
-    color: var(--info-dark);
+.pagination-btn:hover {
+    background: var(--gray-50);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
-.action-info:hover {
-    background: linear-gradient(135deg, var(--info), var(--info-dark));
+.pagination-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
     color: var(--white);
-    border-color: var(--info-dark);
 }
 
-.action-info:hover .action-subtitle,
-.action-info:hover .action-icon,
-.action-info:hover .action-arrow {
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Dashboard Header - Exact match from programs-index.css */
+.dashboard-header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    margin-bottom: var(--space-8);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1)),
+                linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1));
+    background-size: 60px 60px;
+    background-position: 0 0, 30px 30px;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.user-greeting {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.user-avatar {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-bold);
     color: var(--white);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
 }
 
-/* Responsive adjustments */
+.user-avatar:hover {
+    transform: scale(1.05) rotate(-5deg);
+}
+
+.greeting-text {
+    flex: 1;
+}
+
+.welcome-title {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-extrabold);
+    margin-bottom: var(--space-2);
+    color: var(--white);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+    font-size: var(--font-size-base);
+    opacity: 0.95;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.welcome-subtitle i {
+    opacity: 0.9;
+}
+
+.separator {
+    opacity: 0.5;
+    margin: 0 var(--space-2);
+}
+
+.pending-notice {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-medium);
+    backdrop-filter: blur(10px);
+}
+
+/* Header action buttons - Exact match with programs-index.css */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.top-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0.625rem 1.25rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-semibold);
+    text-decoration: none;
+    transition: all var(--transition-base);
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.top-action-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: var(--white);
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Dashboard Footer - Following programs pattern */
+.dashboard-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    text-align: center;
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+}
+
+/* Responsive - Exact match with programs-index.css */
 @media (max-width: 768px) {
     .hide-on-tablet {
         display: none !important;
@@ -436,6 +835,10 @@
     
     .search-container {
         min-width: unset;
+        width: 100%;
+    }
+    
+    .filter-container {
         width: 100%;
     }
     
@@ -464,6 +867,17 @@
     .clickable-card:hover {
         transform: translateY(-2px);
     }
+    
+    .card-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .pagination-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 576px) {
@@ -489,4 +903,775 @@
     .stats-grid-compact {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 480px) {
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Additional styles for course index */
+
+.credits-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 1rem;
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+}
+
+.credits-mobile i {
+    font-size: 0.75rem;
+    color: var(--warning);
+}
+
+.credits-badge {
+    font-size: var(--font-size-xs);
+    color: var(--primary);
+    margin-top: 0.25rem;
+    font-weight: var(--font-medium);
+}
+
+.status-detail {
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+    margin-top: 0.25rem;
+}
+
+/* Badge variants */
+.badge-info {
+    background: var(--info-light);
+    color: var(--info-dark);
+}
+
+.badge-secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+/* Course status indicators */
+.courses-table td .status-detail {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* ============================================
+   RESPONSIVE FIXES - Course Index
+   ============================================ */
+
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
+    .stats-grid-compact {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 1.25rem 1rem;
+    }
+}
+
+/* Desktop (992px to 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .stats-grid-compact {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.875rem;
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 1rem 0.875rem;
+    }
+    
+    .course-icon {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .teacher-avatar {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* Tablet Landscape (768px to 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.875rem;
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 0.875rem 0.75rem;
+    }
+    
+    .course-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .course-name {
+        font-size: 0.9375rem;
+    }
+    
+    .course-desc {
+        font-size: 0.8125rem;
+    }
+    
+    .teacher-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8125rem;
+    }
+    
+    .teacher-name {
+        font-size: 0.8125rem;
+    }
+    
+    .count-number {
+        font-size: 1.25rem;
+    }
+}
+
+/* Tablet Portrait (576px to 767px) */
+@media (min-width: 576px) and (max-width: 767px) {
+    .dashboard-header {
+        padding: var(--space-6);
+    }
+    
+    .user-avatar {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+    
+    .welcome-title {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .welcome-subtitle {
+        font-size: var(--font-size-sm);
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.875rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 0.75rem;
+    }
+    
+    .course-icon {
+        width: 38px;
+        height: 38px;
+    }
+    
+    .course-mobile-info {
+        display: block;
+        margin-top: 0.5rem;
+    }
+    
+    .course-code-mobile,
+    .program-mobile,
+    .teacher-mobile,
+    .credits-mobile {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-right: 1rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+        background: var(--gray-50);
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--gray-200);
+    }
+    
+    .course-code-mobile i,
+    .program-mobile i,
+    .teacher-mobile i,
+    .credits-mobile i {
+        font-size: 0.7rem;
+        color: var(--primary);
+    }
+    
+    .teacher-mobile i {
+        color: var(--success);
+    }
+    
+    .credits-mobile i {
+        color: var(--warning);
+    }
+    
+    .hide-on-tablet {
+        display: none !important;
+    }
+}
+
+/* Mobile Large (425px to 575px) */
+@media (min-width: 425px) and (max-width: 575px) {
+    .dashboard-header {
+        padding: var(--space-4);
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-4);
+    }
+    
+    .user-greeting {
+        gap: var(--space-3);
+    }
+    
+    .user-avatar {
+        width: 3rem;
+        height: 3rem;
+        font-size: var(--font-size-lg);
+    }
+    
+    .welcome-title {
+        font-size: var(--font-size-xl);
+    }
+    
+    .welcome-subtitle {
+        font-size: var(--font-size-xs);
+    }
+    
+    .header-actions {
+        width: 100%;
+    }
+    
+    .top-action-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        font-size: var(--font-size-xs);
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.875rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-4);
+    }
+    
+    .header-actions-bar {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-container,
+    .filter-container {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .course-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
+    }
+    
+    .course-name {
+        font-size: 0.875rem;
+    }
+    
+    .course-desc {
+        display: none;
+    }
+    
+    .course-mobile-info {
+        display: block;
+    }
+    
+    .course-code-mobile,
+    .program-mobile,
+    .teacher-mobile,
+    .credits-mobile {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-right: 0.75rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.7rem;
+        background: var(--gray-50);
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--gray-200);
+    }
+    
+    .students-count {
+        text-align: left;
+    }
+    
+    .count-number {
+        font-size: 1rem;
+    }
+    
+    .count-label {
+        font-size: 0.6rem;
+    }
+    
+    .card-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .pagination-info {
+        width: 100%;
+    }
+    
+    .pagination-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .status-detail {
+        font-size: 0.6rem;
+    }
+}
+
+/* Mobile Small (up to 424px) */
+@media (max-width: 424px) {
+    .dashboard-header {
+        padding: var(--space-3);
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+    
+    .user-greeting {
+        gap: var(--space-2);
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: var(--font-size-base);
+    }
+    
+    .welcome-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.7rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+    }
+    
+    .top-action-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0.5rem 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.25rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+        padding: 1rem;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .header-actions-bar {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+    
+    .search-container,
+    .filter-container {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .search-input {
+        padding: 0.625rem 1rem 0.625rem 2.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .courses-table th,
+    .courses-table td {
+        padding: 0.625rem 0.375rem;
+    }
+    
+    .course-info-cell {
+        gap: 0.5rem;
+    }
+    
+    .course-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+    
+    .course-name {
+        font-size: 0.8125rem;
+    }
+    
+    .course-mobile-info {
+        display: block;
+    }
+    
+    .course-code-mobile,
+    .program-mobile,
+    .teacher-mobile,
+    .credits-mobile {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.125rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .count-number {
+        font-size: 0.9375rem;
+    }
+    
+    .count-label {
+        font-size: 0.55rem;
+    }
+    
+    .item-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.65rem;
+    }
+    
+    .card-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0.875rem;
+    }
+    
+    .pagination-info {
+        font-size: 0.7rem;
+    }
+    
+    .pagination-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        min-width: 28px;
+    }
+    
+    .credits-badge {
+        font-size: 0.6rem;
+    }
+}
+
+/* ============================================
+   COMMON RESPONSIVE FIXES FOR ALL INDEX PAGES
+   ============================================ */
+
+/* Fix for very small devices */
+@media (max-width: 360px) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .user-avatar {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .welcome-title {
+        font-size: 1rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.65rem;
+    }
+    
+    .top-action-btn {
+        padding: 0.4rem 0.4rem;
+        font-size: 0.65rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.625rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.125rem;
+    }
+    
+    .stats-grid-compact .stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .stats-grid-compact .stat-icon {
+        font-size: 1.125rem;
+    }
+    
+    .stats-grid-compact .stat-link {
+        font-size: 0.6rem;
+        padding: 0.25rem;
+    }
+    
+    .card-header {
+        padding: 0.875rem;
+    }
+    
+    .card-title {
+        font-size: 0.9375rem;
+    }
+    
+    .table-responsive {
+        border-radius: 0.375rem;
+    }
+    
+    th, td {
+        padding: 0.5rem 0.25rem !important;
+    }
+    
+    .program-icon,
+    .course-icon,
+    .topic-icon {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .program-name,
+    .course-name,
+    .topic-name {
+        font-size: 0.75rem !important;
+    }
+    
+    .program-code-mobile,
+    .college-mobile,
+    .course-code-mobile,
+    .program-mobile,
+    .teacher-mobile,
+    .credits-mobile,
+    .course-mobile,
+    .creator-mobile {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.35rem !important;
+    }
+    
+    .count-number {
+        font-size: 0.875rem !important;
+    }
+    
+    .count-label {
+        font-size: 0.5rem !important;
+    }
+    
+    .item-badge {
+        padding: 0.15rem 0.35rem !important;
+        font-size: 0.6rem !important;
+    }
+    
+    .pagination-info {
+        font-size: 0.6rem;
+    }
+    
+    .pagination-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.6rem;
+        min-width: 24px;
+    }
+    
+    .empty-icon {
+        font-size: 1.75rem;
+    }
+    
+    .empty-title {
+        font-size: 0.875rem;
+    }
+    
+    .empty-text {
+        font-size: 0.65rem;
+    }
+}
+
+/* Fix for height issues on mobile */
+@media (max-height: 600px) and (max-width: 768px) {
+    .dashboard-header {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .stats-grid-compact {
+        margin-bottom: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.625rem;
+    }
+    
+    .card-body {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+}
+
+/* Ensure touch targets are large enough on mobile */
+@media (max-width: 768px) {
+    .clickable-row td:first-child {
+        position: relative;
+    }
+    
+    .clickable-row td:first-child::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: transparent;
+    }
+    
+    .pagination-btn {
+        min-height: 36px;
+        min-width: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn, .top-action-btn {
+        min-height: 44px;
+    }
+    
+    .search-input, .form-select {
+        min-height: 44px;
+    }
+}
+
+/* Fix for landscape orientation on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.25rem;
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .table-responsive {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}
+
+/* Fix for tablets in landscape with limited height */
+@media (min-width: 768px) and (max-width: 1024px) and (max-height: 600px) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .stats-grid-compact {
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        max-height: 350px;
+        overflow-y: auto;
+    }
+}
+
+/* Creator Info Styles */
+.creator-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.creator-name {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.875rem;
+}
+
+.creator-role {
+    font-size: 0.6875rem;
+    color: #718096;
+    margin-top: 2px;
+}
+
+.no-creator {
+    font-size: 0.8125rem;
+    color: #a0aec0;
+    font-style: italic;
 }

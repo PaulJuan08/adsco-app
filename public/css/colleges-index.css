@@ -642,3 +642,428 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ================================================================
+   HEADER ADDITIONS — paste at the END of colleges-index.css
+   and programs-index.css to make headers consistent with dashboard
+   ================================================================ */
+
+/* ---- Dashboard Header (overrides any existing .dashboard-header) ---- */
+.dashboard-header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    margin-bottom: var(--space-8);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1)),
+                linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.1) 75%, rgba(255, 255, 255, 0.1));
+    background-size: 60px 60px;
+    background-position: 0 0, 30px 30px;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.user-greeting {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.user-avatar {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-bold);
+    color: var(--white);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
+}
+
+.user-avatar:hover {
+    transform: scale(1.05) rotate(-5deg);
+}
+
+.greeting-text {
+    flex: 1;
+}
+
+.welcome-title {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-extrabold);
+    margin-bottom: var(--space-2);
+    color: var(--white);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+    font-size: var(--font-size-base);
+    opacity: 0.95;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.welcome-subtitle i {
+    opacity: 0.9;
+}
+
+.separator {
+    opacity: 0.5;
+    margin: 0 var(--space-2);
+}
+
+.pending-notice {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-medium);
+    backdrop-filter: blur(10px);
+}
+
+/* ---- Header action buttons ---- */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.top-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0.625rem 1.25rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-semibold);
+    text-decoration: none;
+    transition: all var(--transition-base);
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.top-action-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: var(--white);
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ---- Card toolbar (search + filter + buttons inside card-header) ---- */
+.header-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btn-secondary {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    padding: 0.625rem 1rem;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.btn-secondary:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1024px) {
+    .dashboard-header { padding: var(--space-6); }
+    .welcome-title { font-size: var(--font-size-2xl); }
+    .user-avatar { width: 3.5rem; height: 3.5rem; font-size: var(--font-size-xl); }
+    .card-header { flex-direction: column; align-items: stretch; gap: var(--space-4); }
+    .header-actions-bar { width: 100%; }
+}
+
+@media (max-width: 768px) {
+    .header-content { flex-direction: column; align-items: flex-start; gap: var(--space-4); }
+    .header-actions { width: 100%; }
+    .top-action-btn { flex: 1; justify-content: center; }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header { padding: var(--space-4); }
+    .welcome-title { font-size: var(--font-size-xl); }
+}
+
+@media (max-width: 480px) {
+    .stats-grid-compact { grid-template-columns: 1fr; }
+}
+
+/* ============================================
+   COMMON RESPONSIVE FIXES FOR ALL INDEX PAGES
+   ============================================ */
+
+/* Fix for very small devices */
+@media (max-width: 360px) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .user-avatar {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .welcome-title {
+        font-size: 1rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.65rem;
+    }
+    
+    .top-action-btn {
+        padding: 0.4rem 0.4rem;
+        font-size: 0.65rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.625rem;
+    }
+    
+    .stats-grid-compact .stat-number {
+        font-size: 1.125rem;
+    }
+    
+    .stats-grid-compact .stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .stats-grid-compact .stat-icon {
+        font-size: 1.125rem;
+    }
+    
+    .stats-grid-compact .stat-link {
+        font-size: 0.6rem;
+        padding: 0.25rem;
+    }
+    
+    .card-header {
+        padding: 0.875rem;
+    }
+    
+    .card-title {
+        font-size: 0.9375rem;
+    }
+    
+    .table-responsive {
+        border-radius: 0.375rem;
+    }
+    
+    th, td {
+        padding: 0.5rem 0.25rem !important;
+    }
+    
+    .program-icon,
+    .course-icon,
+    .topic-icon {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .program-name,
+    .course-name,
+    .topic-name {
+        font-size: 0.75rem !important;
+    }
+    
+    .program-code-mobile,
+    .college-mobile,
+    .course-code-mobile,
+    .program-mobile,
+    .teacher-mobile,
+    .credits-mobile,
+    .course-mobile,
+    .creator-mobile {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.35rem !important;
+    }
+    
+    .count-number {
+        font-size: 0.875rem !important;
+    }
+    
+    .count-label {
+        font-size: 0.5rem !important;
+    }
+    
+    .item-badge {
+        padding: 0.15rem 0.35rem !important;
+        font-size: 0.6rem !important;
+    }
+    
+    .pagination-info {
+        font-size: 0.6rem;
+    }
+    
+    .pagination-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.6rem;
+        min-width: 24px;
+    }
+    
+    .empty-icon {
+        font-size: 1.75rem;
+    }
+    
+    .empty-title {
+        font-size: 0.875rem;
+    }
+    
+    .empty-text {
+        font-size: 0.65rem;
+    }
+}
+
+/* Fix for height issues on mobile */
+@media (max-height: 600px) and (max-width: 768px) {
+    .dashboard-header {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .stats-grid-compact {
+        margin-bottom: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.625rem;
+    }
+    
+    .card-body {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+}
+
+/* Ensure touch targets are large enough on mobile */
+@media (max-width: 768px) {
+    .clickable-row td:first-child {
+        position: relative;
+    }
+    
+    .clickable-row td:first-child::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: transparent;
+    }
+    
+    .pagination-btn {
+        min-height: 36px;
+        min-width: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn, .top-action-btn {
+        min-height: 44px;
+    }
+    
+    .search-input, .form-select {
+        min-height: 44px;
+    }
+}
+
+/* Fix for landscape orientation on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.25rem;
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .table-responsive {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}
+
+/* Fix for tablets in landscape with limited height */
+@media (min-width: 768px) and (max-width: 1024px) and (max-height: 600px) {
+    .dashboard-header {
+        padding: 0.75rem;
+    }
+    
+    .stats-grid-compact {
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        max-height: 350px;
+        overflow-y: auto;
+    }
+}

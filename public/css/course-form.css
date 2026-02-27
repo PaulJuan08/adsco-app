@@ -993,3 +993,280 @@ textarea.is-invalid {
         font-size: 1rem;
     }
 }
+
+/* ============================================
+   PUBLISH TOGGLE SWITCH - For Course Forms
+   ============================================ */
+
+/* Publish Toggle Container */
+.publish-toggle-container {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.publish-toggle-container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e0;
+}
+
+.publish-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.publish-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+}
+
+.publish-text h4 {
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.publish-text p {
+    font-size: 0.8125rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* Modern Toggle Switch */
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.toggle-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    min-width: 80px;
+}
+
+.toggle-status i {
+    font-size: 0.875rem;
+}
+
+.status-draft {
+    color: #dd6b20;
+}
+
+.status-published {
+    color: #38a169;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e0;
+    transition: .3s;
+    border-radius: 34px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background-color: #48bb78;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+}
+
+/* Publish Info Card (for edit form) */
+.publish-info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.publish-info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f7fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #718096;
+    font-size: 1rem;
+}
+
+.publish-info-content {
+    flex: 1;
+}
+
+.publish-info-label {
+    font-size: 0.6875rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.125rem;
+}
+
+.publish-info-value {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.publish-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.publish-badge.published {
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #9ae6b4;
+}
+
+.publish-badge.draft {
+    background: #fffaf0;
+    color: #744210;
+    border: 1px solid #fbd38d;
+}
+
+/* Status Badge in Preview */
+.course-preview-status {
+    padding: 0.375rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid transparent;
+}
+
+.status-published {
+    background: #f0fff4;
+    color: #276749;
+    border-color: #9ae6b4;
+}
+
+.status-draft {
+    background: #fffaf0;
+    color: #744210;
+    border-color: #fbd38d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .publish-toggle-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .toggle-wrapper {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .publish-info {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .publish-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .publish-text h4 {
+        font-size: 0.9375rem;
+    }
+    
+    .publish-text p {
+        font-size: 0.75rem;
+    }
+    
+    .toggle-switch {
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-slider:before {
+        height: 20px;
+        width: 20px;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+}

@@ -27,8 +27,30 @@
                 </div>
                 <div class="course-preview-title" id="previewTitle">New Course</div>
                 <div class="course-preview-code" id="previewCode">---</div>
-                <div class="course-preview-status">
-                    <i class="fas fa-check-circle"></i> Published
+                <div class="course-preview-status" id="previewStatus">
+                    <i class="fas fa-clock"></i> Draft
+                </div>
+            </div>
+
+            <!-- Publish Toggle -->
+            <div class="publish-toggle-container">
+                <div class="publish-info">
+                    <div class="publish-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="publish-text">
+                        <h4>Course Visibility</h4>
+                        <p>Control whether this course is visible to students</p>
+                    </div>
+                </div>
+                <div class="toggle-wrapper">
+                    <div class="toggle-status" id="toggleStatusText">
+                        <span class="status-draft"><i class="fas fa-clock"></i> Draft</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="publishToggle" name="is_published" value="1" form="courseForm">
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
 
@@ -180,21 +202,8 @@
                             </div>
                         </div>
                         
-                        <!-- Status Notice -->
-                        <div class="status-notice">
-                            <i class="fas fa-info-circle"></i>
-                            <div class="status-notice-content">
-                                <div class="status-notice-title">Course Status</div>
-                                <div class="status-notice-text">
-                                    New courses are automatically created as <strong>Published</strong> and <strong>Active</strong>. 
-                                    They will be visible to enrolled students immediately.
-                                </div>
-                            </div>
-                        </div>
-                        
                         <!-- Hidden fields -->
                         <input type="hidden" name="status" value="active">
-                        <input type="hidden" name="is_published" value="1">
                     </form>
                 </div>
                 
@@ -244,6 +253,16 @@
                                 <div class="guideline-content">
                                     <div class="guideline-title">Credits</div>
                                     <div class="guideline-text">Enter between 0.5 and 10 credits</div>
+                                </div>
+                            </div>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Publish Status</div>
+                                    <div class="guideline-text">Toggle to make course visible to students</div>
                                 </div>
                             </div>
                         </div>
@@ -320,6 +339,9 @@
         const codeInput = document.getElementById('course_code');
         const previewTitle = document.getElementById('previewTitle');
         const previewCode = document.getElementById('previewCode');
+        const previewStatus = document.getElementById('previewStatus');
+        const publishToggle = document.getElementById('publishToggle');
+        const toggleStatusText = document.getElementById('toggleStatusText');
         const avatarLetter = document.getElementById('avatarLetter');
         const submitButton = document.getElementById('submitButton');
         
@@ -343,8 +365,24 @@
             }
         }
         
+        // Update publish status
+        function updatePublishStatus() {
+            const isPublished = publishToggle.checked;
+            
+            if (isPublished) {
+                toggleStatusText.innerHTML = '<span class="status-published"><i class="fas fa-check-circle"></i> Published</span>';
+                previewStatus.innerHTML = '<i class="fas fa-check-circle"></i> Published';
+                previewStatus.className = 'course-preview-status status-published';
+            } else {
+                toggleStatusText.innerHTML = '<span class="status-draft"><i class="fas fa-clock"></i> Draft</span>';
+                previewStatus.innerHTML = '<i class="fas fa-clock"></i> Draft';
+                previewStatus.className = 'course-preview-status status-draft';
+            }
+        }
+        
         titleInput.addEventListener('input', updatePreview);
         codeInput.addEventListener('input', updatePreview);
+        publishToggle.addEventListener('change', updatePublishStatus);
         
         // Auto-generate course code suggestion
         titleInput.addEventListener('input', function() {
@@ -475,6 +513,10 @@
         document.getElementById('previewTitle').textContent = 'New Course';
         document.getElementById('previewCode').textContent = '---';
         document.getElementById('avatarLetter').textContent = '📚';
+        document.getElementById('publishToggle').checked = false;
+        document.getElementById('toggleStatusText').innerHTML = '<span class="status-draft"><i class="fas fa-clock"></i> Draft</span>';
+        document.getElementById('previewStatus').innerHTML = '<i class="fas fa-clock"></i> Draft';
+        document.getElementById('previewStatus').className = 'course-preview-status status-draft';
         
         // Clear error states
         document.querySelectorAll('.form-input, .form-textarea, .form-select').forEach(el => {

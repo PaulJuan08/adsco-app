@@ -566,6 +566,18 @@
     font-size: 0.875rem;
 }
 
+.action-btn-small.action-btn-success {
+    color: #065f46;
+    border-color: #9ae6b4;
+    background: #d1fae5;
+}
+
+.action-btn-small.action-btn-success:hover {
+    background: #48bb78;
+    color: white;
+    border-color: #48bb78;
+}
+
 /*----------------------------------------
   STUDENT INFO SMALL
 ----------------------------------------*/

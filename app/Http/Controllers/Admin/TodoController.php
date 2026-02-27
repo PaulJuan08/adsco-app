@@ -67,10 +67,13 @@ class TodoController extends Controller
         $totalAssignments  = Assignment::count();
         $totalAccess       = QuizStudentAccess::where('status', 'allowed')->count()
                            + AssignmentStudentAccess::where('status', 'allowed')->count();
+        
+        // Calculate pending reviews (ungraded submissions)
+        $pendingReviews = AssignmentSubmission::whereIn('status', ['submitted', 'late'])->count();
 
         return view('admin.todo.index', compact(
             'quizzes', 'assignments', 'type', 'search',
-            'totalQuizzes', 'totalAssignments', 'totalAccess'
+            'totalQuizzes', 'totalAssignments', 'totalAccess', 'pendingReviews'
         ));
     }
 
@@ -714,5 +717,81 @@ class TodoController extends Controller
             'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
             'collegeId', 'programId', 'year', 'searchName'
         ));
+    }
+
+    /**
+     * Get dashboard statistics
+     */
+    public function getStats()
+    {
+        $stats = [
+            'total_quizzes' => Quiz::count(),
+            'total_assignments' => Assignment::count(),
+            'total_access_grants' => QuizStudentAccess::where('status', 'allowed')->count() 
+                                    + AssignmentStudentAccess::where('status', 'allowed')->count(),
+            'pending_reviews' => AssignmentSubmission::whereIn('status', ['submitted', 'late'])->count(),
+            'recent_activities' => $this->getRecentActivities()
+        ];
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Get recent activities
+     */
+    private function getRecentActivities($limit = 10)
+    {
+        $activities = collect();
+
+        // Get recent quiz attempts
+        $quizAttempts = QuizAttempt::with(['user', 'quiz'])
+            ->whereNotNull('completed_at')
+            ->latest('completed_at')
+            ->take($limit)
+            ->get()
+            ->map(function ($attempt) {
+                return [
+                    'type' => 'quiz_attempt',
+                    'user' => $attempt->user ? $attempt->user->full_name : 'Unknown',
+                    'item' => $attempt->quiz ? $attempt->quiz->title : 'Unknown Quiz',
+                    'score' => $attempt->percentage . '%',
+                    'passed' => $attempt->passed,
+                    'date' => $attempt->completed_at
+                ];
+            });
+
+        // Get recent assignment submissions
+        $submissions = AssignmentSubmission::with(['student', 'assignment'])
+            ->latest('submitted_at')
+            ->take($limit)
+            ->get()
+            ->map(function ($submission) {
+                return [
+                    'type' => 'submission',
+                    'user' => $submission->student ? $submission->student->full_name : 'Unknown',
+                    'item' => $submission->assignment ? $submission->assignment->title : 'Unknown Assignment',
+                    'status' => $submission->status,
+                    'date' => $submission->submitted_at
+                ];
+            });
+
+        // Merge and sort by date
+        $activities = $quizAttempts->concat($submissions)
+            ->sortByDesc('date')
+            ->take($limit)
+            ->values();
+
+        return $activities;
+    }
+
+    /**
+     * Clear todo-related caches
+     */
+    public function clearCache()
+    {
+        Cache::flush();
+        
+        return redirect()->back()
+            ->with('success', 'All todo caches cleared successfully.');
     }
 }

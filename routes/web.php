@@ -34,6 +34,7 @@ use App\Http\Controllers\Teacher\ProgressController as TeacherProgressController
 use App\Http\Controllers\Teacher\TodoController as TeacherTodoController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\ProfileController as TeacherProfileController;
+use App\Http\Controllers\Teacher\EnrollmentController as TeacherEnrollmentController;
 
 // ==================== STUDENT CONTROLLERS ====================
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
@@ -256,17 +257,32 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/profile/edit', [TeacherProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [TeacherProfileController::class, 'update'])->name('profile.update');
 
-        // Course Management
+        // ============ COURSE MANAGEMENT (FULL CRUD) ============
         Route::resource('courses', TeacherCourseController::class)->parameters(['courses' => 'encryptedId']);
-        Route::get('/courses/{encryptedId}/available-topics', [TeacherCourseController::class, 'availableTopics'])->name('courses.available-topics');
-        Route::post('/courses/{encryptedId}/add-topic', [TeacherCourseController::class, 'addTopic'])->name('courses.add-topic');
-        Route::post('/courses/{encryptedId}/add-topics', [TeacherCourseController::class, 'addTopics'])->name('courses.add-topics');
-        Route::post('/courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
+        
+        // Publish/Unpublish course
+        Route::patch('courses/{encryptedId}/publish', [TeacherCourseController::class, 'publish'])->name('courses.publish');
+        
+        // Access management
+        Route::get('courses/{encryptedId}/access-modal', [TeacherCourseController::class, 'accessModal'])->name('courses.access.modal');
+        Route::post('courses/{encryptedId}/toggle-enrollment', [TeacherCourseController::class, 'toggleEnrollment'])->name('courses.toggle-enrollment');
+        
+        // Topic management for courses
+        Route::get('courses/{encryptedId}/available-topics', [TeacherCourseController::class, 'availableTopics'])->name('courses.available-topics');
+        Route::post('courses/{encryptedId}/add-topic', [TeacherCourseController::class, 'addTopic'])->name('courses.add-topic');
+        Route::post('courses/{encryptedId}/add-topics', [TeacherCourseController::class, 'addTopics'])->name('courses.add-topics');
+        Route::post('courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
 
-        // Topic Management
+        // ============ TOPIC MANAGEMENT ============
         Route::resource('topics', TeacherTopicController::class)->parameters(['topics' => 'encryptedId']);
+        
+        // FIX: Add publish route for topics (this was missing)
+        Route::patch('topics/{encryptedId}/publish', [TeacherTopicController::class, 'publish'])->name('topics.publish');
+        
+        // Optional: Add clear cache route for topics
+        Route::get('topics/clear-cache', [TeacherTopicController::class, 'clearCache'])->name('topics.clear-cache');
 
-        // Quiz Management - REMOVED INDEX
+        // ============ QUIZ MANAGEMENT ============
         Route::get('/quizzes', function() {
             return redirect()->route('teacher.todo.index', ['type' => 'quiz']);
         })->name('quizzes.index');
@@ -280,43 +296,59 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('/quizzes/{encryptedId}/toggle-publish', [TeacherQuizController::class, 'togglePublish'])->name('quizzes.toggle-publish');
         Route::get('/quizzes/{encryptedId}/results', [TeacherQuizController::class, 'results'])->name('quizzes.results');
         
-        // Assignment Management - REMOVED INDEX
+        // ============ ASSIGNMENT MANAGEMENT ============
         Route::get('/assignments', function() {
             return redirect()->route('teacher.todo.index', ['type' => 'assignment']);
         })->name('assignments.index');
-        
+
         Route::get('/assignments/create', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
         Route::post('/assignments', [TeacherAssignmentController::class, 'store'])->name('assignments.store');
         Route::get('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'show'])->name('assignments.show');
         Route::get('/assignments/{encryptedId}/edit', [TeacherAssignmentController::class, 'edit'])->name('assignments.edit');
         Route::put('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'update'])->name('assignments.update');
         Route::delete('/assignments/{encryptedId}', [TeacherAssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::patch('/assignments/{encryptedId}/publish', [TeacherAssignmentController::class, 'togglePublish'])->name('assignments.publish');
         
-        // Progress & Analytics
+        // ============ PROGRESS & ANALYTICS ============
         Route::get('/progress', [TeacherProgressController::class, 'index'])->name('progress.index');
         Route::get('/enrollments', [TeacherCourseController::class, 'enrollments'])->name('enrollments');
+
+        // ============ ENROLLMENT MANAGEMENT ============
+        Route::prefix('enrollments')->name('enrollments.')->group(function () {
+            Route::get('/', [TeacherEnrollmentController::class, 'index'])->name('index');
+            Route::get('/students', [TeacherEnrollmentController::class, 'getStudents'])->name('students');
+            Route::get('/course/{encryptedCourseId}/students', [TeacherEnrollmentController::class, 'getEnrolledStudents'])->name('course.students');
+            Route::get('/course/{encryptedCourseId}/student-ids', [TeacherEnrollmentController::class, 'getEnrolledStudentIds'])->name('student-ids');
+            Route::post('/enroll', [TeacherEnrollmentController::class, 'enroll'])->name('enroll');
+            Route::post('/remove', [TeacherEnrollmentController::class, 'remove'])->name('remove');
+            Route::get('/programs/{collegeId}', [TeacherEnrollmentController::class, 'getProgramsByCollege'])->name('programs');
+        });
 
         // ============ TEACHER TODO MANAGEMENT ============
         Route::prefix('todo')->name('todo.')->group(function () {
             // Main dashboard
             Route::get('/', [TeacherTodoController::class, 'index'])->name('index');
             
-            // Quiz Access Management
+            // Quiz routes - ADD THESE MISSING ROUTES
+            Route::get('/quiz/{encryptedId}/show', [TeacherTodoController::class, 'quizShow'])->name('quiz.show');
+            Route::get('/quiz/{encryptedId}/access-modal', [TeacherTodoController::class, 'quizAccessModal'])->name('quiz.access.modal');
+            
+            // Quiz Access Management (you already have these)
             Route::get('/quiz/{encryptedId}/access', [TeacherTodoController::class, 'quizAccess'])->name('quiz.access');
             Route::post('/quiz/{encryptedId}/grant', [TeacherTodoController::class, 'grantQuizAccess'])->name('quiz.grant');
             Route::post('/quiz/{encryptedId}/revoke', [TeacherTodoController::class, 'revokeQuizAccess'])->name('quiz.revoke');
             Route::post('/quiz/{encryptedId}/toggle/{studentId}', [TeacherTodoController::class, 'toggleQuizAccess'])->name('quiz.toggle');
             
-            // Assignment Access Management
+            // Assignment Access Management (you already have these)
             Route::get('/assignment/{encryptedId}/access', [TeacherTodoController::class, 'assignmentAccess'])->name('assignment.access');
             Route::post('/assignment/{encryptedId}/grant', [TeacherTodoController::class, 'grantAssignmentAccess'])->name('assignment.grant');
             Route::post('/assignment/{encryptedId}/revoke', [TeacherTodoController::class, 'revokeAssignmentAccess'])->name('assignment.revoke');
             Route::post('/assignment/{encryptedId}/toggle/{studentId}', [TeacherTodoController::class, 'toggleAssignmentAccess'])->name('assignment.toggle');
             
-            // Assignment Show (Unified page) - for teachers
+            // Assignment Show (Unified page)
             Route::get('/assignment/{encryptedId}/show', [TeacherTodoController::class, 'assignmentShow'])->name('assignment.show');
             
-            // Assignment Access Modal (AJAX) - for teachers
+            // Assignment Access Modal (AJAX)
             Route::get('/assignment/{encryptedId}/access-modal', [TeacherTodoController::class, 'assignmentAccessModal'])->name('assignment.access.modal');
             
             // Progress Tracking (Unified)
@@ -329,6 +361,9 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             // AJAX Helpers
             Route::get('/colleges/{collegeId}/programs', [TeacherTodoController::class, 'getProgramsByCollege'])->name('colleges.programs');
         });
+
+        // ============ AJAX HELPERS (OUTSIDE TODO) ============
+        Route::get('/colleges/{collegeId}/programs', [TeacherCourseController::class, 'getProgramsByCollege'])->name('colleges.programs');
     });
     
     // ==================== STUDENT ROUTES ====================

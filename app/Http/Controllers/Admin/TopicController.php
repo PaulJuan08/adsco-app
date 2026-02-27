@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Traits\CacheManager;
 use Illuminate\Support\Facades\Log;
+use App\Models\User; 
+use Illuminate\Support\Facades\Auth;
 
 class TopicController extends Controller
 {
@@ -19,10 +21,16 @@ class TopicController extends Controller
     
     public function index()
     {
-        // Get topics with specific columns only
-        $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
+        // Get topics with creator relationship
+        $topics = Topic::with(['creator', 'courses']) // Add creator and courses relationships
+            ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at', 'created_by'])
             ->latest()
             ->paginate(10);
+        
+        // Get all courses for the filter dropdown
+        $courses = Course::select(['id', 'title', 'course_code'])
+            ->orderBy('title')
+            ->get();
         
         // Get all statistics in ONE optimized query
         $stats = Topic::selectRaw('
@@ -38,6 +46,7 @@ class TopicController extends Controller
         
         return view('admin.topics.index', [
             'topics' => $topics,
+            'courses' => $courses, // Pass courses to the view for the filter dropdown
             'publishedTopics' => $stats->published_topics ?? 0,
             'draftTopics' => $stats->draft_topics ?? 0,
             'topicsThisMonth' => $stats->topics_this_month ?? 0,
@@ -67,6 +76,7 @@ class TopicController extends Controller
         // Add default values
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
+        $validated['created_by'] = Auth::id(); // This will now work with Auth imported
 
         // 🔥 SIMPLE PDF UPLOAD - Works on both local and live
         if ($request->hasFile('pdf_file')) {
@@ -102,8 +112,8 @@ class TopicController extends Controller
             $cacheKey = 'admin_topic_show_' . $id;
             
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
-                return Topic::with(['courses']) // Add this to load courses relationship
-                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at'])
+                return Topic::with(['courses', 'creator']) // Add creator here
+                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by'])
                     ->findOrFail($id);
             });
             
@@ -114,7 +124,8 @@ class TopicController extends Controller
                 'pdf_url' => self::getPdfUrl($topic->pdf_file)
             ]);
             
-            return view('admin.topics.show', compact('topic'));
+            // PASS THE ENCRYPTED ID TO THE VIEW
+            return view('admin.topics.show', compact('topic', 'encryptedId'));
             
         } catch (\Exception $e) {
             Log::error('Error showing topic', [
@@ -436,11 +447,12 @@ class TopicController extends Controller
                 $this->clearStudentCachesForCourse($course->id);
             }
             
+            // Use the encryptedId parameter directly, not re-encrypting
             return redirect()->route('admin.topics.show', $encryptedId)
                 ->with('success', "Topic {$status} successfully!");
                 
         } catch (\Exception $e) {
-            Log::error('Error publishing topic', [ // This now works with the import
+            Log::error('Error publishing topic', [
                 'encryptedId' => $encryptedId,
                 'error' => $e->getMessage()
             ]);

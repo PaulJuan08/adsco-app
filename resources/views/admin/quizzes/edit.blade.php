@@ -29,14 +29,51 @@
                     {{ $quiz->title }}
                 </div>
                 <div class="quiz-preview-meta">
-                    <span class="quiz-preview-badge">
-                        <i class="fas fa-question-circle"></i> 
-                        {{ $quiz->questions->count() }} Questions
+                    <span class="quiz-preview-badge {{ $quiz->is_published ? 'published' : 'draft' }}" id="previewStatus">
+                        <i class="fas {{ $quiz->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i> 
+                        {{ $quiz->is_published ? 'Published' : 'Draft' }}
                     </span>
                     <span class="quiz-preview-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-question-circle"></i> 
+                        <span id="totalQuestionsPreview">{{ $quiz->questions->count() }}</span> Questions
+                    </span>
+                    <span class="quiz-preview-badge" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
                         <i class="fas fa-clock"></i> 
                         {{ $quiz->duration ?? 'No' }} min
                     </span>
+                </div>
+            </div>
+
+            <!-- Publish Toggle Section -->
+            <div class="publish-section">
+                <div class="publish-toggle">
+                    <div class="publish-label">
+                        <i class="fas fa-globe"></i>
+                        <span>Publish Status</span>
+                    </div>
+                    
+                    <label class="toggle-switch">
+                        <input type="checkbox" 
+                               id="publish-toggle" 
+                               name="is_published" 
+                               value="1"
+                               form="quizForm"
+                               {{ $quiz->is_published ? 'checked' : '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    
+                    <div class="toggle-status" id="publish-status">
+                        @if($quiz->is_published)
+                            <span class="published">Published</span>
+                        @else
+                            <span class="draft">Draft</span>
+                        @endif
+                    </div>
+                    
+                    <div class="publish-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Published quizzes are visible to students with access</span>
+                    </div>
                 </div>
             </div>
 
@@ -293,6 +330,12 @@
                                 <span style="font-size: 0.8125rem; font-weight: 600; color: #2d3748;">#{{ $quiz->id }}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; border-top: 1px solid #edf2f7;">
+                                <span style="font-size: 0.75rem; color: #718096;">Status</span>
+                                <span style="font-size: 0.8125rem; font-weight: 600; color: #2d3748;" id="summaryStatus">
+                                    {{ $quiz->is_published ? 'Published' : 'Draft' }}
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.375rem 0; border-top: 1px solid #edf2f7;">
                                 <span style="font-size: 0.75rem; color: #718096;">Total Questions</span>
                                 <span style="font-size: 0.8125rem; font-weight: 600; color: #2d3748;" id="totalQuestionsCount">{{ $quiz->questions->count() }}</span>
                             </div>
@@ -357,6 +400,16 @@
                                     <div class="tip-description">Add duration in minutes or leave empty for no limit</div>
                                 </div>
                             </div>
+                            
+                            <div class="tip-item">
+                                <div class="tip-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="tip-content">
+                                    <div class="tip-title">Publish Status</div>
+                                    <div class="tip-description">Toggle to make quiz visible to students</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -382,6 +435,10 @@
                             <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
                                 <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
                                 <span style="font-size: 0.75rem; color: #4a5568;">Optional explanations help students learn</span>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
+                                <span style="font-size: 0.75rem; color: #4a5568;">Published quizzes are immediately accessible to students</span>
                             </div>
                         </div>
                     </div>
@@ -504,6 +561,10 @@
         const titleInput = document.getElementById('title');
         const previewTitle = document.getElementById('previewTitle');
         const previewIcon = document.getElementById('previewIcon');
+        const publishToggle = document.getElementById('publish-toggle');
+        const publishStatus = document.getElementById('publish-status');
+        const previewStatus = document.getElementById('previewStatus');
+        const summaryStatus = document.getElementById('summaryStatus');
         const submitButton = document.getElementById('submitButton');
         const questionsContainer = document.getElementById('questions-list');
         const addQuestionBtn = document.getElementById('add-question-btn');
@@ -518,9 +579,22 @@
         function updatePreview() {
             const title = titleInput.value.trim();
             previewTitle.textContent = title || 'Quiz Title';
+        }
+        
+        // Update publish status in preview and summary
+        function updatePublishStatus() {
+            const isPublished = publishToggle.checked;
             
-            if (title) {
-                // Keep the icon as is, just update title
+            if (isPublished) {
+                publishStatus.innerHTML = '<span class="published">Published</span>';
+                previewStatus.innerHTML = '<i class="fas fa-check-circle"></i> Published';
+                previewStatus.className = 'quiz-preview-badge published';
+                if (summaryStatus) summaryStatus.textContent = 'Published';
+            } else {
+                publishStatus.innerHTML = '<span class="draft">Draft</span>';
+                previewStatus.innerHTML = '<i class="fas fa-clock"></i> Draft';
+                previewStatus.className = 'quiz-preview-badge draft';
+                if (summaryStatus) summaryStatus.textContent = 'Draft';
             }
         }
         
@@ -528,16 +602,26 @@
             titleInput.addEventListener('input', updatePreview);
         }
         
+        if (publishToggle) {
+            publishToggle.addEventListener('change', updatePublishStatus);
+        }
+        
         // Update total questions count
         function updateTotalQuestionsCount() {
             const totalQuestions = document.querySelectorAll('.question-card').length;
             const countElement = document.getElementById('totalQuestionsCount');
+            const previewCount = document.getElementById('totalQuestionsPreview');
+            
             if (countElement) {
                 countElement.textContent = totalQuestions;
             }
             
+            if (previewCount) {
+                previewCount.textContent = totalQuestions;
+            }
+            
             // Update quiz preview badge
-            const previewBadge = document.querySelector('.quiz-preview-badge:first-child');
+            const previewBadge = document.querySelector('.quiz-preview-badge:nth-child(2)');
             if (previewBadge) {
                 previewBadge.innerHTML = `<i class="fas fa-question-circle"></i> ${totalQuestions} Questions`;
             }
@@ -734,7 +818,6 @@
                 // Update question text name
                 const questionText = card.querySelector('textarea[name*="[question]"]');
                 if (questionText) {
-                    const oldName = questionText.name;
                     questionText.name = `questions[${qIndex}][question]`;
                 }
                 
@@ -1074,10 +1157,12 @@
                     return false;
                 }
                 
-                // Update confirmation
+                // Update confirmation with publish status
+                const publishStatus = publishToggle.checked ? 'Published' : 'Draft';
+                
                 Swal.fire({
                     title: 'Update Quiz?',
-                    text: 'Are you sure you want to update this quiz?',
+                    html: `Are you sure you want to update this quiz?<br><strong>Status will be: ${publishStatus}</strong>`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#667eea',

@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\Topic;
 use App\Models\Course;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Traits\CacheManager;
+use Illuminate\Support\Facades\Log;
 
 class TopicController extends Controller
 {
@@ -20,12 +23,17 @@ class TopicController extends Controller
     {
         $teacherId = Auth::id();
         
-        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
-        
-        // Teachers can see all topics (including those created by others)
-        $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
+        // Get topics with creator relationship - teachers can see all topics
+        $topics = Topic::with(['creator', 'courses']) // Add creator and courses relationships
+            ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at', 'created_by'])
             ->latest()
             ->paginate(10);
+        
+        // Get all courses for the filter dropdown (only teacher's courses)
+        $courses = Course::where('teacher_id', $teacherId)
+            ->select(['id', 'title', 'course_code'])
+            ->orderBy('title')
+            ->get();
         
         // Get all statistics in ONE optimized query
         $stats = Topic::selectRaw('
@@ -41,6 +49,7 @@ class TopicController extends Controller
         
         return view('teacher.topics.index', [
             'topics' => $topics,
+            'courses' => $courses, // Pass courses to the view for the filter dropdown
             'publishedTopics' => $stats->published_topics ?? 0,
             'draftTopics' => $stats->draft_topics ?? 0,
             'topicsThisMonth' => $stats->topics_this_month ?? 0,
@@ -70,8 +79,9 @@ class TopicController extends Controller
         // Add default values
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
+        $validated['created_by'] = Auth::id();
 
-        // 🔥 UPDATED PDF UPLOAD - Simple direct upload
+        // 🔥 SIMPLE PDF UPLOAD - Works on both local and live
         if ($request->hasFile('pdf_file')) {
             $file = $request->file('pdf_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
@@ -85,19 +95,13 @@ class TopicController extends Controller
 
         $topic = Topic::create($validated);
         
-        // Clear teacher topic caches
+        // Clear all caches
         $this->clearTeacherTopicCaches(Auth::id());
-        
-        // Clear admin topic caches
         $this->clearAdminTopicCaches();
-        
-        // 🔥 ADD THIS: Clear admin dashboard caches
         $this->clearAdminDashboardCaches();
-        
-        // 🔥 ADD THIS: Clear teacher dashboard cache for current teacher
         $this->clearTeacherDashboardCaches(Auth::id());
         
-        \Log::info('New topic created by teacher - ID: ' . $topic->id . ', Title: ' . $topic->title);
+        Log::info('New topic created by teacher - ID: ' . $topic->id . ', Title: ' . $topic->title);
         
         return redirect()->route('teacher.topics.index')
             ->with('success', 'Topic created successfully.');
@@ -107,21 +111,28 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $teacherId = Auth::id();
             
             $cacheKey = 'teacher_topic_show_' . $id;
             
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
-                return Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'created_at', 'updated_at'])
+                return Topic::with(['courses', 'creator']) // Add creator here
+                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by'])
                     ->findOrFail($id);
             });
             
-            return view('teacher.topics.show', compact('topic'));
+            // Debug log to check PDF file
+            Log::info('Teacher loading topic show page', [
+                'topic_id' => $topic->id,
+                'pdf_file' => $topic->pdf_file,
+                'pdf_url' => self::getPdfUrl($topic->pdf_file)
+            ]);
+            
+            // FIX: Pass both topic AND encryptedId to the view
+            return view('teacher.topics.show', compact('topic', 'encryptedId'));
             
         } catch (\Exception $e) {
-            \Log::error('Error showing topic', [
+            Log::error('Teacher error showing topic', [
                 'encryptedId' => $encryptedId,
-                'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
             
@@ -134,7 +145,6 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $teacherId = Auth::id();
             
             $cacheKey = 'teacher_topic_edit_' . $id;
             
@@ -145,9 +155,8 @@ class TopicController extends Controller
             return view('teacher.topics.edit', compact('topic'));
             
         } catch (\Exception $e) {
-            \Log::error('Error editing topic', [
+            Log::error('Teacher error editing topic', [
                 'encryptedId' => $encryptedId,
-                'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
             
@@ -161,7 +170,6 @@ class TopicController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $topic = Topic::findOrFail($id);
-            $teacherId = Auth::id();
 
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
@@ -172,7 +180,7 @@ class TopicController extends Controller
                 'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
             ]);
 
-            // 🔥 UPDATED PDF UPDATE - Simple direct upload
+            // 🔥 SIMPLE PDF UPDATE - Works on both local and live
             if ($request->hasFile('pdf_file')) {
                 // Delete old file if exists
                 if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
@@ -194,12 +202,11 @@ class TopicController extends Controller
 
             $topic->update($validated);
             
-            // Clear all topic-related caches
-            $this->clearTeacherTopicCaches($teacherId);
+            // Clear caches
+            $this->clearTeacherTopicCaches(Auth::id());
             Cache::forget('teacher_topic_show_' . $id);
             Cache::forget('teacher_topic_edit_' . $id);
             
-            // When topic is updated, clear student caches for all courses that use this topic
             $courses = $topic->courses;
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
@@ -209,9 +216,8 @@ class TopicController extends Controller
                 ->with('success', 'Topic updated successfully.');
                 
         } catch (\Exception $e) {
-            \Log::error('Error updating topic', [
+            Log::error('Teacher error updating topic', [
                 'encryptedId' => $encryptedId,
-                'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
             
@@ -225,24 +231,21 @@ class TopicController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $topic = Topic::findOrFail($id);
-            $teacherId = Auth::id();
             
-            // Get all courses that use this topic before deletion
             $courses = $topic->courses;
             
-            // 🔥 UPDATED PDF DELETION
+            // 🔥 SIMPLE PDF DELETION
             if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
                 unlink(public_path('pdf/' . $topic->pdf_file));
             }
             
             $topic->delete();
             
-            // Clear all topic-related caches
-            $this->clearTeacherTopicCaches($teacherId);
+            // Clear caches
+            $this->clearTeacherTopicCaches(Auth::id());
             Cache::forget('teacher_topic_show_' . $id);
             Cache::forget('teacher_topic_edit_' . $id);
             
-            // Clear student caches for all affected courses
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
             }
@@ -251,14 +254,13 @@ class TopicController extends Controller
                 ->with('success', 'Topic deleted successfully.');
                 
         } catch (\Exception $e) {
-            \Log::error('Error deleting topic', [
+            Log::error('Teacher error deleting topic', [
                 'encryptedId' => $encryptedId,
-                'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
             
             return redirect()->route('teacher.topics.index')
-                ->with('error', 'Topic not found or you do not have permission to delete it.');
+                ->with('error', 'Topic not found or invalid link.');
         }
     }
 
@@ -270,7 +272,7 @@ class TopicController extends Controller
         $teacherId = Auth::id();
         $this->clearTeacherTopicCaches($teacherId);
         $this->clearAdminDashboardCaches();
-        $this->clearTeacherDashboardCaches(Auth::id());
+        $this->clearTeacherDashboardCaches($teacherId);
         
         return redirect()->route('teacher.topics.index')
             ->with('success', 'Topic caches cleared successfully.');
@@ -285,24 +287,56 @@ class TopicController extends Controller
             return null;
         }
         
-        // If it's already a full URL or old storage path
-        if (str_contains($pdfFile, '/storage/')) {
-            // Extract just the filename
+        // If it's already a full URL
+        if (filter_var($pdfFile, FILTER_VALIDATE_URL)) {
+            return $pdfFile;
+        }
+        
+        // Extract just the filename
+        if (str_contains($pdfFile, '/')) {
             $filename = basename($pdfFile);
-            return asset('pdf/' . $filename);
+        } else {
+            $filename = $pdfFile;
         }
         
-        // If it's just a filename (new format)
-        if (!str_contains($pdfFile, '/')) {
-            return asset('pdf/' . $pdfFile);
+        // Clean filename - remove any special characters that might cause issues
+        $filename = preg_replace('/[^a-zA-Z0-9_\-\s\.\(\)]/', '', $filename);
+        
+        // Check which folder the file exists in
+        $possiblePaths = [
+            'pdf' => public_path('pdf/' . $filename),
+            'pdfs' => public_path('pdfs/' . $filename),
+            'storage/pdf' => public_path('storage/pdf/' . $filename),
+            'storage/pdfs' => public_path('storage/pdfs/' . $filename),
+        ];
+        
+        $foundFolder = null;
+        foreach ($possiblePaths as $folder => $path) {
+            if (file_exists($path)) {
+                $foundFolder = $folder;
+                Log::info('PDF file found in ' . $folder . ' folder: ' . $filename);
+                break;
+            }
         }
         
-        // If it's some other path, return as is
-        return asset($pdfFile);
+        if (!$foundFolder) {
+            Log::warning('PDF file not found in any location: ' . $filename);
+            // Default to pdf folder
+            $foundFolder = 'pdf';
+        }
+        
+        // Return secure route with encrypted filename
+        try {
+            return route('pdf.view', ['encryptedFilename' => Crypt::encrypt($filename)]);
+        } catch (\Exception $e) {
+            Log::error('PDF URL encryption failed: ' . $e->getMessage());
+            // Fallback to direct URL - use the correct folder
+            return asset($foundFolder . '/' . $filename);
+        }
     }
     
     /**
-     * Get file type icon based on URL (Static method)
+     * Get file type icon based on URL
      */
     public static function getFileIcon($url)
     {
@@ -334,7 +368,7 @@ class TopicController extends Controller
     }
     
     /**
-     * Get file type color (Static method)
+     * Get file type color
      */
     public static function getFileColor($url)
     {
@@ -360,7 +394,7 @@ class TopicController extends Controller
     }
     
     /**
-     * Get file type name (Static method)
+     * Get file type name
      */
     public static function getFileType($url)
     {
@@ -385,5 +419,84 @@ class TopicController extends Controller
         }
         
         return 'File';
+    }
+
+    /**
+     * Publish or unpublish a topic
+     * 
+     * @param string $encryptedId
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function publish($encryptedId)
+    {
+        Log::info('=== TOPIC PUBLISH REQUEST STARTED ===', [
+            'encryptedId' => $encryptedId,
+            'method' => request()->method(),
+            'ajax' => request()->ajax(),
+            'wantsJson' => request()->wantsJson(),
+            'url' => request()->fullUrl(),
+        ]);
+
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $topic = Topic::findOrFail($id);
+            
+            // Toggle publish status
+            $oldStatus = $topic->is_published;
+            // AFTER (correct)
+            $newStatus = !$topic->is_published; // calculate BEFORE update
+            $topic->update(['is_published' => $newStatus]);
+            $status = $newStatus ? 'published' : 'unpublished';
+            
+            // Clear ALL related caches
+            $this->clearTeacherTopicCaches(Auth::id());
+            $this->clearAdminTopicCaches();
+            Cache::forget('teacher_topic_show_' . $id);
+            Cache::forget('admin_topic_show_' . $id);
+
+            // CRITICAL: Clear the course-level cache for every course this topic belongs to
+            $courses = $topic->courses;
+            foreach ($courses as $course) {
+                Cache::forget('teacher_course_show_' . $course->id . '_teacher_' . Auth::id());
+                Cache::forget('teacher_available_topics_' . $course->id);
+                $this->clearStudentCachesForCourse($course->id);
+            }
+            
+            Log::info('Topic status toggled', [
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'courses_cache_cleared' => $courses->pluck('id')->toArray(),
+            ]);
+            
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Topic {$status} successfully!",
+                    'topic' => [
+                        'id' => $topic->id,
+                        'is_published' => $newStatus,
+                    ]
+                ]);
+            }
+            
+            return redirect()->route('teacher.topics.show', $encryptedId)
+                ->with('success', "Topic {$status} successfully!");
+                
+        } catch (\Exception $e) {
+            Log::error('Teacher error publishing topic', [
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage(),
+            ]);
+            
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update topic status. ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->route('teacher.topics.index')
+                ->with('error', 'Failed to update topic status.');
+        }
     }
 }

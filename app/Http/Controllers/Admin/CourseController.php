@@ -25,11 +25,16 @@ class CourseController extends Controller
 
     public function index()
     {
-        $courses = Course::select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at'])
+        $courses = Course::select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at', 'created_by'])
             ->withCount('students')
-            ->with(['teacher' => function ($query) {
-                $query->select(['id', 'f_name', 'l_name', 'employee_id']);
-            }])
+            ->with([
+                'teacher' => function ($query) {
+                    $query->select(['id', 'f_name', 'l_name', 'employee_id']);
+                },
+                'creator' => function ($query) {  // ADD THIS
+                    $query->select(['id', 'f_name', 'l_name', 'role']);
+                }
+            ])
             ->latest()
             ->paginate(10);
 
@@ -81,11 +86,8 @@ class CourseController extends Controller
             'description'  => 'nullable|string',
             'teacher_id'   => 'nullable|exists:users,id',
             'is_published' => 'nullable|boolean',
-            'credits'      => 'nullable|integer|min:1',
+            'credits'      => 'nullable|integer|min:1|max:10',
             'status'       => 'nullable|string|in:active,inactive',
-            'max_students' => 'nullable|integer|min:1',
-            'start_date'   => 'nullable|date',
-            'end_date'     => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $course = Course::create([
@@ -93,12 +95,9 @@ class CourseController extends Controller
             'course_code'  => $validated['course_code'],
             'description'  => $validated['description'] ?? null,
             'teacher_id'   => $validated['teacher_id']  ?? null,
-            'is_published' => $validated['is_published'] ?? false,
+            'is_published' => $request->has('is_published') ? true : false,
             'credits'      => $validated['credits']      ?? 3,
             'status'       => $validated['status']       ?? 'active',
-            'max_students' => $validated['max_students'] ?? null,
-            'start_date'   => $validated['start_date']   ?? null,
-            'end_date'     => $validated['end_date']     ?? null,
             'created_by'   => auth()->id(),
         ]);
 
@@ -188,11 +187,8 @@ class CourseController extends Controller
                 'description'  => 'nullable|string',
                 'teacher_id'   => 'nullable|exists:users,id',
                 'is_published' => 'nullable|boolean',
-                'credits'      => 'nullable|integer|min:1',
+                'credits'      => 'nullable|integer|min:1|max:10',
                 'status'       => 'nullable|string|in:active,inactive',
-                'max_students' => 'nullable|integer|min:1',
-                'start_date'   => 'nullable|date',
-                'end_date'     => 'nullable|date|after_or_equal:start_date',
             ]);
 
             $course->update([
@@ -200,12 +196,9 @@ class CourseController extends Controller
                 'course_code'  => $validated['course_code'],
                 'description'  => $validated['description'] ?? null,
                 'teacher_id'   => $validated['teacher_id']  ?? null,
-                'is_published' => $validated['is_published'] ?? $course->is_published,
+                'is_published' => $request->has('is_published') ? true : false,
                 'credits'      => $validated['credits']      ?? $course->credits,
                 'status'       => $validated['status']       ?? $course->status,
-                'max_students' => $validated['max_students'] ?? $course->max_students,
-                'start_date'   => $validated['start_date']   ?? $course->start_date,
-                'end_date'     => $validated['end_date']     ?? $course->end_date,
             ]);
 
             $this->clearAdminCourseCaches();
@@ -330,9 +323,6 @@ class CourseController extends Controller
                 $message  = 'Student removed from course.';
                 $enrolled = false;
             } else {
-                if ($this->isCourseFull($course)) {
-                    return response()->json(['success' => false, 'message' => 'Course is already full.'], 400);
-                }
                 $course->enrollments()->create([
                     'student_id'  => $studentId,
                     'enrolled_at' => now(),

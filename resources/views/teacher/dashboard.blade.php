@@ -134,7 +134,7 @@
                         <i class="fas fa-user-plus" style="color: var(--primary); margin-right: 0.5rem;"></i>
                         Recent Enrollments
                     </h2>
-                    <a href="{{ route('teacher.enrollments') }}" class="stat-link">
+                    <a href="{{ route('teacher.enrollments.index') }}" class="stat-link">
                         View all <i class="fas fa-chevron-right"></i>
                     </a>
                 </div>

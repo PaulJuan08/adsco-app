@@ -20,73 +20,40 @@
                     $percentage = $attempt->percentage ?? 0;
                     $scoreClass = $percentage >= 80 ? 'score-high' : ($percentage >= 60 ? 'score-medium' : 'score-low');
                     $passed = $attempt->passed ?? false;
-                    $passingScore = $attempt->quiz && $attempt->quiz->passing_score ? $attempt->quiz->passing_score : 70;
-                    
-                    // Check if answers exist and is valid
-                    $hasAnswers = false;
-                    if (isset($attempt->answers)) {
-                        if (is_array($attempt->answers) && count($attempt->answers) > 0) {
-                            $hasAnswers = true;
-                        } elseif (is_object($attempt->answers) && method_exists($attempt->answers, 'count') && $attempt->answers->count() > 0) {
-                            $hasAnswers = true;
-                        } elseif (is_string($attempt->answers) && strlen($attempt->answers) > 0) {
-                            $hasAnswers = true;
-                        }
-                    }
+                    $passingScore = $attempt->quiz->passing_score ?? 70;
                 @endphp
                 <tr>
                     <td>
                         <div class="student-cell">
-                            @if($attempt->user)
-                                <div class="student-avatar-sm">
-                                    {{ strtoupper(substr($attempt->user->f_name ?? '', 0, 1) . substr($attempt->user->l_name ?? '', 0, 1)) }}
+                            <div class="student-avatar-sm">
+                                {{ strtoupper(substr($attempt->user->f_name, 0, 1) . substr($attempt->user->l_name, 0, 1)) }}
+                            </div>
+                            <div class="student-info">
+                                <div class="student-name">{{ $attempt->user->full_name }}</div>
+                                <div class="student-meta">
+                                    <span><i class="fas fa-id-card"></i> {{ $attempt->user->student_id ?? 'N/A' }}</span>
+                                    @if($attempt->user->college)
+                                        <span><i class="fas fa-university"></i> {{ $attempt->user->college->college_name }}</span>
+                                    @endif
                                 </div>
-                                <div class="student-info">
-                                    <div class="student-name">{{ $attempt->user->full_name ?? 'Unknown Student' }}</div>
-                                    <div class="student-meta">
-                                        <span><i class="fas fa-id-card"></i> {{ $attempt->user->student_id ?? 'N/A' }}</span>
-                                        @if($attempt->user->college)
-                                            <span><i class="fas fa-university"></i> {{ $attempt->user->college->college_name }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            @else
-                                <div class="student-avatar-sm" style="background: #dc2626;">
-                                    <i class="fas fa-user-slash"></i>
-                                </div>
-                                <div class="student-info">
-                                    <div class="student-name" style="color: #dc2626;">Deleted Student</div>
-                                    <div class="student-meta">
-                                        <span><i class="fas fa-id-card"></i> N/A</span>
-                                    </div>
-                                </div>
-                            @endif
+                            </div>
                         </div>
                     </td>
                     <td>
-                        @if($attempt->quiz)
-                            <div class="fw-600">{{ $attempt->quiz->title ?? 'Unknown Quiz' }}</div>
-                            <div class="text-muted small">
-                                <i class="fas fa-question-circle"></i> {{ $attempt->total_questions ?? 0 }} Questions
-                                @if($attempt->quiz)
-                                    <br><i class="fas fa-trophy"></i> Pass: {{ $attempt->quiz->passing_score ?? 70 }}%
-                                @endif
-                            </div>
-                        @else
-                            <div class="fw-600 text-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Deleted Quiz
-                            </div>
-                            <div class="text-muted small">
-                                <span class="badge badge-danger">Quiz no longer exists</span>
-                            </div>
-                        @endif
+                        <div class="fw-600">{{ $attempt->quiz->title ?? 'Unknown Quiz' }}</div>
+                        <div class="text-muted small">
+                            <i class="fas fa-question-circle"></i> {{ $attempt->total_questions ?? 0 }} Questions
+                            @if($attempt->quiz)
+                                <br><i class="fas fa-trophy"></i> Pass: {{ $attempt->quiz->passing_score ?? 70 }}%
+                            @endif
+                        </div>
                     </td>
                     <td>
                         <span class="score-badge {{ $scoreClass }}">
                             {{ $percentage }}%
                         </span>
                         <div class="text-muted extra-small mt-1">
-                            {{ $attempt->score ?? 0 }}/{{ $attempt->total_points ?? 0 }} points
+                            {{ $attempt->score }}/{{ $attempt->total_points }} points
                         </div>
                     </td>
                     <td>
@@ -94,9 +61,9 @@
                             <span class="status-badge status-passed">
                                 <i class="fas fa-check-circle"></i>
                                 <span>PASSED</span>
-                                @if($percentage >= ($passingScore + 20))
+                                @if($percentage >= $passingScore + 20)
                                     <span class="excellent-badge">EXCELLENT</span>
-                                @elseif($percentage >= ($passingScore + 10))
+                                @elseif($percentage >= $passingScore + 10)
                                     <span class="good-badge">GOOD</span>
                                 @endif
                             </span>
@@ -104,7 +71,7 @@
                             <span class="status-badge status-failed">
                                 <i class="fas fa-times-circle"></i>
                                 <span>FAILED</span>
-                                @if($percentage < ($passingScore - 20))
+                                @if($percentage < $passingScore - 20)
                                     <span class="needs-improvement-badge">NEEDS IMPROVEMENT</span>
                                 @endif
                             </span>
@@ -126,23 +93,17 @@
                     </td>
                     <td>
                         <div class="action-group">
-                            @if($attempt->user && $attempt->user->id)
-                                <a href="{{ route('admin.users.show', Crypt::encrypt($attempt->user->id)) }}" 
-                                   class="view-btn" 
-                                   title="View Student">
-                                    <i class="fas fa-user"></i>
-                                </a>
-                            @endif
-                            
-                            @if($attempt->quiz && $attempt->quiz->id)
-                                <a href="{{ route('admin.quizzes.show', Crypt::encrypt($attempt->quiz->id)) }}" 
-                                   class="view-btn" 
-                                   title="View Quiz">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            @endif
-                            
-                            @if($hasAnswers)
+                            <a href="{{ route('teacher.users.show', Crypt::encrypt($attempt->user->id)) }}" 
+                               class="view-btn" 
+                               title="View Student">
+                                <i class="fas fa-user"></i>
+                            </a>
+                            <a href="{{ route('teacher.quizzes.show', Crypt::encrypt($attempt->quiz->id)) }}" 
+                               class="view-btn" 
+                               title="View Quiz">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            @if($attempt->answers)
                                 <button type="button" 
                                         class="view-btn" 
                                         title="View Answers"
@@ -171,7 +132,7 @@
     </table>
 </div>
 
-@if(isset($attempts) && $attempts instanceof \Illuminate\Pagination\AbstractPaginator && $attempts->hasPages())
+@if($attempts instanceof \Illuminate\Pagination\AbstractPaginator && $attempts->hasPages())
     <div class="pagination-info">
         <span>
             Showing {{ $attempts->firstItem() }} to {{ $attempts->lastItem() }} of {{ $attempts->total() }} attempts
@@ -213,23 +174,19 @@
             .then(response => response.json())
             .then(data => {
                 let html = '';
-                if (data.answers && data.answers.length > 0) {
-                    data.answers.forEach((answer, index) => {
-                        const resultClass = answer.is_correct ? 'correct' : 'incorrect';
-                        html += `
-                            <div class="answer-item">
-                                <div class="answer-question">Question ${index + 1}:</div>
-                                <div class="answer-box">${answer.question || 'Question not available'}</div>
-                                <div class="answer-result ${resultClass}">
-                                    <i class="fas ${answer.is_correct ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-                                    <span>Your answer was ${answer.is_correct ? 'correct' : 'incorrect'}</span>
-                                </div>
+                data.answers.forEach((answer, index) => {
+                    const resultClass = answer.is_correct ? 'correct' : 'incorrect';
+                    html += `
+                        <div class="answer-item">
+                            <div class="answer-question">Question ${index + 1}:</div>
+                            <div class="answer-box">${answer.question}</div>
+                            <div class="answer-result ${resultClass}">
+                                <i class="fas ${answer.is_correct ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                <span>Your answer was ${answer.is_correct ? 'correct' : 'incorrect'}</span>
                             </div>
-                        `;
-                    });
-                } else {
-                    html = '<div class="text-center p-4"><i class="fas fa-info-circle"></i><p class="mt-3">No answers available for this attempt.</p></div>';
-                }
+                        </div>
+                    `;
+                });
                 content.innerHTML = html;
             })
             .catch(error => {

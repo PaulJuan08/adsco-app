@@ -33,37 +33,78 @@
                 </div>
             </div>
 
+            <!-- Publish Toggle -->
+            <div class="publish-toggle-container">
+                <div class="publish-info">
+                    <div class="publish-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="publish-text">
+                        <h4>Course Visibility</h4>
+                        <p>Toggle to change course publication status</p>
+                    </div>
+                </div>
+                <div class="toggle-wrapper">
+                    <div class="toggle-status" id="toggleStatusText">
+                        @if($course->is_published)
+                            <span class="status-published"><i class="fas fa-check-circle"></i> Published</span>
+                        @else
+                            <span class="status-draft"><i class="fas fa-clock"></i> Draft</span>
+                        @endif
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="publishToggle" name="is_published" value="1" form="updateForm" {{ $course->is_published ? 'checked' : '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Publish Info Card -->
+            <div class="publish-info-card">
+                <div class="publish-info-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="publish-info-content">
+                    <div class="publish-info-label">Current Status</div>
+                    <div class="publish-info-value">
+                        @if($course->is_published)
+                            <span class="publish-badge published"><i class="fas fa-check-circle"></i> Published</span>
+                            <span style="font-size: 0.75rem; color: #718096;">Visible to all enrolled students</span>
+                        @else
+                            <span class="publish-badge draft"><i class="fas fa-clock"></i> Draft</span>
+                            <span style="font-size: 0.75rem; color: #718096;">Only visible to instructors and admins</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <!-- Display validation errors -->
             @if($errors->any())
-            <div class="validation-alert">
-                <div style="display: flex; align-items: center;">
-                    <i class="fas fa-exclamation-circle"></i>
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
                     <strong>Please fix the following errors:</strong>
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-                <ul>
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
             </div>
             @endif
             
             <!-- Display success message if any -->
             @if(session('success'))
-            <div class="success-alert">
-                <div style="display: flex; align-items: center;">
-                    <i class="fas fa-check-circle"></i>
-                    <strong>{{ session('success') }}</strong>
-                </div>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                {{ session('success') }}
             </div>
             @endif
             
             @if(session('error'))
-            <div class="validation-alert">
-                <div style="display: flex; align-items: center;">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <strong>{{ session('error') }}</strong>
-                </div>
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ session('error') }}
             </div>
             @endif
             
@@ -84,34 +125,36 @@
                             
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="title" class="form-label required">
+                                    <label for="title" class="form-label">
                                         <i class="fas fa-heading"></i> Course Title
+                                        <span class="required">*</span>
                                     </label>
                                     <input type="text" 
                                            id="title" 
                                            name="title" 
                                            value="{{ old('title', $course->title) }}" 
                                            required
-                                           class="form-control @error('title') is-invalid @enderror"
+                                           class="form-input @error('title') error @enderror"
                                            placeholder="e.g., Introduction to Programming">
                                     @error('title')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="form-error">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="course_code" class="form-label required">
+                                    <label for="course_code" class="form-label">
                                         <i class="fas fa-code"></i> Course Code
+                                        <span class="required">*</span>
                                     </label>
                                     <input type="text" 
                                            id="course_code" 
                                            name="course_code" 
                                            value="{{ old('course_code', $course->course_code) }}" 
                                            required
-                                           class="form-control @error('course_code') is-invalid @enderror"
+                                           class="form-input @error('course_code') error @enderror"
                                            placeholder="e.g., CS101">
                                     @error('course_code')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="form-error">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
@@ -123,10 +166,10 @@
                                 <textarea id="description" 
                                           name="description" 
                                           rows="4"
-                                          class="form-control @error('description') is-invalid @enderror"
+                                          class="form-textarea @error('description') error @enderror"
                                           placeholder="Enter course description...">{{ old('description', $course->description) }}</textarea>
                                 @error('description')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    <div class="form-error">{{ $message }}</div>
                                 @enderror
                                 <div class="form-hint">
                                     <i class="fas fa-info-circle"></i> Optional: Provide a detailed description of the course
@@ -147,7 +190,7 @@
                                     </label>
                                     <select id="teacher_id" 
                                             name="teacher_id"
-                                            class="form-select @error('teacher_id') is-invalid @enderror">
+                                            class="form-select @error('teacher_id') error @enderror">
                                         <option value="">-- Select Teacher (Optional) --</option>
                                         @foreach($teachers as $teacher)
                                             <option value="{{ $teacher->id }}" {{ old('teacher_id', $course->teacher_id) == $teacher->id ? 'selected' : '' }}>
@@ -162,13 +205,14 @@
                                         <i class="fas fa-user-tie"></i> Leave blank to assign later
                                     </div>
                                     @error('teacher_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="form-error">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="credits" class="form-label required">
+                                    <label for="credits" class="form-label">
                                         <i class="fas fa-cubes"></i> Credits
+                                        <span class="required">*</span>
                                     </label>
                                     <input type="number" 
                                            id="credits" 
@@ -178,9 +222,9 @@
                                            max="10"
                                            step="0.5"
                                            required
-                                           class="form-control @error('credits') is-invalid @enderror">
+                                           class="form-input @error('credits') error @enderror">
                                     @error('credits')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="form-error">{{ $message }}</div>
                                     @enderror
                                     <div class="form-hint">
                                         <i class="fas fa-info-circle"></i> Enter between 0.5 and 10 credits
@@ -189,29 +233,12 @@
                             </div>
                         </div>
                         
-                        <!-- Course Status Notice -->
-                        <div class="status-notice">
-                            <i class="fas fa-info-circle"></i>
-                            <div class="status-notice-content">
-                                <div class="status-notice-title">Course Status</div>
-                                <div class="status-notice-text">
-                                    This course is <strong>{{ $course->is_published ? 'Published' : 'Draft' }}</strong>. 
-                                    @if($course->is_published)
-                                        Published courses are visible to enrolled students.
-                                    @else
-                                        Draft courses are only visible to instructors and administrators.
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        
                         <!-- Hidden fields -->
                         <input type="hidden" name="status" value="active">
-                        <input type="hidden" name="is_published" value="{{ $course->is_published ? '1' : '0' }}">
                     </form>
                 </div>
                 
-                <!-- Right Column - Course Information Sidebar (Inline with Basic Course Information) -->
+                <!-- Right Column - Course Information Sidebar -->
                 <div class="sidebar-column">
                     <div class="sidebar-card">
                         <div class="sidebar-card-title">
@@ -287,8 +314,8 @@
                 </div>
             </div>
             
-            <!-- Form Actions (Outside Two Column Layout) -->
-            <div class="form-actions">
+            <!-- Form Actions -->
+            <div class="form-actions" style="margin-top: 1.5rem;">
                 <div>
                     <form action="{{ route('admin.courses.destroy', Crypt::encrypt($course->id)) }}" method="POST" id="deleteForm" style="display: inline;">
                         @csrf
@@ -318,6 +345,34 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const publishToggle = document.getElementById('publishToggle');
+        const toggleStatusText = document.getElementById('toggleStatusText');
+        const previewStatus = document.querySelector('.course-preview-status');
+        const submitButton = document.getElementById('submitButton');
+        
+        // Update publish status display
+        function updatePublishStatus() {
+            const isPublished = publishToggle.checked;
+            
+            if (isPublished) {
+                toggleStatusText.innerHTML = '<span class="status-published"><i class="fas fa-check-circle"></i> Published</span>';
+                if (previewStatus) {
+                    previewStatus.innerHTML = '<i class="fas fa-check-circle"></i> Published';
+                    previewStatus.className = 'course-preview-status status-published';
+                }
+            } else {
+                toggleStatusText.innerHTML = '<span class="status-draft"><i class="fas fa-clock"></i> Draft</span>';
+                if (previewStatus) {
+                    previewStatus.innerHTML = '<i class="fas fa-clock"></i> Draft';
+                    previewStatus.className = 'course-preview-status status-draft';
+                }
+            }
+        }
+        
+        if (publishToggle) {
+            publishToggle.addEventListener('change', updatePublishStatus);
+        }
+        
         // Handle delete button click with SweetAlert2
         const deleteButton = document.getElementById('deleteButton');
         if (deleteButton) {
@@ -355,25 +410,31 @@
                 let isValid = true;
                 
                 if (!title) {
-                    document.getElementById('title').classList.add('is-invalid');
+                    document.getElementById('title').classList.add('error');
                     isValid = false;
+                } else {
+                    document.getElementById('title').classList.remove('error');
                 }
                 
                 if (!code) {
-                    document.getElementById('course_code').classList.add('is-invalid');
+                    document.getElementById('course_code').classList.add('error');
                     isValid = false;
+                } else {
+                    document.getElementById('course_code').classList.remove('error');
                 }
                 
-                if (!credits || parseFloat(credits) <= 0) {
-                    document.getElementById('credits').classList.add('is-invalid');
+                if (!credits || parseFloat(credits) < 0.5 || parseFloat(credits) > 10) {
+                    document.getElementById('credits').classList.add('error');
                     isValid = false;
+                } else {
+                    document.getElementById('credits').classList.remove('error');
                 }
                 
                 if (!isValid) {
                     e.preventDefault();
                     Swal.fire({
                         title: 'Validation Error',
-                        text: 'Please fill in all required fields.',
+                        text: 'Please fill in all required fields correctly.',
                         icon: 'error',
                         confirmButtonColor: '#667eea'
                     });
@@ -381,16 +442,17 @@
                 }
                 
                 // Show loading state
-                const submitBtn = document.getElementById('submitButton');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-                submitBtn.disabled = true;
-                
-                // Re-enable after timeout (in case form doesn't redirect)
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 5000);
+                if (submitButton) {
+                    const originalText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                    submitButton.disabled = true;
+                    
+                    // Re-enable after timeout (in case form doesn't redirect)
+                    setTimeout(() => {
+                        submitButton.innerHTML = originalText;
+                        submitButton.disabled = false;
+                    }, 5000);
+                }
             });
         }
 

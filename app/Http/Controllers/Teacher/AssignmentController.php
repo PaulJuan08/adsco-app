@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
-use App\Models\Course;
-use App\Models\Topic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -15,22 +13,16 @@ class AssignmentController extends Controller
     public function index()
     {
         $teacherId = Auth::id();
-        $assignments = Assignment::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->with(['course', 'topic'])->latest()->paginate(10);
+        $assignments = Assignment::where('created_by', $teacherId)
+                               ->latest()
+                               ->paginate(10);
         
         return view('teacher.assignments.index', compact('assignments'));
     }
 
     public function create()
     {
-        $teacherId = Auth::id();
-        $courses = Course::where('teacher_id', $teacherId)->get();
-        $topics = Topic::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->get();
-        
-        return view('teacher.assignments.create', compact('courses', 'topics'));
+        return view('teacher.assignments.create');
     }
 
     public function store(Request $request)
@@ -38,8 +30,6 @@ class AssignmentController extends Controller
         $teacherId = Auth::id();
         
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
@@ -51,10 +41,8 @@ class AssignmentController extends Controller
             'available_until' => 'nullable|date',
         ]);
 
-        // Verify teacher owns the course
-        $course = Course::where('id', $validated['course_id'])
-                       ->where('teacher_id', $teacherId)
-                       ->firstOrFail();
+        // Add the teacher ID as the creator
+        $validated['created_by'] = $teacherId;
 
         Assignment::create($validated);
         
@@ -67,9 +55,8 @@ class AssignmentController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $assignment = Assignment::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->with(['course', 'topic'])->findOrFail($id);
+        $assignment = Assignment::where('created_by', $teacherId)
+                               ->findOrFail($id);
         
         return view('teacher.assignments.show', compact('assignment'));
     }
@@ -79,16 +66,10 @@ class AssignmentController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $assignment = Assignment::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->findOrFail($id);
+        $assignment = Assignment::where('created_by', $teacherId)
+                               ->findOrFail($id);
         
-        $courses = Course::where('teacher_id', $teacherId)->get();
-        $topics = Topic::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->get();
-        
-        return view('teacher.assignments.edit', compact('assignment', 'courses', 'topics'));
+        return view('teacher.assignments.edit', compact('assignment'));
     }
 
     public function update(Request $request, $encryptedId)
@@ -96,13 +77,10 @@ class AssignmentController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $assignment = Assignment::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->findOrFail($id);
+        $assignment = Assignment::where('created_by', $teacherId)
+                               ->findOrFail($id);
 
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
@@ -125,13 +103,32 @@ class AssignmentController extends Controller
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
         
-        $assignment = Assignment::whereHas('course', function($query) use ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        })->findOrFail($id);
+        $assignment = Assignment::where('created_by', $teacherId)
+                               ->findOrFail($id);
         
         $assignment->delete();
         
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment deleted successfully.');
+    }
+
+    /**
+     * Toggle publish status
+     */
+    public function togglePublish(Request $request, $encryptedId)
+    {
+        $id = Crypt::decrypt($encryptedId);
+        $teacherId = Auth::id();
+        
+        $assignment = Assignment::where('created_by', $teacherId)
+                               ->findOrFail($id);
+        
+        $assignment->update([
+            'is_published' => !$assignment->is_published
+        ]);
+        
+        $status = $assignment->is_published ? 'published' : 'unpublished';
+        
+        return redirect()->back()->with('success', "Assignment {$status} successfully.");
     }
 }

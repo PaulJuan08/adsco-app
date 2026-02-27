@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', isset($topic) ? 'Edit Topic - ' . $topic->title : 'Create New Topic')
+@section('title', 'Edit Topic - ' . $topic->title)
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/topic-form.css') }}">
@@ -11,8 +11,8 @@
     <div class="form-container">
         <div class="card-header">
             <div class="card-title-group">
-                <i class="fas {{ isset($topic) ? 'fa-edit' : 'fa-plus' }} card-icon"></i>
-                <h2 class="card-title">{{ isset($topic) ? 'Edit Topic' : 'Create New Topic' }}</h2>
+                <i class="fas fa-edit card-icon"></i>
+                <h2 class="card-title">Edit Topic</h2>
             </div>
             <a href="{{ route('admin.topics.index') }}" class="view-all-link">
                 <i class="fas fa-arrow-left"></i> Back to Topics
@@ -20,32 +20,76 @@
         </div>
         
         <div class="card-body">
-            <!-- Topic Preview - Live Preview -->
+            <!-- Topic Preview - Live Preview (matching course preview style) -->
             <div class="topic-preview">
                 <div class="topic-preview-avatar" id="previewAvatar">
-                    {{ isset($topic) ? strtoupper(substr($topic->title, 0, 1)) : '📚' }}
+                    {{ strtoupper(substr($topic->title, 0, 1)) }}
                 </div>
-                <div class="topic-preview-title" id="previewTitle">
-                    {{ isset($topic) ? $topic->title : 'New Topic' }}
+                <div class="topic-preview-title" id="previewTitle">{{ $topic->title }}</div>
+                <div class="topic-preview-code" id="previewCode">
+                    @php
+                        $words = explode(' ', $topic->title);
+                        $code = '';
+                        if (count($words) >= 2) {
+                            $code = substr($words[0], 0, 2) . substr($words[1], 0, 1);
+                        } else {
+                            $code = substr($topic->title, 0, 3);
+                        }
+                        echo strtoupper($code);
+                    @endphp
                 </div>
-                <div class="topic-preview-meta">
-                    @if(isset($topic) && $topic->is_published)
-                        <span class="status-badge status-published">
-                            <i class="fas fa-check-circle"></i> Published
-                        </span>
-                    @elseif(isset($topic))
-                        <span class="status-badge status-draft">
-                            <i class="fas fa-clock"></i> Draft
-                        </span>
-                    @else
-                        <span class="status-badge status-auto">
-                            <i class="fas fa-rocket"></i> Auto-published
-                        </span>
-                    @endif
+                <div class="topic-preview-status {{ $topic->is_published ? 'status-published' : 'status-draft' }}" id="previewStatus">
+                    <i class="fas {{ $topic->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                    {{ $topic->is_published ? 'Published' : 'Draft' }}
                 </div>
             </div>
 
-            <!-- Error Display -->
+            <!-- Publish Toggle (exactly matching course style) -->
+            <div class="publish-toggle-container">
+                <div class="publish-info">
+                    <div class="publish-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="publish-text">
+                        <h4>Topic Visibility</h4>
+                        <p>Toggle to change topic publication status</p>
+                    </div>
+                </div>
+                <div class="toggle-wrapper">
+                    <div class="toggle-status" id="toggleStatusText">
+                        @if($topic->is_published)
+                            <span class="status-published"><i class="fas fa-check-circle"></i> Published</span>
+                        @else
+                            <span class="status-draft"><i class="fas fa-clock"></i> Draft</span>
+                        @endif
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="publishToggle" name="is_published" value="1" form="topicForm" {{ $topic->is_published ? 'checked' : '' }}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Publish Info Card (exactly matching course style) -->
+            <div class="publish-info-card">
+                <div class="publish-info-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="publish-info-content">
+                    <div class="publish-info-label">Current Status</div>
+                    <div class="publish-info-value">
+                        @if($topic->is_published)
+                            <span class="publish-badge published"><i class="fas fa-check-circle"></i> Published</span>
+                            <span style="font-size: 0.75rem; color: #718096;">Visible to all enrolled students</span>
+                        @else
+                            <span class="publish-badge draft"><i class="fas fa-clock"></i> Draft</span>
+                            <span style="font-size: 0.75rem; color: #718096;">Only visible to instructors and admins</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display validation errors -->
             @if($errors->any())
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-circle"></i>
@@ -60,28 +104,30 @@
             </div>
             @endif
             
-            <!-- Auto-publish Notice for New Topics -->
-            @if(!isset($topic))
-            <div class="auto-publish-notice">
-                <i class="fas fa-rocket"></i>
-                <div>
-                    <strong>Auto-published:</strong> Topics are automatically published and will be immediately visible to students.
-                </div>
+            <!-- Display success message if any -->
+            @if(session('success'))
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
             </div>
             @endif
-
-            <!-- Two Column Layout -->
+            
+            @if(session('error'))
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            </div>
+            @endif
+            
+            <!-- Two Column Layout - Form and Sidebar Inline -->
             <div class="two-column-layout">
                 <!-- Left Column - Form -->
                 <div class="form-column">
-                    <form action="{{ isset($topic) ? route('admin.topics.update', Crypt::encrypt($topic->id)) : route('admin.topics.store') }}" method="POST" enctype="multipart/form-data" id="topicForm">
+                    <!-- Update Form -->
+                    <form action="{{ route('admin.topics.update', Crypt::encrypt($topic->id)) }}" method="POST" enctype="multipart/form-data" id="topicForm">
                         @csrf
-                        @if(isset($topic))
-                            @method('PUT')
-                        @endif
+                        @method('PUT')
                         
-                        <!-- Hidden field to set topic as published -->
-                        <input type="hidden" name="is_published" value="1">
+                        <!-- Hidden field for publish status - will be updated by toggle -->
+                        <input type="hidden" name="is_published" id="is_published_field" value="{{ $topic->is_published ? '1' : '0' }}">
                         
                         <!-- Basic Information Section -->
                         <div class="form-section">
@@ -89,46 +135,40 @@
                                 <i class="fas fa-info-circle"></i> Basic Information
                             </div>
                             
-                            <!-- Title -->
-                            <div class="form-group">
-                                <label for="title" class="form-label required">
-                                    <i class="fas fa-heading"></i> Topic Title
-                                </label>
-                                <input type="text" 
-                                       id="title" 
-                                       name="title" 
-                                       value="{{ old('title', $topic->title ?? '') }}"
-                                       required
-                                       placeholder="e.g., Introduction to Arrays"
-                                       class="form-input @error('title') error @enderror">
-                                @error('title')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                    </span>
-                                @enderror
-                                <span class="form-help">
-                                    <i class="fas fa-info-circle"></i> Enter a descriptive title for your topic
-                                </span>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="title" class="form-label">
+                                        <i class="fas fa-heading"></i> Topic Title
+                                        <span class="required">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           id="title" 
+                                           name="title" 
+                                           value="{{ old('title', $topic->title) }}" 
+                                           required
+                                           class="form-input @error('title') error @enderror"
+                                           placeholder="e.g., Introduction to Arrays">
+                                    @error('title')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                             
-                            <!-- Description -->
                             <div class="form-group">
                                 <label for="description" class="form-label">
                                     <i class="fas fa-align-left"></i> Description
                                 </label>
-                                <textarea 
-                                    id="description" 
-                                    name="description" 
-                                    placeholder="Describe what this topic covers..."
-                                    class="form-textarea @error('description') error @enderror">{{ old('description', $topic->description ?? '') }}</textarea>
+                                <textarea id="description" 
+                                          name="description" 
+                                          rows="4"
+                                          class="form-textarea @error('description') error @enderror"
+                                          placeholder="Describe what this topic covers...">{{ old('description', $topic->description) }}</textarea>
                                 @error('description')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                    </span>
+                                    <div class="form-error">{{ $message }}</div>
                                 @enderror
-                                <span class="form-help">
+                                <div class="form-hint">
                                     <i class="fas fa-info-circle"></i> Optional: Add a brief description of the topic content
-                                </span>
+                                </div>
                             </div>
                         </div>
                         
@@ -138,282 +178,260 @@
                                 <i class="fas fa-paperclip"></i> Resources & Attachments
                             </div>
                             
-                            <!-- PDF File Upload -->
-                            <div class="form-group">
-                                <label for="pdf_file" class="form-label">
-                                    <i class="fas fa-file-pdf"></i> PDF Document
-                                </label>
-                                <input type="file" 
-                                       id="pdf_file" 
-                                       name="pdf_file" 
-                                       accept=".pdf"
-                                       class="form-file @error('pdf_file') error @enderror">
-                                <span class="form-help">
-                                    <i class="fas fa-info-circle"></i> Maximum file size: 10MB. PDF files only.
-                                </span>
-                                
-                                <!-- Show current PDF if exists -->
-                                @if(isset($topic) && $topic->pdf_file)
-                                <div class="current-file">
-                                    <div class="current-file-header">
-                                        <div class="current-file-icon">
-                                            <i class="fas fa-file-pdf"></i>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="pdf_file" class="form-label">
+                                        <i class="fas fa-file-pdf"></i> PDF Document
+                                    </label>
+                                    <input type="file" 
+                                           id="pdf_file" 
+                                           name="pdf_file" 
+                                           accept=".pdf"
+                                           class="form-file @error('pdf_file') error @enderror">
+                                    <div class="form-hint">
+                                        <i class="fas fa-info-circle"></i> Maximum file size: 10MB. PDF files only.
+                                    </div>
+                                    
+                                    <!-- Show current PDF if exists -->
+                                    @if($topic->pdf_file)
+                                    <div class="current-file">
+                                        <div class="current-file-header">
+                                            <div class="current-file-icon">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </div>
+                                            <div class="current-file-info">
+                                                <div class="current-file-name">{{ basename($topic->pdf_file) }}</div>
+                                                <div class="current-file-type">PDF Document</div>
+                                            </div>
+                                            <div class="current-file-actions">
+                                                <a href="{{ asset('pdf/' . $topic->pdf_file) }}" target="_blank" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                                <a href="{{ asset('pdf/' . $topic->pdf_file) }}" download 
+                                                   class="btn btn-secondary btn-sm">
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div class="current-file-info">
-                                            <div class="current-file-name">{{ basename($topic->pdf_file) }}</div>
-                                            <div class="current-file-type">PDF Document</div>
-                                        </div>
-                                        <div class="current-file-actions">
-                                            <a href="{{ asset($topic->pdf_file) }}" target="_blank" 
-                                               class="btn btn-primary btn-sm">
-                                                <i class="fas fa-eye"></i> View
-                                            </a>
-                                            <a href="{{ asset($topic->pdf_file) }}" download 
-                                               class="btn btn-secondary btn-sm">
-                                                <i class="fas fa-download"></i> Download
-                                            </a>
+                                        <div class="current-file-warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span>Uploading a new PDF will replace the current one.</span>
                                         </div>
                                     </div>
-                                    <div class="current-file-warning">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <span>Uploading a new PDF will replace the current one.</span>
+                                    @endif
+                                    
+                                    @error('pdf_file')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="form-grid" style="margin-top: 1rem;">
+                                <div class="form-group">
+                                    <label for="video_link" class="form-label">
+                                        <i class="fas fa-video"></i> Video Link
+                                    </label>
+                                    <input type="url" 
+                                           id="video_link" 
+                                           name="video_link" 
+                                           value="{{ old('video_link', $topic->video_link) }}"
+                                           placeholder="https://www.youtube.com/watch?v=..."
+                                           class="form-input @error('video_link') error @enderror">
+                                    @error('video_link')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-hint">
+                                        <i class="fas fa-info-circle"></i> Enter YouTube, Vimeo, or direct video URL
                                     </div>
                                 </div>
-                                @endif
                                 
-                                @error('pdf_file')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                    </span>
-                                @enderror
-                            </div>
-                            
-                            <!-- Video Link -->
-                            <div class="form-group">
-                                <label for="video_link" class="form-label">
-                                    <i class="fas fa-video"></i> Video Link
-                                </label>
-                                <input type="url" 
-                                       id="video_link" 
-                                       name="video_link" 
-                                       value="{{ old('video_link', $topic->video_link ?? '') }}"
-                                       placeholder="https://www.youtube.com/watch?v=..."
-                                       class="form-input @error('video_link') error @enderror">
-                                @error('video_link')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                    </span>
-                                @enderror
-                                <span class="form-help">
-                                    <i class="fas fa-info-circle"></i> Enter YouTube, Vimeo, or direct video URL
-                                </span>
-                            </div>
-                            
-                            <!-- Attachment Link -->
-                            <div class="form-group">
-                                <label for="attachment" class="form-label">
-                                    <i class="fas fa-link"></i> Attachment Link
-                                </label>
-                                <input type="url" 
-                                       id="attachment" 
-                                       name="attachment" 
-                                       value="{{ old('attachment', $topic->attachment ?? '') }}"
-                                       placeholder="https://drive.google.com/file/..."
-                                       class="form-input @error('attachment') error @enderror">
-                                @error('attachment')
-                                    <span class="form-error">
-                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                    </span>
-                                @enderror
-                                <span class="form-help">
-                                    <i class="fas fa-info-circle"></i> Enter Google Drive, Dropbox, or direct file URL
-                                </span>
+                                <div class="form-group">
+                                    <label for="attachment" class="form-label">
+                                        <i class="fas fa-link"></i> Attachment Link
+                                    </label>
+                                    <input type="url" 
+                                           id="attachment" 
+                                           name="attachment" 
+                                           value="{{ old('attachment', $topic->attachment) }}"
+                                           placeholder="https://drive.google.com/file/..."
+                                           class="form-input @error('attachment') error @enderror">
+                                    @error('attachment')
+                                        <div class="form-error">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-hint">
+                                        <i class="fas fa-info-circle"></i> Enter Google Drive, Dropbox, or direct file URL
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
                 </div>
                 
-                <!-- Right Column - Sidebar -->
+                <!-- Right Column - Sidebar (matching course style) -->
                 <div class="sidebar-column">
-                    <!-- Quick Tips Card -->
+                    <!-- Topic Information Card (like Course Information) -->
                     <div class="sidebar-card">
                         <div class="sidebar-card-title">
-                            <i class="fas fa-lightbulb"></i> Quick Tips
+                            <i class="fas fa-info-circle"></i> Topic Information
                         </div>
                         
-                        <div class="tips-grid">
-                            <div class="tip-item">
-                                <div class="tip-icon">
-                                    <i class="fas fa-rocket"></i>
-                                </div>
-                                <div class="tip-content">
-                                    <div class="tip-title">Auto-published</div>
-                                    <div class="tip-description">Topics publish immediately and are visible to students</div>
-                                </div>
-                            </div>
-                            
-                            <div class="tip-item">
-                                <div class="tip-icon">
-                                    <i class="fas fa-file-pdf"></i>
-                                </div>
-                                <div class="tip-content">
-                                    <div class="tip-title">PDF Files</div>
-                                    <div class="tip-description">Max 10MB, PDF format only. Replaces existing file</div>
-                                </div>
-                            </div>
-                            
-                            <div class="tip-item">
-                                <div class="tip-icon">
-                                    <i class="fas fa-video"></i>
-                                </div>
-                                <div class="tip-content">
-                                    <div class="tip-title">Video Links</div>
-                                    <div class="tip-description">YouTube, Vimeo, or direct video URLs supported</div>
-                                </div>
-                            </div>
-                            
-                            <div class="tip-item">
-                                <div class="tip-icon">
-                                    <i class="fas fa-link"></i>
-                                </div>
-                                <div class="tip-content">
-                                    <div class="tip-title">Attachment Links</div>
-                                    <div class="tip-description">Google Drive, Dropbox, or direct file URLs</div>
-                                </div>
+                        <!-- Statistics -->
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-hashtag"></i> Topic ID</span>
+                            <span class="info-value">#{{ $topic->id }}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-calendar-alt"></i> Created</span>
+                            <div style="text-align: right;">
+                                <span class="info-value">{{ $topic->created_at->format('M d, Y') }}</span>
+                                <div class="info-subvalue">{{ $topic->created_at->diffForHumans() }}</div>
                             </div>
                         </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-clock"></i> Last Updated</span>
+                            <div style="text-align: right;">
+                                <span class="info-value">{{ $topic->updated_at->format('M d, Y') }}</span>
+                                <div class="info-subvalue">{{ $topic->updated_at->diffForHumans() }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-book"></i> Courses</span>
+                            <span class="info-value">{{ $topic->courses ? $topic->courses->count() : 0 }}</span>
+                        </div>
+                        
+                        @php
+                            $resources = 0;
+                            if($topic->pdf_file) $resources++;
+                            if($topic->video_link) $resources++;
+                            if($topic->attachment) $resources++;
+                        @endphp
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-paperclip"></i> Resources</span>
+                            <span class="info-value" id="resourcesCount">{{ $resources }}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-tag"></i> Status</span>
+                            <span class="info-value" id="summaryStatus">
+                                @if($topic->is_published)
+                                    <span style="color: #48bb78;">Published</span>
+                                @else
+                                    <span style="color: #ed8936;">Draft</span>
+                                @endif
+                            </span>
+                        </div>
                     </div>
-                    
-                    <!-- Guidelines Card -->
+
+                    <!-- Guidelines Card (matching course style) -->
                     <div class="sidebar-card">
                         <div class="sidebar-card-title">
                             <i class="fas fa-clipboard-check"></i> Guidelines
                         </div>
                         
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
-                                <span style="font-size: 0.75rem; color: #4a5568;">Title should be clear and descriptive</span>
+                        <div class="guidelines-list">
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-asterisk"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Required Fields</div>
+                                    <div class="guideline-text">Fields marked with * are mandatory</div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
-                                <span style="font-size: 0.75rem; color: #4a5568;">Description helps students understand the topic</span>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-heading"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Topic Title</div>
+                                    <div class="guideline-text">Be clear and descriptive about the content</div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
-                                <span style="font-size: 0.75rem; color: #4a5568;">Resources are optional but enhance learning</span>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">PDF Files</div>
+                                    <div class="guideline-text">Max 10MB, PDF format only</div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                <i class="fas fa-check-circle" style="color: #48bb78; font-size: 0.875rem; margin-top: 0.125rem;"></i>
-                                <span style="font-size: 0.75rem; color: #4a5568;">All topics are published automatically</span>
+                            
+                            <div class="guideline-item">
+                                <div class="guideline-icon">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="guideline-content">
+                                    <div class="guideline-title">Publish Status</div>
+                                    <div class="guideline-text">Toggle to make topic visible to students</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Topic Summary Card (for both Create and Edit mode) -->
+                    <!-- Quick Actions Card (matching course style) -->
                     <div class="sidebar-card">
                         <div class="sidebar-card-title">
-                            <i class="fas fa-chart-simple"></i> Topic Summary
+                            <i class="fas fa-bolt"></i> Quick Actions
                         </div>
                         
-                        <div class="summary-stats">
-                            @if(isset($topic))
-                                <!-- Edit Mode Summary -->
-                                <div class="summary-row">
-                                    <span class="summary-label">Topic ID</span>
-                                    <span class="summary-value">#{{ $topic->id }}</span>
+                        <div class="quick-actions-grid">
+                            <a href="{{ route('admin.topics.index') }}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-chalkboard"></i>
                                 </div>
-                                <div class="divider"></div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Status</span>
-                                    <span class="summary-value">
-                                        @if($topic->is_published)
-                                            <span style="color: #48bb78;">Published</span>
-                                        @else
-                                            <span style="color: #ed8936;">Draft</span>
-                                        @endif
-                                    </span>
+                                <div class="action-content">
+                                    <div class="action-title">View All Topics</div>
+                                    <div class="action-subtitle">Browse existing topics</div>
                                 </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Visibility</span>
-                                    <span class="summary-value">
-                                        @if($topic->is_published)
-                                            Public
-                                        @else
-                                            Private
-                                        @endif
-                                    </span>
+                                <div class="action-arrow">
+                                    <i class="fas fa-chevron-right"></i>
                                 </div>
-                                <div class="divider"></div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Created</span>
-                                    <span class="summary-value">{{ $topic->created_at->format('M d, Y') }}</span>
-                                </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Last Updated</span>
-                                    <span class="summary-value">{{ $topic->updated_at->format('M d, Y') }}</span>
-                                </div>
-                            @else
-                                <!-- Create Mode Summary -->
-                                <div class="summary-row">
-                                    <span class="summary-label">Status</span>
-                                    <span class="summary-value">
-                                        <span style="color: #3182ce;">Auto-published</span>
-                                    </span>
-                                </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Visibility</span>
-                                    <span class="summary-value">Public - Visible to all students</span>
-                                </div>
-                                <div class="divider"></div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Publication</span>
-                                    <span class="summary-value">Immediate upon creation</span>
-                                </div>
-                            @endif
+                            </a>
                             
-                            <div class="divider"></div>
-                            
-                            @php
-                                $resources = 0;
-                                if(isset($topic)) {
-                                    if($topic->pdf_file) $resources++;
-                                    if($topic->video_link) $resources++;
-                                    if($topic->attachment) $resources++;
-                                }
-                            @endphp
-                            
-                            <div class="summary-row">
-                                <span class="summary-label">Resources</span>
-                                <span class="summary-value">
-                                    @if(isset($topic))
-                                        {{ $resources }} file(s)
-                                    @else
-                                        0 files
-                                    @endif
-                                </span>
-                            </div>
-                            
-                            @if(isset($topic))
-                            <div class="summary-row">
-                                <span class="summary-label">Courses</span>
-                                <span class="summary-value">{{ $topic->courses ? $topic->courses->count() : 0 }}</span>
-                            </div>
-                            @endif
+                            <a href="{{ route('admin.topics.create') }}" class="action-card">
+                                <div class="action-icon">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="action-content">
+                                    <div class="action-title">Create New Topic</div>
+                                    <div class="action-subtitle">Add another topic</div>
+                                </div>
+                                <div class="action-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="card-footer-modern">
-            <a href="{{ route('admin.topics.index') }}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancel
-            </a>
-            <button type="submit" form="topicForm" class="btn btn-primary" id="submitButton">
-                <i class="fas {{ isset($topic) ? 'fa-save' : 'fa-plus-circle' }}"></i>
-                {{ isset($topic) ? 'Update Topic' : 'Create Topic' }}
-            </button>
+            
+            <!-- Form Actions (exactly matching course style) -->
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <div>
+                    <form action="{{ route('admin.topics.destroy', Crypt::encrypt($topic->id)) }}" method="POST" id="deleteForm" style="display: inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="btn btn-danger" id="deleteButton">
+                            <i class="fas fa-trash-alt"></i> Delete Topic
+                        </button>
+                    </form>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="{{ route('admin.topics.index') }}" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" form="topicForm" class="btn btn-primary" id="submitButton">
+                        <i class="fas fa-save"></i> Update Topic
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -424,23 +442,84 @@
     document.addEventListener('DOMContentLoaded', function() {
         const titleInput = document.getElementById('title');
         const previewTitle = document.getElementById('previewTitle');
+        const previewCode = document.getElementById('previewCode');
         const previewAvatar = document.getElementById('previewAvatar');
+        const previewStatus = document.querySelector('.topic-preview-status');
+        const publishToggle = document.getElementById('publishToggle');
+        const toggleStatusText = document.getElementById('toggleStatusText');
+        const isPublishedField = document.getElementById('is_published_field');
+        const summaryStatus = document.getElementById('summaryStatus');
+        const resourcesCount = document.getElementById('resourcesCount');
         const submitButton = document.getElementById('submitButton');
         
-        // Live preview update
+        // Live preview update (matching course functionality)
         function updatePreview() {
             const title = titleInput.value.trim();
-            previewTitle.textContent = title || 'New Topic';
+            previewTitle.textContent = title || '{{ $topic->title }}';
             
+            // Update avatar
             if (title) {
                 previewAvatar.textContent = title.charAt(0).toUpperCase();
+            }
+            
+            // Update code preview
+            if (title) {
+                const words = title.split(' ');
+                let code = '';
+                if (words.length >= 2) {
+                    code = words[0].substring(0, 2).toUpperCase() + words[1].substring(0, 1).toUpperCase();
+                } else {
+                    code = title.substring(0, 3).toUpperCase();
+                }
+                previewCode.textContent = code;
             } else {
-                previewAvatar.textContent = '📚';
+                previewCode.textContent = '---';
             }
         }
         
         if (titleInput) {
             titleInput.addEventListener('input', updatePreview);
+        }
+        
+        // Update publish status display (exactly matching course)
+        function updatePublishStatus() {
+            const isPublished = publishToggle.checked;
+            
+            // Update hidden field
+            if (isPublishedField) {
+                isPublishedField.value = isPublished ? '1' : '0';
+            }
+            
+            // Update toggle status text
+            if (toggleStatusText) {
+                if (isPublished) {
+                    toggleStatusText.innerHTML = '<span class="status-published"><i class="fas fa-check-circle"></i> Published</span>';
+                } else {
+                    toggleStatusText.innerHTML = '<span class="status-draft"><i class="fas fa-clock"></i> Draft</span>';
+                }
+            }
+            
+            // Update preview status
+            if (previewStatus) {
+                if (isPublished) {
+                    previewStatus.innerHTML = '<i class="fas fa-check-circle"></i> Published';
+                    previewStatus.className = 'topic-preview-status status-published';
+                } else {
+                    previewStatus.innerHTML = '<i class="fas fa-clock"></i> Draft';
+                    previewStatus.className = 'topic-preview-status status-draft';
+                }
+            }
+            
+            // Update summary status
+            if (summaryStatus) {
+                summaryStatus.innerHTML = isPublished 
+                    ? '<span style="color: #48bb78;">Published</span>' 
+                    : '<span style="color: #ed8936;">Draft</span>';
+            }
+        }
+        
+        if (publishToggle) {
+            publishToggle.addEventListener('change', updatePublishStatus);
         }
         
         // File size validation for PDF upload
@@ -460,9 +539,7 @@
                             confirmButtonColor: '#667eea'
                         });
                         this.value = '';
-                    }
-                    
-                    if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    } else if (!file.name.toLowerCase().endsWith('.pdf')) {
                         Swal.fire({
                             title: 'Invalid File Type',
                             text: 'Only PDF files are allowed.',
@@ -470,6 +547,12 @@
                             confirmButtonColor: '#667eea'
                         });
                         this.value = '';
+                    } else {
+                        // Update resources count
+                        if (resourcesCount) {
+                            const currentCount = parseInt(resourcesCount.textContent) || 0;
+                            resourcesCount.textContent = currentCount + 1;
+                        }
                     }
                 }
             });
@@ -495,70 +578,73 @@
             });
         }
         
-        // Form validation and submission with SweetAlert2
-        const form = document.getElementById('topicForm');
-        
-        if (form && submitButton) {
-            form.addEventListener('submit', function(e) {
+        // Handle delete button click with SweetAlert2 (exactly matching course)
+        const deleteButton = document.getElementById('deleteButton');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                const titleInput = document.getElementById('title');
+                Swal.fire({
+                    title: 'Delete Topic?',
+                    text: 'This action cannot be undone. All topic data will be permanently removed.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f56565',
+                    cancelButtonColor: '#a0aec0',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                        deleteButton.disabled = true;
+                        document.getElementById('deleteForm').submit();
+                    }
+                });
+            });
+        }
+
+        // Form validation (matching course style)
+        const updateForm = document.getElementById('topicForm');
+        if (updateForm) {
+            updateForm.addEventListener('submit', function(e) {
                 const title = titleInput.value.trim();
+                
+                let isValid = true;
                 
                 if (!title) {
                     titleInput.classList.add('error');
+                    isValid = false;
+                } else {
+                    titleInput.classList.remove('error');
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
                     Swal.fire({
                         title: 'Validation Error',
                         text: 'Please enter a topic title.',
                         icon: 'error',
                         confirmButtonColor: '#667eea'
                     });
-                    titleInput.focus();
-                    return false;
-                } else {
-                    titleInput.classList.remove('error');
+                    return;
                 }
                 
-                @if(isset($topic))
-                // Edit mode confirmation
-                Swal.fire({
-                    title: 'Update Topic?',
-                    text: 'This topic will remain ' + ('{{ $topic->is_published }}' ? 'published' : 'in draft') + ' and visible to students.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#667eea',
-                    cancelButtonColor: '#a0aec0',
-                    confirmButtonText: 'Yes, Update',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-                        submitButton.disabled = true;
-                        form.submit();
-                    }
-                });
-                @else
-                // Create mode confirmation
-                Swal.fire({
-                    title: 'Create Topic?',
-                    text: 'This topic will be automatically published and visible to students.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#667eea',
-                    cancelButtonColor: '#a0aec0',
-                    confirmButtonText: 'Yes, Create',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-                        submitButton.disabled = true;
-                        form.submit();
-                    }
-                });
-                @endif
+                // Show loading state
+                if (submitButton) {
+                    const originalText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                    submitButton.disabled = true;
+                    
+                    // Re-enable after timeout (in case form doesn't redirect)
+                    setTimeout(() => {
+                        submitButton.innerHTML = originalText;
+                        submitButton.disabled = false;
+                    }, 5000);
+                }
             });
         }
-        
+
         // Show notifications from session
         @if(session('success'))
             Swal.fire({

@@ -4,180 +4,41 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/todo-index.css') }}">
-<style>
-    .todo-card {
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .todo-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-    }
-    
-    .todo-card::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: currentColor;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-    }
-    
-    .todo-card:hover::after {
-        opacity: 0.03;
-    }
-    
-    .students-preview {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
-        border: 1px solid #edf2f7;
-    }
-    
-    .students-preview-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .students-preview-title i {
-        color: var(--primary);
-    }
-    
-    .students-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-    }
-    
-    .student-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.75rem;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        color: #2d3748;
-        transition: all 0.2s;
-    }
-    
-    .student-chip:hover {
-        border-color: var(--primary);
-        background: #fff3e0;
-    }
-    
-    .student-chip i {
-        color: var(--primary);
-        font-size: 0.625rem;
-    }
-    
-    .student-chip .status-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 0.25rem;
-    }
-    
-    .status-submitted {
-        background: #48bb78;
-    }
-    
-    .status-graded {
-        background: #667eea;
-    }
-    
-    .status-late {
-        background: #f56565;
-    }
-    
-    .status-pending {
-        background: #cbd5e0;
-    }
-    
-    .view-all-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        font-size: 0.75rem;
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 600;
-        transition: gap 0.2s;
-    }
-    
-    .view-all-link:hover {
-        gap: 0.625rem;
-        color: var(--primary-dark);
-    }
-    
-    .student-avatar-mini {
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.625rem;
-        font-weight: 600;
-        margin-right: 0.375rem;
-    }
-    
-    .submission-info {
-        font-size: 0.6875rem;
-        color: #718096;
-        margin-left: 0.5rem;
-    }
-    
-    .stats-mini {
-        display: flex;
-        gap: 1rem;
-        margin-top: 0.5rem;
-        padding-top: 0.5rem;
-        border-top: 1px dashed #e2e8f0;
-    }
-    
-    .stat-mini-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.6875rem;
-        color: #718096;
-    }
-    
-    .stat-mini-item i {
-        color: var(--primary);
-    }
-    
-    .stat-mini-value {
-        font-weight: 600;
-        color: #2d3748;
-        margin-left: 0.25rem;
-    }
-</style>
 @endpush
 
 @section('content')
 <div class="dashboard-container">
+    {{-- Delete Confirmation Modal --}}
+    <div class="delete-modal" id="deleteModal">
+        <div class="delete-modal-content">
+            <div class="delete-modal-header">
+                <div class="delete-modal-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="delete-modal-title">Confirm Deletion</h3>
+            </div>
+            <div class="delete-modal-body">
+                <p id="deleteModalMessage">Are you sure you want to delete this item?</p>
+                <div class="delete-modal-item" id="deleteModalItem"></div>
+                <p style="margin-top: 1rem; font-size: 0.875rem; color: #dc2626;">
+                    <i class="fas fa-info-circle"></i> This action cannot be undone. All associated data (submissions, attempts, etc.) will be permanently removed.
+                </p>
+            </div>
+            <div class="delete-modal-actions">
+                <button type="button" class="delete-modal-btn cancel" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <form id="deleteForm" method="POST" class="delete-form">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="delete-modal-btn delete" id="confirmDeleteBtn">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {{-- Header --}}
     <div class="dashboard-header">
         <div class="header-content">
@@ -200,6 +61,14 @@
     <div class="alert alert-success">
         <i class="fas fa-check-circle"></i>
         {{ session('success') }}
+    </div>
+    @endif
+
+    {{-- Error Alert --}}
+    @if(session('error'))
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ session('error') }}
     </div>
     @endif
 
@@ -249,10 +118,25 @@
                 View progress <i class="fas fa-arrow-right"></i>
             </div>
         </div>
+
+        <div class="stat-card stat-card-warning clickable-card" onclick="window.location.href='{{ route('admin.todo.progress', ['type' => 'quiz']) }}'">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-label">Pending Reviews</div>
+                    <div class="stat-number">{{ number_format($pendingReviews ?? 0) }}</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <div class="stat-link">
+                Review submissions <i class="fas fa-arrow-right"></i>
+            </div>
+        </div>
     </div>
 
     {{-- Action Bar --}}
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="header-actions" style="justify-content: space-between; margin-bottom: 1.5rem;">
         <div class="todo-tabs">
             <a href="{{ route('admin.todo.index') }}" 
                class="todo-tab {{ $type === 'all' ? 'active' : '' }}">
@@ -268,7 +152,7 @@
             </a>
         </div>
         
-        <div class="header-actions">
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
             <form method="GET" action="{{ route('admin.todo.index') }}" style="display: flex; gap: 0.5rem;">
                 <input type="hidden" name="type" value="{{ $type }}">
                 <div class="search-container">
@@ -282,17 +166,24 @@
                 <button type="submit" class="btn-xs btn-xs-primary">
                     <i class="fas fa-search"></i> Search
                 </button>
+                @if($search)
+                <a href="{{ route('admin.todo.index', ['type' => $type]) }}" class="btn-xs btn-xs-outline">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+                @endif
             </form>
             
-            <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
-                <i class="fas fa-plus-circle"></i> New Quiz
-            </a>
-            <a href="{{ route('admin.assignments.create') }}" class="btn-xs btn-xs-success">
-                <i class="fas fa-plus-circle"></i> New Assignment
-            </a>
-            <a href="{{ route('admin.todo.progress') }}" class="btn-xs btn-xs-outline">
-                <i class="fas fa-chart-bar"></i> Progress
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
+                    <i class="fas fa-plus-circle"></i> New Quiz
+                </a>
+                <a href="{{ route('admin.assignments.create') }}" class="btn-xs btn-xs-success">
+                    <i class="fas fa-plus-circle"></i> New Assignment
+                </a>
+                <a href="{{ route('admin.todo.progress') }}" class="btn-xs btn-xs-outline">
+                    <i class="fas fa-chart-bar"></i> Progress
+                </a>
+            </div>
         </div>
     </div>
 
@@ -300,11 +191,11 @@
     @if($quizzes->isNotEmpty())
     <div class="section-heading">
         <i class="fas fa-brain"></i> Quizzes 
-        <span style="font-size: 0.75rem; color: var(--gray-500); font-weight: 400; margin-left: 0.5rem;">
-            ({{ $quizzes->count() }})
+        <span class="badge badge-gray" style="margin-left: 0.5rem;">
+            {{ $quizzes->count() }}
         </span>
     </div>
-    
+
     <div class="todo-grid">
         @foreach($quizzes as $quiz)
         @php
@@ -318,7 +209,9 @@
                 
             $attemptCount = $quiz->attempts_count ?? 0;
             $studentCount = $quiz->attempts()->distinct('user_id')->count('user_id');
-            $creator = $quiz->creator;
+            $passedCount = $quiz->attempts()->where('passed', 1)->count();
+            $failedCount = $quiz->attempts()->where('passed', 0)->whereNotNull('completed_at')->count();
+            $avgScore = $quiz->attempts()->whereNotNull('percentage')->avg('percentage');
         @endphp
         <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}'">
             <div class="todo-card-header">
@@ -328,17 +221,26 @@
                 <div style="flex: 1; min-width: 0;">
                     <div class="todo-card-title">{{ $quiz->title }}</div>
                     <div class="todo-card-desc">
-                        {{ Str::limit($quiz->description, 60) }}
+                        {{ Str::limit($quiz->description ?? 'No description', 60) }}
                     </div>
                     {{-- Creator info --}}
-                    <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
-                        <i class="fas fa-user-circle"></i> Created by: 
-                        @if($creator)
-                            <span style="font-weight: 500;">{{ $creator->f_name }} {{ $creator->l_name }}</span>
-                            <span style="color: #a0aec0;">({{ $creator->role == 1 ? 'Admin' : ($creator->role == 3 ? 'Teacher' : 'Unknown') }})</span>
-                        @else
-                            <span style="font-style: italic;">System / Unknown</span>
-                        @endif
+                    <div class="creator-info">
+                        <i class="fas fa-user-circle"></i> 
+                        <span class="creator-name">
+                            @if($quiz->creator)
+                                <span style="color: {{ $quiz->creator->role == 1 ? '#f59e0b' : ($quiz->creator->role == 3 ? '#48bb78' : 'inherit') }}; font-weight: 500;">
+                                    {{ $quiz->creator->f_name }} {{ $quiz->creator->l_name }}
+                                </span>
+                                <span class="creator-badge" style="background: {{ $quiz->creator->role == 1 ? '#f59e0b' : ($quiz->creator->role == 3 ? '#48bb78' : '#718096') }}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 6px;">
+                                    {{ $quiz->creator->role == 1 ? 'Admin' : ($quiz->creator->role == 3 ? 'Teacher' : 'Staff') }}
+                                </span>
+                            @else
+                                <span style="color: #a0aec0; font-style: italic;">System</span>
+                                <span class="creator-badge" style="background: #a0aec0; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 6px;">
+                                    Auto-generated
+                                </span>
+                            @endif
+                        </span>
                     </div>
                 </div>
             </div>
@@ -372,7 +274,7 @@
                                 <span class="student-avatar-mini">
                                     {{ strtoupper(substr($attempt->user->f_name ?? '?', 0, 1)) }}
                                 </span>
-                                <span>{{ Str::limit($attempt->user->f_name ?? 'Unknown', 10) }}</span>
+                                <span>{{ Str::limit($attempt->user->f_name ?? 'Unknown', 8) }}</span>
                                 <span class="submission-info">
                                     {{ $attempt->percentage }}%
                                     <span class="status-indicator {{ $attempt->passed ? 'status-graded' : 'status-late' }}"></span>
@@ -383,7 +285,7 @@
                                 <span class="student-avatar-mini">
                                     <i class="fas fa-user-slash" style="font-size: 0.5rem;"></i>
                                 </span>
-                                <span>Deleted User</span>
+                                <span>Deleted</span>
                                 <span class="submission-info">
                                     {{ $attempt->percentage }}%
                                     <span class="status-indicator {{ $attempt->passed ? 'status-graded' : 'status-late' }}"></span>
@@ -395,8 +297,8 @@
                 
                 @if($attemptCount > 5)
                 <a href="{{ route('admin.todo.progress', ['type' => 'quiz', 'item_id' => $quiz->id]) }}" 
-                   class="view-all-link" 
-                   onclick="event.stopPropagation()">
+                class="view-all-link" 
+                onclick="event.stopPropagation()">
                     View all {{ $attemptCount }} attempts <i class="fas fa-arrow-right"></i>
                 </a>
                 @endif
@@ -404,15 +306,15 @@
                 <div class="stats-mini">
                     <div class="stat-mini-item">
                         <i class="fas fa-check-circle"></i>
-                        Passed: <span class="stat-mini-value">{{ $quiz->attempts()->where('passed', 1)->count() }}</span>
+                        Passed: <span class="stat-mini-value">{{ $passedCount }}</span>
                     </div>
                     <div class="stat-mini-item">
                         <i class="fas fa-times-circle"></i>
-                        Failed: <span class="stat-mini-value">{{ $quiz->attempts()->where('passed', 0)->whereNotNull('completed_at')->count() }}</span>
+                        Failed: <span class="stat-mini-value">{{ $failedCount }}</span>
                     </div>
                     <div class="stat-mini-item">
                         <i class="fas fa-chart-line"></i>
-                        Avg: <span class="stat-mini-value">{{ round($quiz->attempts()->whereNotNull('percentage')->avg('percentage')) }}%</span>
+                        Avg: <span class="stat-mini-value">{{ $avgScore ? round($avgScore) . '%' : 'N/A' }}</span>
                     </div>
                 </div>
             </div>
@@ -425,17 +327,23 @@
             
             <div class="todo-card-actions" onclick="event.stopPropagation()">
                 <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}" 
-                   class="btn-xs btn-xs-primary">
+                class="btn-xs btn-xs-primary">
                     <i class="fas fa-user-shield"></i> Manage Access
                 </a>
                 <a href="{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
-                   class="btn-xs btn-xs-outline">
+                class="btn-xs btn-xs-outline">
                     <i class="fas fa-edit"></i> Edit
                 </a>
                 <a href="{{ route('admin.todo.progress', ['type' => 'quiz', 'item_id' => $quiz->id]) }}" 
-                   class="btn-xs btn-xs-outline">
+                class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
                 </a>
+                {{-- Delete Quiz Button --}}
+                <button type="button" 
+                        class="btn-xs btn-xs-danger" 
+                        onclick="event.stopPropagation(); showDeleteModal('quiz', '{{ addslashes($quiz->title) }}', '{{ route('admin.quizzes.destroy', Crypt::encrypt($quiz->id)) }}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             </div>
         </div>
         @endforeach
@@ -446,11 +354,11 @@
     @if($assignments->isNotEmpty())
     <div class="section-heading">
         <i class="fas fa-file-alt"></i> Assignments 
-        <span style="font-size: 0.75rem; color: var(--gray-500); font-weight: 400; margin-left: 0.5rem;">
-            ({{ $assignments->count() }})
+        <span class="badge badge-gray" style="margin-left: 0.5rem;">
+            {{ $assignments->count() }}
         </span>
     </div>
-    
+
     <div class="todo-grid">
         @foreach($assignments as $assignment)
         @php
@@ -464,7 +372,10 @@
             $submissionCount = $assignment->submissions_count ?? 0;
             $gradedCount = $assignment->submissions()->where('status', 'graded')->count();
             $pendingCount = $assignment->submissions()->whereIn('status', ['submitted', 'late'])->count();
-            $creator = $assignment->creator;
+            
+            $avgScore = $assignment->submissions()
+                ->whereNotNull('score')
+                ->avg('score');
         @endphp
         <div class="todo-card" onclick="window.location.href='{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}'">
             <div class="todo-card-header">
@@ -474,20 +385,35 @@
                 <div style="flex: 1; min-width: 0;">
                     <div class="todo-card-title">{{ $assignment->title }}</div>
                     <div class="todo-card-desc">
-                        {{ $assignment->course?->course_name ?? 'No course' }}
+                        @if($assignment->course)
+                            <span class="course-badge">
+                                <i class="fas fa-book"></i> {{ $assignment->course->course_code ?? $assignment->course->name }}
+                            </span>
+                        @endif
                         @if($assignment->due_date)
-                        · Due {{ $assignment->due_date->format('M d, Y') }}
+                            <span style="margin-left: 0.5rem;">
+                                <i class="fas fa-calendar"></i> Due {{ $assignment->due_date->format('M d, Y') }}
+                            </span>
                         @endif
                     </div>
                     {{-- Creator info --}}
-                    <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
-                        <i class="fas fa-user-circle"></i> Created by: 
-                        @if($creator)
-                            <span style="font-weight: 500;">{{ $creator->f_name }} {{ $creator->l_name }}</span>
-                            <span style="color: #a0aec0;">({{ $creator->role == 1 ? 'Admin' : ($creator->role == 3 ? 'Teacher' : 'Unknown') }})</span>
-                        @else
-                            <span style="font-style: italic;">System / Unknown</span>
-                        @endif
+                    <div class="creator-info">
+                        <i class="fas fa-user-circle"></i> 
+                        <span class="creator-name">
+                            @if($assignment->creator)
+                                <span style="color: {{ $assignment->creator->role == 1 ? '#f59e0b' : ($assignment->creator->role == 3 ? '#48bb78' : 'inherit') }}; font-weight: 500;">
+                                    {{ $assignment->creator->f_name }} {{ $assignment->creator->l_name }}
+                                </span>
+                                <span class="creator-badge" style="background: {{ $assignment->creator->role == 1 ? '#f59e0b' : ($assignment->creator->role == 3 ? '#48bb78' : '#718096') }}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 6px;">
+                                    {{ $assignment->creator->role == 1 ? 'Admin' : ($assignment->creator->role == 3 ? 'Teacher' : 'Staff') }}
+                                </span>
+                            @else
+                                <span style="color: #a0aec0; font-style: italic;">System</span>
+                                <span class="creator-badge" style="background: #a0aec0; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 6px;">
+                                    Auto-generated
+                                </span>
+                            @endif
+                        </span>
                     </div>
                 </div>
             </div>
@@ -503,7 +429,7 @@
                 <span class="badge badge-gray">
                     <i class="fas fa-upload"></i> {{ $submissionCount }} submitted
                 </span>
-                <span class="badge badge-gray">
+                <span class="badge badge-primary">
                     <i class="fas fa-star"></i> {{ $assignment->points }} pts
                 </span>
             </div>
@@ -523,17 +449,24 @@
                                 'submitted' => 'status-submitted',
                                 default => 'status-pending'
                             };
+                            $statusIcon = match($submission->status) {
+                                'graded' => 'fa-check-circle',
+                                'late' => 'fa-exclamation-circle',
+                                'submitted' => 'fa-clock',
+                                default => 'fa-hourglass'
+                            };
                         @endphp
                         @if($submission->student)
                             <div class="student-chip" title="{{ $submission->student->full_name ?? 'Unknown Student' }} - {{ $submission->status }}">
                                 <span class="student-avatar-mini">
                                     {{ strtoupper(substr($submission->student->f_name ?? '?', 0, 1)) }}
                                 </span>
-                                <span>{{ Str::limit($submission->student->f_name ?? 'Unknown', 10) }}</span>
+                                <span>{{ Str::limit($submission->student->f_name ?? 'Unknown', 8) }}</span>
                                 <span class="submission-info">
                                     @if($submission->score)
-                                        {{ $submission->score }}/{{ $assignment->points }}
+                                        <i class="fas fa-star" style="color: #fbbf24;"></i> {{ $submission->score }}/{{ $assignment->points }}
                                     @endif
+                                    <i class="fas {{ $statusIcon }}" style="font-size: 0.5rem;"></i>
                                     <span class="status-indicator {{ $statusColor }}"></span>
                                 </span>
                             </div>
@@ -542,10 +475,10 @@
                                 <span class="student-avatar-mini">
                                     <i class="fas fa-user-slash" style="font-size: 0.5rem;"></i>
                                 </span>
-                                <span>Deleted User</span>
+                                <span>Deleted</span>
                                 <span class="submission-info">
                                     @if($submission->score)
-                                        {{ $submission->score }}/{{ $assignment->points }}
+                                        <i class="fas fa-star" style="color: #fbbf24;"></i> {{ $submission->score }}/{{ $assignment->points }}
                                     @endif
                                     <span class="status-indicator {{ $statusColor }}"></span>
                                 </span>
@@ -556,8 +489,8 @@
                 
                 @if($submissionCount > 5)
                 <a href="{{ route('admin.todo.progress', ['type' => 'assignment', 'item_id' => $assignment->id]) }}" 
-                   class="view-all-link"
-                   onclick="event.stopPropagation()">
+                class="view-all-link"
+                onclick="event.stopPropagation()">
                     View all {{ $submissionCount }} submissions <i class="fas fa-arrow-right"></i>
                 </a>
                 @endif
@@ -575,11 +508,6 @@
                         <i class="fas fa-star"></i>
                         Avg Score: 
                         <span class="stat-mini-value">
-                            @php
-                                $avgScore = $assignment->submissions()
-                                    ->whereNotNull('score')
-                                    ->avg('score');
-                            @endphp
                             {{ $avgScore ? round($avgScore, 1) : 'N/A' }}
                         </span>
                     </div>
@@ -593,18 +521,24 @@
             @endif
             
             <div class="todo-card-actions" onclick="event.stopPropagation()">
-                <a href="{{ route('admin.todo.assignment.access', Crypt::encrypt($assignment->id)) }}" 
-                   class="btn-xs btn-xs-primary">
+                <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}" 
+                class="btn-xs btn-xs-primary">
                     <i class="fas fa-user-shield"></i> Manage Access
                 </a>
                 <a href="{{ route('admin.assignments.edit', Crypt::encrypt($assignment->id)) }}" 
-                   class="btn-xs btn-xs-outline">
+                class="btn-xs btn-xs-outline">
                     <i class="fas fa-edit"></i> Edit
                 </a>
                 <a href="{{ route('admin.todo.progress', ['type' => 'assignment', 'item_id' => $assignment->id]) }}" 
-                   class="btn-xs btn-xs-outline">
+                class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
                 </a>
+                {{-- Delete Assignment Button --}}
+                <button type="button" 
+                        class="btn-xs btn-xs-danger" 
+                        onclick="event.stopPropagation(); showDeleteModal('assignment', '{{ addslashes($assignment->title) }}', '{{ route('admin.assignments.destroy', Crypt::encrypt($assignment->id)) }}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             </div>
         </div>
         @endforeach
@@ -615,8 +549,8 @@
     @if($quizzes->isEmpty() && $assignments->isEmpty())
     <div class="empty-todo">
         <i class="fas fa-clipboard-list"></i>
-        <p style="font-size: 1rem; font-weight: 600; color: var(--gray-700);">No items found</p>
-        <p style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 1.5rem;">
+        <p class="empty-title">No items found</p>
+        <p class="empty-text">
             {{ $search ? 'No results match your search criteria.' : 'Create a quiz or assignment to get started.' }}
         </p>
         <div style="display: flex; gap: 0.75rem; justify-content: center;">
@@ -635,11 +569,24 @@
     </div>
     @endif
 
+    {{-- Pagination --}}
+    @if(method_exists($quizzes, 'links') || method_exists($assignments, 'links'))
+    <div class="pagination-container" style="margin-top: 2rem;">
+        @if($type === 'quiz' && method_exists($quizzes, 'links'))
+            {{ $quizzes->links() }}
+        @elseif($type === 'assignment' && method_exists($assignments, 'links'))
+            {{ $assignments->links() }}
+        @elseif($type === 'all')
+            {{-- Handle pagination for both if needed --}}
+        @endif
+    </div>
+    @endif
+
     {{-- Footer --}}
     <footer class="dashboard-footer">
         <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
         <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            To-Do Management • Updated {{ now()->format('M d, Y') }}
+            To-Do Management • Updated {{ now()->format('M d, Y h:i A') }}
         </p>
     </footer>
 </div>
@@ -647,7 +594,55 @@
 
 @push('scripts')
 <script>
+    // Delete Modal functionality
+    function showDeleteModal(type, title, deleteUrl) {
+        const modal = document.getElementById('deleteModal');
+        const message = document.getElementById('deleteModalMessage');
+        const itemDisplay = document.getElementById('deleteModalItem');
+        const deleteForm = document.getElementById('deleteForm');
+        
+        // Set message based on type
+        message.textContent = `Are you sure you want to delete this ${type}?`;
+        
+        // Set icon based on type
+        const icon = type === 'quiz' ? 'brain' : 'file-alt';
+        itemDisplay.innerHTML = `<i class="fas fa-${icon}"></i> ${title}`;
+        
+        // Set form action
+        deleteForm.action = deleteUrl;
+        
+        // Show modal
+        modal.classList.add('active');
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeDeleteModal() {
+        const modal = document.getElementById('deleteModal');
+        modal.classList.remove('active');
+        
+        // Restore body scrolling
+        document.body.style.overflow = '';
+    }
+    
+    // Close modal when clicking outside
     document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('deleteModal');
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeDeleteModal();
+            }
+        });
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeDeleteModal();
+            }
+        });
+        
         // Make stat cards clickable
         const clickableCards = document.querySelectorAll('.clickable-card');
         clickableCards.forEach(card => {
@@ -658,14 +653,16 @@
                 }
                 
                 const link = this.querySelector('.stat-link');
-                if (link) {
-                    window.location.href = link.closest('a')?.href || link.href;
+                if (link && link.closest('a')) {
+                    window.location.href = link.closest('a').href;
+                } else if (this.dataset.href) {
+                    window.location.href = this.dataset.href;
                 }
             });
         });
 
-        // Prevent event bubbling on action buttons
-        const actionButtons = document.querySelectorAll('.todo-card-actions a, .view-all-link');
+        // Prevent event bubbling on action buttons and view-all links
+        const actionButtons = document.querySelectorAll('.todo-card-actions a, .view-all-link, .todo-card-actions .btn-xs');
         actionButtons.forEach(button => {
             button.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -677,10 +674,49 @@
         if (searchInput) {
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
+                    e.preventDefault();
                     this.form.submit();
                 }
             });
         }
+
+        // Add loading state to filter buttons
+        const filterButtons = document.querySelectorAll('.btn-xs[type="submit"]');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+                this.disabled = true;
+                
+                // Re-enable after form submission (will be redirected)
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 2000);
+            });
+        });
+
+        // Add hover effects for todo cards
+        const todoCards = document.querySelectorAll('.todo-card');
+        todoCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+            });
+        });
+
+        // Show modal if there's a session flag (for assignment access)
+        @if(session('open_access_modal'))
+            const accessModal = document.getElementById('accessModal');
+            if (accessModal) {
+                accessModal.classList.add('active');
+            }
+        @endif
     });
 </script>
 @endpush

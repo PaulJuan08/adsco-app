@@ -12,7 +12,8 @@ class Topic extends Model
     
     protected $fillable = [
         'title', 'description', 'content', 'video_link', 
-        'attachment', 'pdf_file', 'course_id', 'order', 'estimated_time', 'is_published'
+        'attachment', 'pdf_file', 'course_id', 'order', 
+        'estimated_time', 'is_published', 'created_by'  // Add created_by here
     ];
     
     protected $casts = [
@@ -20,6 +21,51 @@ class Topic extends Model
         'order' => 'integer',
         'estimated_time' => 'integer'
     ];
+    
+    // ============ NEW: Creator Relationship ============
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
+    // Helper to get creator name
+    public function getCreatorNameAttribute()
+    {
+        return $this->creator ? $this->creator->f_name . ' ' . $this->creator->l_name : 'System';
+    }
+    
+    // Helper to get creator avatar
+    public function getCreatorAvatarAttribute()
+    {
+        if (!$this->creator) {
+            return 'S';
+        }
+        
+        if ($this->creator->avatar) {
+            return $this->creator->avatar;
+        }
+        
+        return strtoupper(substr($this->creator->f_name, 0, 1));
+    }
+    
+    // Helper to get creator role
+    public function getCreatorRoleAttribute()
+    {
+        if (!$this->creator) {
+            return 'System';
+        }
+        
+        $roles = [
+            1 => 'Admin',
+            2 => 'Registrar',
+            3 => 'Teacher',
+            4 => 'Student'
+        ];
+        
+        return $roles[$this->creator->role] ?? 'User';
+    }
+    
+    // ============ Existing Relationships ============
     
     // Direct course relationship (for backward compatibility)
     public function course()
@@ -57,6 +103,8 @@ class Topic extends Model
             ->withTimestamps();
     }
     
+    // ============ Scopes ============
+    
     // Scope for published topics
     public function scopePublished($query)
     {
@@ -68,6 +116,14 @@ class Topic extends Model
     {
         return $query->where('is_published', false);
     }
+    
+    // Scope for topics created by a specific user
+    public function scopeCreatedBy($query, $userId)
+    {
+        return $query->where('created_by', $userId);
+    }
+    
+    // ============ Helper Methods ============
     
     // Check if topic has video
     public function hasVideo()
