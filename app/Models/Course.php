@@ -21,7 +21,8 @@ class Course extends Model
         'status',
         'start_date',
         'end_date',
-        'max_students'
+        'max_students',
+        'created_by' // ADD THIS - needed for the creator relationship
     ];
 
     protected $casts = [
@@ -35,6 +36,12 @@ class Course extends Model
     public function teacher()
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    // ADD THIS RELATIONSHIP - for the user who created the course
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     // Relationship with topics through pivot table (ORDERED)

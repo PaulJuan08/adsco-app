@@ -8,8 +8,10 @@ use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Traits\CacheManager;
+use Illuminate\Support\Facades\Log;
 
 class TopicController extends Controller
 {
@@ -17,8 +19,6 @@ class TopicController extends Controller
     
     public function index()
     {
-        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
-        
         // Get topics with specific columns only
         $topics = Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at'])
             ->latest()
@@ -68,26 +68,24 @@ class TopicController extends Controller
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
 
-        // Handle PDF file upload
+        // 🔥 SIMPLE PDF UPLOAD - Works on both local and live
         if ($request->hasFile('pdf_file')) {
             $file = $request->file('pdf_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('pdfs', $fileName, 'public');
-            $validated['pdf_file'] = '/storage/' . $filePath;
+            
+            // Store directly in public/pdf folder
+            $file->move(public_path('pdf'), $fileName);
+            
+            // Save just the filename in database
+            $validated['pdf_file'] = $fileName;
         }
 
         $topic = Topic::create($validated);
         
-        // Clear ALL topic-related caches
+        // Clear all caches
         $this->clearAdminTopicCaches();
-        
-        // Clear ALL teacher topic caches (teachers can see all topics)
         $this->clearAllTeacherTopicCaches();
-        
-        // 🔥 ADD THIS: Clear admin dashboard caches
         $this->clearAdminDashboardCaches();
-        
-        // 🔥 ADD THIS: Clear teacher dashboard caches for all teachers
         $this->clearTeacherDashboardCaches();
         
         \Log::info('New topic created - ID: ' . $topic->id . ', Title: ' . $topic->title);
@@ -104,14 +102,22 @@ class TopicController extends Controller
             $cacheKey = 'admin_topic_show_' . $id;
             
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
-                return Topic::select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'created_at', 'updated_at'])
+                return Topic::with(['courses']) // Add this to load courses relationship
+                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at'])
                     ->findOrFail($id);
             });
+            
+            // Debug log to check PDF file
+            Log::info('Loading topic show page', [
+                'topic_id' => $topic->id,
+                'pdf_file' => $topic->pdf_file,
+                'pdf_url' => self::getPdfUrl($topic->pdf_file)
+            ]);
             
             return view('admin.topics.show', compact('topic'));
             
         } catch (\Exception $e) {
-            \Log::error('Error showing topic', [
+            Log::error('Error showing topic', [
                 'encryptedId' => $encryptedId,
                 'error' => $e->getMessage()
             ]);
@@ -160,17 +166,21 @@ class TopicController extends Controller
                 'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
             ]);
 
-            // Handle PDF file upload
+            // 🔥 SIMPLE PDF UPDATE - Works on both local and live
             if ($request->hasFile('pdf_file')) {
                 // Delete old file if exists
-                if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                    unlink(public_path($topic->pdf_file));
+                if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                    unlink(public_path('pdf/' . $topic->pdf_file));
                 }
                 
                 $file = $request->file('pdf_file');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('pdfs', $fileName, 'public');
-                $validated['pdf_file'] = '/storage/' . $filePath;
+                
+                // Store directly in public/pdf folder
+                $file->move(public_path('pdf'), $fileName);
+                
+                // Save just the filename
+                $validated['pdf_file'] = $fileName;
             } else {
                 // Keep existing pdf_file if not uploading new one
                 $validated['pdf_file'] = $topic->pdf_file;
@@ -178,12 +188,11 @@ class TopicController extends Controller
 
             $topic->update($validated);
             
-            // Clear all topic-related caches
+            // Clear caches
             $this->clearAdminTopicCaches();
             Cache::forget('admin_topic_show_' . $id);
             Cache::forget('admin_topic_edit_' . $id);
             
-            // When topic is updated, clear student caches for all courses that use this topic
             $courses = $topic->courses;
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
@@ -209,22 +218,20 @@ class TopicController extends Controller
             $id = Crypt::decrypt($encryptedId);
             $topic = Topic::findOrFail($id);
             
-            // Get all courses that use this topic before deletion
             $courses = $topic->courses;
             
-            // Delete PDF file if exists
-            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                unlink(public_path($topic->pdf_file));
+            // 🔥 SIMPLE PDF DELETION
+            if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                unlink(public_path('pdf/' . $topic->pdf_file));
             }
             
             $topic->delete();
             
-            // Clear all topic-related caches
+            // Clear caches
             $this->clearAdminTopicCaches();
             Cache::forget('admin_topic_show_' . $id);
             Cache::forget('admin_topic_edit_' . $id);
             
-            // Clear student caches for all affected courses
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
             }
@@ -255,6 +262,63 @@ class TopicController extends Controller
         
         return redirect()->route('admin.topics.index')
             ->with('success', 'Topic caches cleared successfully.');
+    }
+    
+    /**
+     * 🔥 HELPER METHOD - Get PDF URL (handles both old and new formats)
+     */
+    public static function getPdfUrl($pdfFile)
+    {
+        if (empty($pdfFile)) {
+            return null;
+        }
+        
+        // If it's already a full URL
+        if (filter_var($pdfFile, FILTER_VALIDATE_URL)) {
+            return $pdfFile;
+        }
+        
+        // Extract just the filename
+        if (str_contains($pdfFile, '/')) {
+            $filename = basename($pdfFile);
+        } else {
+            $filename = $pdfFile;
+        }
+        
+        // Clean filename - remove any special characters that might cause issues
+        $filename = preg_replace('/[^a-zA-Z0-9_\-\s\.\(\)]/', '', $filename);
+        
+        // Check which folder the file exists in
+        $possiblePaths = [
+            'pdf' => public_path('pdf/' . $filename),
+            'pdfs' => public_path('pdfs/' . $filename),
+            'storage/pdf' => public_path('storage/pdf/' . $filename),
+            'storage/pdfs' => public_path('storage/pdfs/' . $filename),
+        ];
+        
+        $foundFolder = null;
+        foreach ($possiblePaths as $folder => $path) {
+            if (file_exists($path)) {
+                $foundFolder = $folder;
+                Log::info('PDF file found in ' . $folder . ' folder: ' . $filename);
+                break;
+            }
+        }
+        
+        if (!$foundFolder) {
+            Log::warning('PDF file not found in any location: ' . $filename);
+            // Default to pdf folder
+            $foundFolder = 'pdf';
+        }
+        
+        // Return secure route with encrypted filename
+        try {
+            return route('pdf.view', ['encryptedFilename' => Crypt::encrypt($filename)]);
+        } catch (\Exception $e) {
+            Log::error('PDF URL encryption failed: ' . $e->getMessage());
+            // Fallback to direct URL - use the correct folder
+            return asset($foundFolder . '/' . $filename);
+        }
     }
     
     /**
@@ -341,5 +405,48 @@ class TopicController extends Controller
         }
         
         return 'File';
+    }
+
+    /**
+     * Publish or unpublish a topic
+     * 
+     * @param string $encryptedId
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function publish($encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $topic = Topic::findOrFail($id);
+            
+            // Toggle publish status
+            $topic->update([
+                'is_published' => !$topic->is_published
+            ]);
+            
+            $status = $topic->is_published ? 'published' : 'unpublished';
+            
+            // Clear caches
+            $this->clearAdminTopicCaches();
+            Cache::forget('admin_topic_show_' . $id);
+            
+            // Clear course caches for all courses this topic belongs to
+            foreach ($topic->courses as $course) {
+                Cache::forget('course_show_' . $course->id);
+                $this->clearStudentCachesForCourse($course->id);
+            }
+            
+            return redirect()->route('admin.topics.show', $encryptedId)
+                ->with('success', "Topic {$status} successfully!");
+                
+        } catch (\Exception $e) {
+            Log::error('Error publishing topic', [ // This now works with the import
+                'encryptedId' => $encryptedId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('admin.topics.index')
+                ->with('error', 'Failed to update topic status. ' . $e->getMessage());
+        }
     }
 }

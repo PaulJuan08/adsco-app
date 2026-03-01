@@ -21,226 +21,184 @@
     <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     
+    <!-- Layout CSS -->
+    <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
+    
+    @stack('styles')
+    
     <style>
-        /* Sidebar-specific styles that extend dashboard.css */
-        .layout-with-sidebar {
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-            color: white;
-            position: fixed;
-            left: 0;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            box-shadow: var(--shadow-xl);
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-        
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.75rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
-        }
-
-        .sidebar-logo {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border-radius: var(--radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-        }
-
-        .sidebar-logo img {
+        /* Dropdown styles with smooth animations */
+        .sidebar-dropdown {
             width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .sidebar-title {
-            font-size: 1.375rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            white-space: nowrap;
-        }
-        
-        .sidebar-nav {
-            flex: 1;
-            padding: 1.5rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.875rem 1rem;
-            border-radius: var(--radius-sm);
-            color: #d1d5db;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9375rem;
-            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
             position: relative;
         }
         
-        .sidebar-nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: var(--primary);
-            transform: scaleY(0);
-            transition: transform 0.2s ease;
+        .sidebar-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            border-radius: 0.375rem;
+            position: relative;
+            z-index: 2;
         }
         
-        .sidebar-nav-item:hover {
+        .sidebar-dropdown-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-dropdown-btn.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: white;
+            border-left: 3px solid #667eea;
+        }
+        
+        .sidebar-dropdown-btn i:first-child {
+            width: 20px;
+            font-size: 1rem;
+            color: currentColor;
+        }
+        
+        .dropdown-arrow {
+            margin-left: auto;
+            font-size: 0.75rem;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Smooth dropdown menu */
+        .sidebar-dropdown-menu {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-left: 1rem;
+            padding-left: 0.5rem;
+            border-left: 1px dashed rgba(255, 255, 255, 0.1);
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+            transform-origin: top;
+            will-change: max-height;
+        }
+        
+        .sidebar-dropdown:hover .sidebar-dropdown-menu {
+            max-height: 200px; /* Adjust based on content */
+            opacity: 1;
+        }
+        
+        .sidebar-dropdown:hover .dropdown-arrow {
+            transform: rotate(90deg);
+        }
+        
+        .sidebar-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 1rem 0.6rem 1.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0.375rem;
+            margin: 0.125rem 0;
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .sidebar-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.08);
             color: white;
             transform: translateX(4px);
         }
         
-        .sidebar-nav-item.active {
-            background: rgba(79, 70, 229, 0.15);
+        .sidebar-dropdown-item.active {
+            background: rgba(102, 126, 234, 0.12);
             color: white;
+            font-weight: 500;
         }
         
-        .sidebar-nav-item.active::before {
-            transform: scaleY(1);
+        .sidebar-dropdown-item i {
+            width: 18px;
+            font-size: 0.875rem;
+            color: currentColor;
+            transition: transform 0.2s ease;
         }
         
-        .sidebar-nav-item i {
-            width: 22px;
+        .sidebar-dropdown-item:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Badge styles */
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.1rem 0.4rem;
+            margin-left: auto;
+            min-width: 18px;
             text-align: center;
-            font-size: 1.125rem;
-            flex-shrink: 0;
+            animation: pulse 2s infinite;
         }
         
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
         }
         
-        .sidebar-user-profile {
-            display: flex;
-            align-items: center;
-            gap: 0.875rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: var(--radius-sm);
+        /* Smooth transitions for sidebar nav items */
+        .sidebar-nav-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .sidebar-user-avatar {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.125rem;
-            flex-shrink: 0;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        .sidebar-nav-item:hover {
+            transform: translateX(4px);
         }
         
-        .sidebar-user-details {
-            flex: 1;
-            min-width: 0;
+        /* Ensure smooth hover effects */
+        .sidebar-dropdown-btn, 
+        .sidebar-dropdown-item,
+        .sidebar-nav-item {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
         }
         
-        .sidebar-user-name {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            color: white;
-            margin-bottom: 0.125rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* Keep dropdown open when menu is hovered */
+        .sidebar-dropdown-menu:hover {
+            max-height: 200px;
+            opacity: 1;
         }
         
-        .sidebar-user-role {
-            font-size: 0.8125rem;
-            color: #9ca3af;
-        }
-        
-        .sidebar-logout-btn {
-            background: rgba(239, 68, 68, 0.15);
-            color: #fca5a5;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
-            width: 100%;
-        }
-        
-        .sidebar-logout-btn:hover {
-            background: rgba(239, 68, 68, 0.25);
-            color: #fecaca;
-            transform: translateX(0);
-        }
-        
-        .content-wrapper {
-            flex: 1;
-            margin-left: 280px;
-            transition: all 0.3s ease;
-        }
-        
-        /* Mobile Responsive */
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
+            .sidebar-dropdown-menu {
+                margin-left: 0.5rem;
             }
             
-            .sidebar.mobile-open {
-                transform: translateX(0);
+            .sidebar-dropdown-item {
+                padding-left: 1rem;
             }
-            
-            .content-wrapper {
-                margin-left: 0;
-            }
-        }
-        
-        .d-none {
-            display: none !important;
         }
     </style>
-    
-    @stack('styles')
 </head>
 <body>
     <div class="layout-with-sidebar">
@@ -254,50 +212,115 @@
             </div>
             
             <nav class="sidebar-nav">
+                <!-- Dashboard -->
                 <a href="{{ route('dashboard') }}" class="sidebar-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
+
+                <!-- Users -->
                 <a href="{{ route('admin.users.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i>
                     <span>Users</span>
                 </a>
-                <a href="{{ route('admin.courses.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
-                    <i class="fas fa-book"></i>
-                    <span>Courses</span>
-                </a>
-                <a href="{{ route('admin.topics.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.topics.*') ? 'active' : '' }}">
-                    <i class="fas fa-list"></i>
-                    <span>Topics</span>
-                </a>
-                <a href="{{ route('admin.quizzes.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Quizzes</span>
-                </a>
-            </nav>  
-            
-            <div class="sidebar-footer">
-                <div class="sidebar-user-profile">
-                    <div class="sidebar-user-avatar">
-                        {{ strtoupper(substr(Auth::user()->f_name ?? 'A', 0, 1)) }}
+
+                <!-- Departments Dropdown -->
+                <div class="sidebar-dropdown">
+                    <div class="sidebar-dropdown-btn {{ request()->routeIs('admin.colleges.*') || request()->routeIs('admin.programs.*') ? 'active' : '' }}">
+                        <i class="fas fa-building"></i>
+                        <span>Departments</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
                     </div>
-                    <div class="sidebar-user-details">
-                        @php
-                            $roleMapping = [
-                                1 => 'Admin',
-                                2 => 'Registrar',
-                                3 => 'Teacher',
-                                4 => 'Student'
-                            ];
-                            
-                            $user = Auth::user();
-                            $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
-                        @endphp
-                        
-                        <div class="sidebar-user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
-                        <div class="sidebar-user-role">{{ $roleText }}</div>
+                    <div class="sidebar-dropdown-menu">
+                        <a href="{{ route('admin.colleges.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.colleges.*') ? 'active' : '' }}">
+                            <i class="fas fa-university"></i>
+                            <span>Colleges</span>
+                        </a>
+                        <a href="{{ route('admin.programs.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.programs.*') ? 'active' : '' }}">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Programs</span>
+                        </a>
                     </div>
                 </div>
+
+                <!-- Learning Materials Dropdown -->
+                <div class="sidebar-dropdown">
+                    <div class="sidebar-dropdown-btn {{ request()->routeIs('admin.courses.*') || request()->routeIs('admin.topics.*') ? 'active' : '' }}">
+                        <i class="fas fa-book-open"></i>
+                        <span>Learning Materials</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </div>
+                    <div class="sidebar-dropdown-menu">
+                        <a href="{{ route('admin.courses.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}">
+                            <i class="fas fa-book"></i>
+                            <span>Courses</span>
+                        </a>
+                        <a href="{{ route('admin.topics.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.topics.*') ? 'active' : '' }}">
+                            <i class="fas fa-list"></i>
+                            <span>Topics</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- To-Do Dropdown -->
+                <div class="sidebar-dropdown">
+                    <div class="sidebar-dropdown-btn {{ request()->routeIs('admin.todo.*') || request()->routeIs('admin.quizzes.*') || request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
+                        <i class="fas fa-tasks"></i>
+                        <span>To-Do</span>
+                        <i class="fas fa-chevron-right dropdown-arrow"></i>
+                    </div>
+                    <div class="sidebar-dropdown-menu">
+                        <a href="{{ route('admin.todo.index', ['type' => 'quiz']) }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.todo.quiz*') ? 'active' : '' }}">
+                            <i class="fas fa-brain"></i>
+                            <span>Quizzes</span>
+                        </a>
+                        <a href="{{ route('admin.todo.index', ['type' => 'assignment']) }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.todo.assignment*') ? 'active' : '' }}">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Assignments</span>
+                        </a>
+                        <a href="{{ route('admin.todo.progress') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.todo.progress*') ? 'active' : '' }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Progress</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Enrollments -->
+                <a href="{{ route('admin.enrollments.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.enrollments*') ? 'active' : '' }}">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Enrollments</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- Profile link -->
+                <a href="{{ route('admin.profile.show') }}" class="sidebar-user-profile-link">
+                    <div class="sidebar-user-profile">
+                        <div class="sidebar-user-avatar">
+                            @if(Auth::user()->avatar)
+                                <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
+                            @else
+                                {{ strtoupper(substr(Auth::user()->f_name ?? 'A', 0, 1)) }}
+                            @endif
+                        </div>
+                        <div class="sidebar-user-details">
+                            @php
+                                $roleMapping = [
+                                    1 => 'Admin',
+                                    2 => 'Registrar',
+                                    3 => 'Teacher',
+                                    4 => 'Student'
+                                ];
+                                
+                                $user = Auth::user();
+                                $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
+                            @endphp
+                            
+                            <div class="sidebar-user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
+                            <div class="sidebar-user-role">{{ $roleText }}</div>
+                        </div>
+                    </div>
+                </a>
                 
                 <button class="sidebar-nav-item sidebar-logout-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-sign-out-alt"></i>
@@ -317,5 +340,107 @@
     </div>
     
     @stack('scripts')
+    
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+
+        // Smooth dropdown animations with hardware acceleration
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.sidebar-dropdown');
+            
+            dropdowns.forEach(dropdown => {
+                const menu = dropdown.querySelector('.sidebar-dropdown-menu');
+                const btn = dropdown.querySelector('.sidebar-dropdown-btn');
+                const arrow = dropdown.querySelector('.dropdown-arrow');
+                
+                if (!menu) return;
+                
+                // Set initial max-height based on content
+                const setMaxHeight = () => {
+                    if (menu.style.maxHeight !== '0px' && menu.style.maxHeight !== '') {
+                        menu.style.maxHeight = menu.scrollHeight + 'px';
+                    }
+                };
+                
+                // Smooth hover with RAF for performance
+                let hoverTimeout;
+                let isHovering = false;
+                
+                dropdown.addEventListener('mouseenter', function() {
+                    cancelAnimationFrame(hoverTimeout);
+                    isHovering = true;
+                    
+                    requestAnimationFrame(() => {
+                        menu.style.maxHeight = menu.scrollHeight + 'px';
+                        menu.style.opacity = '1';
+                        if (arrow) arrow.style.transform = 'rotate(90deg)';
+                    });
+                });
+                
+                dropdown.addEventListener('mouseleave', function() {
+                    isHovering = false;
+                    
+                    // Check if any child is active
+                    const hasActiveChild = dropdown.querySelector('.sidebar-dropdown-item.active');
+                    
+                    if (!hasActiveChild) {
+                        hoverTimeout = requestAnimationFrame(() => {
+                            if (!isHovering) {
+                                menu.style.maxHeight = '0';
+                                menu.style.opacity = '0';
+                                if (arrow) arrow.style.transform = 'rotate(0deg)';
+                            }
+                        });
+                    }
+                });
+                
+                // Keep open when hovering menu
+                menu.addEventListener('mouseenter', function() {
+                    cancelAnimationFrame(hoverTimeout);
+                    isHovering = true;
+                });
+                
+                menu.addEventListener('mouseleave', function() {
+                    isHovering = false;
+                    
+                    const hasActiveChild = dropdown.querySelector('.sidebar-dropdown-item.active');
+                    
+                    if (!hasActiveChild) {
+                        hoverTimeout = requestAnimationFrame(() => {
+                            if (!isHovering) {
+                                menu.style.maxHeight = '0';
+                                menu.style.opacity = '0';
+                                if (arrow) arrow.style.transform = 'rotate(0deg)';
+                            }
+                        });
+                    }
+                });
+                
+                // Adjust max-height on window resize
+                window.addEventListener('resize', () => {
+                    if (menu.style.maxHeight !== '0px') {
+                        menu.style.maxHeight = menu.scrollHeight + 'px';
+                    }
+                });
+            });
+            
+            // Keep dropdowns open if they have active children
+            const activeDropdowns = document.querySelectorAll('.sidebar-dropdown-item.active');
+            activeDropdowns.forEach(item => {
+                const dropdown = item.closest('.sidebar-dropdown');
+                if (dropdown) {
+                    const menu = dropdown.querySelector('.sidebar-dropdown-menu');
+                    const arrow = dropdown.querySelector('.dropdown-arrow');
+                    if (menu) {
+                        menu.style.maxHeight = menu.scrollHeight + 'px';
+                        menu.style.opacity = '1';
+                    }
+                    if (arrow) arrow.style.transform = 'rotate(90deg)';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

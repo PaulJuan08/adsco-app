@@ -9,16 +9,18 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use App\Mail\UserApprovedMail;
+use App\Models\College;
+use App\Models\Program;
 
 class UserController extends Controller
 {
-
     public function index()
     {
         // Get filters
         $search = request()->input('search');
         $role = request()->input('role');
         $status = request()->input('status');
+        $page = request()->get('page', 1);
         
         // Pre-define role names for view
         $roleNames = [
@@ -28,20 +30,31 @@ class UserController extends Controller
             4 => 'Student'
         ];
         
-        // Get user statistics using cached method - now includes this_month
+        // Get user statistics using cached method
         $stats = $this->getStats();
+        
+        // Check if we need to bypass cache (after deletion/approval)
+        $bypassCache = session()->get('bypass_cache', false);
         
         // Create cache key based on filters
         $cacheKey = 'users_index_' . md5(json_encode([
             'search' => $search,
             'role' => $role,
             'status' => $status,
-            'page' => request()->get('page', 1)
+            'page' => $page
         ]));
         
-        // Cache for 2 minutes for paginated results
-        $users = Cache::remember($cacheKey, 120, function() use ($search, $role, $status) {
-            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at']);
+        // If we need to bypass cache or this is a search, clear this specific cache
+        if ($bypassCache || $search) {
+            Cache::forget($cacheKey);
+            if ($bypassCache) {
+                session()->forget('bypass_cache');
+            }
+        }
+        
+        // Cache for 1 minute (reduced from 2 for fresher data)
+        $users = Cache::remember($cacheKey, 60, function() use ($search, $role, $status) {
+            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at', 'email_verified_at']);
             
             // Apply search filter
             if ($search) {
@@ -64,19 +77,6 @@ class UserController extends Controller
             
             return $query->orderBy('created_at', 'desc')->paginate(10);
         });
-        
-        // Clear this specific cache if there's a search (for real-time results)
-        if ($search) {
-            Cache::forget($cacheKey);
-            $users = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at'])
-                ->where(function($q) use ($search) {
-                    $q->where('f_name', 'like', "%{$search}%")
-                    ->orWhere('l_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-        }
         
         return view('admin.users.index', compact('users', 'stats', 'roleNames'));
     }
@@ -140,7 +140,12 @@ class UserController extends Controller
             ];
         });
 
-        return view('admin.users.create', compact('roleOptions', 'stats', 'suggestions'));
+        // Pass active colleges for the academic section
+        $colleges = College::where('status', 1)
+                        ->orderBy('college_name')
+                        ->get(['id', 'college_name', 'college_year']);
+
+        return view('admin.users.create', compact('roleOptions', 'stats', 'suggestions', 'colleges'));
     }
     
     public function store(Request $request)
@@ -168,7 +173,10 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'age' => 'nullable|integer|min:15|max:100',
             'sex' => 'nullable|in:male,female',
-            'contact' => 'nullable|string|max:20'
+            'contact' => 'nullable|string|max:20',
+            'college_id'   => 'nullable|exists:colleges,id',
+            'program_id'   => 'nullable|exists:programs,id',
+            'college_year' => 'nullable|string|max:50',
         ], $idRules));
         
         $userData = [
@@ -177,13 +185,14 @@ class UserController extends Controller
             'email' => $request->email,
             'role' => $request->role,
             'password' => bcrypt($request->password),
-            'is_approved' => true,
+            'is_approved' => true, // Admin created users are auto-approved
             'approved_at' => now(),
             'approved_by' => auth()->id(),
             'age' => $request->age,
             'sex' => $request->sex,
             'contact' => $request->contact,
-            'created_by' => auth()->id()
+            'created_by' => auth()->id(),
+            'email_verified_at' => now(), // Admin created users are auto-verified
         ];
         
         // Add appropriate ID based on role
@@ -192,6 +201,20 @@ class UserController extends Controller
         }
         if ($request->filled('student_id')) {
             $userData['student_id'] = $request->student_id;
+        }
+
+        // Academic assignment for students
+        if ($role == 4) {
+            if ($request->filled('program_id')) {
+                $program = Program::find($request->program_id);
+                $userData['program_id'] = $program->id;
+                $userData['college_id'] = $program->college_id; // derived from program
+            } elseif ($request->filled('college_id')) {
+                $userData['college_id'] = $request->college_id;
+            }
+            if ($request->filled('college_year')) {
+                $userData['college_year'] = $request->college_year;
+            }
         }
         
         $user = User::create($userData);
@@ -226,7 +249,7 @@ class UserController extends Controller
             // Cache individual user show for 5 minutes with relationships
             $cacheKey = 'user_show_detail_' . $id;
             $user = Cache::remember($cacheKey, 300, function() use ($id) {
-                return User::with(['approvedBy', 'createdBy'])->findOrFail($id);
+                return User::with(['approvedBy', 'createdBy', 'college', 'program'])->findOrFail($id);
             });
             
             // Get user stats for the header (cached)
@@ -289,7 +312,7 @@ class UserController extends Controller
             // Cache individual user for edit (2 minutes for fresh data)
             $cacheKey = 'user_edit_detail_' . $id;
             $user = Cache::remember($cacheKey, 120, function() use ($id) {
-                return User::with(['approvedBy'])->findOrFail($id);
+                return User::with(['approvedBy', 'college', 'program'])->findOrFail($id);
             });
             
             // Cache role options
@@ -343,8 +366,13 @@ class UserController extends Controller
                     'current_year' => $currentYear
                 ];
             });
+
+            // Pass active colleges for the academic section
+            $colleges = College::where('status', 1)
+                            ->orderBy('college_name')
+                            ->get(['id', 'college_name', 'college_year']);
             
-            return view('admin.users.edit', compact('user', 'encryptedId', 'roleOptions', 'stats', 'suggestions'));
+            return view('admin.users.edit', compact('user', 'encryptedId', 'roleOptions', 'stats', 'suggestions', 'colleges'));
             
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
@@ -395,7 +423,10 @@ class UserController extends Controller
                 'password' => 'nullable|string|min:8|confirmed',
                 'age' => 'nullable|integer|min:15|max:100',
                 'sex' => 'nullable|in:male,female',
-                'contact' => 'nullable|string|max:20'
+                'contact' => 'nullable|string|max:20',
+                'college_id'   => 'nullable|exists:colleges,id',
+                'program_id'   => 'nullable|exists:programs,id',
+                'college_year' => 'nullable|string|max:50',
             ], $idRules));
             
             // Prepare update data
@@ -408,21 +439,44 @@ class UserController extends Controller
                 'contact' => $request->contact
             ];
             
-            // Only admin can change role
+            // Only admin can change role and role-specific fields
             if (auth()->user()->isAdmin()) {
                 $updateData['role'] = $request->role;
                 
                 // Handle ID fields based on role
                 if (in_array($request->role, [2, 3])) {
                     $updateData['employee_id'] = $request->employee_id;
-                    $updateData['student_id'] = null; // Clear student_id if changing from student
+                    $updateData['student_id'] = null;
+                    // Clear academic fields when switching away from student
+                    $updateData['college_id'] = null;
+                    $updateData['program_id'] = null;
+                    $updateData['college_year'] = null;
+                    
                 } elseif ($request->role == 4) {
                     $updateData['student_id'] = $request->student_id;
-                    $updateData['employee_id'] = null; // Clear employee_id if changing to student
+                    $updateData['employee_id'] = null;
+                    
+                    // Program is the source of truth; college is derived
+                    if ($request->filled('program_id')) {
+                        $program = Program::find($request->program_id);
+                        $updateData['program_id'] = $program->id;
+                        $updateData['college_id'] = $program->college_id;
+                    } elseif ($request->filled('college_id')) {
+                        $updateData['college_id'] = $request->college_id;
+                        $updateData['program_id'] = null;
+                    } else {
+                        $updateData['college_id'] = null;
+                        $updateData['program_id'] = null;
+                    }
+                    $updateData['college_year'] = $request->filled('college_year') ? $request->college_year : null;
+                    
                 } else {
-                    // Admin role - clear both IDs
+                    // Admin role - clear all role-specific fields
                     $updateData['employee_id'] = null;
                     $updateData['student_id'] = null;
+                    $updateData['college_id'] = null;
+                    $updateData['program_id'] = null;
+                    $updateData['college_year'] = null;
                 }
             }
             
@@ -435,12 +489,6 @@ class UserController extends Controller
             
             // Clear user-related caches
             $this->clearUserCaches($id);
-            
-            // Clear specific caches
-            Cache::forget('user_show_detail_' . $id);
-            Cache::forget('user_edit_detail_' . $id);
-            Cache::forget('user_activities_' . $id);
-            Cache::forget('user_edit_stats_' . auth()->id());
             
             // Log the update
             if (class_exists(\App\Helpers\AuditHelper::class)) {
@@ -473,31 +521,72 @@ class UserController extends Controller
                     ->with('error', 'You cannot delete your own account.');
             }
             
-            // Get user email for logging before deletion
+            // Store user info for logging
             $userEmail = $user->email;
+            $userName = $user->f_name . ' ' . $user->l_name;
+            $userRole = $user->role;
+            $userCollegeId = $user->college_id;
+            $userProgramId = $user->program_id;
             
-            $user->delete();
-            
-            // Clear user-related caches
-            $this->clearUserCaches($id);
-            
-            // Clear specific caches
-            Cache::forget('user_show_detail_' . $id);
-            Cache::forget('user_edit_detail_' . $id);
-            Cache::forget('user_activities_' . $id);
-            
-            // Log the deletion
-            if (class_exists(\App\Helpers\AuditHelper::class)) {
-                \App\Helpers\AuditHelper::log('delete', "Deleted user: {$userEmail}", null, ['user_id' => $id]);
+            // If student, clean up assignment submission files first
+            if ($userRole == 4) {
+                foreach ($user->assignmentSubmissions as $submission) {
+                    if ($submission->attachment_path && 
+                        Storage::disk('public')->exists($submission->attachment_path)) {
+                        Storage::disk('public')->delete($submission->attachment_path);
+                    }
+                }
             }
             
+            // Delete the user - this will trigger:
+            // 1. Model events for file cleanup
+            // 2. Database cascade deletes for all related records (if foreign keys are set)
+            $user->delete();
+            
+            // Clear caches
+            $this->clearUserCaches($id);
+            
+            // Clear college-specific caches if this was a student
+            if ($userRole == 4) {
+                if ($userCollegeId) {
+                    Cache::forget('college_students_' . $userCollegeId);
+                    Cache::forget('college_' . $userCollegeId . '_stats');
+                }
+                if ($userProgramId) {
+                    Cache::forget('program_students_' . $userProgramId);
+                    Cache::forget('program_' . $userProgramId . '_stats');
+                }
+            }
+            
+            // Clear all user index caches
+            $this->clearAllUserIndexCaches();
+            
+            // Set session flag to bypass cache on next index load
+            session()->flash('bypass_cache', true);
+            
+            // Log the deletion
+            \Log::info('User deleted', [
+                'user_id' => $id,
+                'email' => $userEmail,
+                'role' => $userRole,
+                'deleted_by' => auth()->id()
+            ]);
+            
             return redirect()->route('admin.users.index')
-                ->with('success', 'User deleted successfully.');
+                ->with('success', "User {$userName} and all related records deleted successfully.");
+                
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
+        } catch (\Exception $e) {
+            \Log::error('Error deleting user: ' . $e->getMessage());
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Failed to delete user: ' . $e->getMessage());
         }
     }
     
+    /**
+     * Approve a user - Updated to check email verification
+     */
     public function approve($encryptedId)
     {
         try {
@@ -516,6 +605,12 @@ class UserController extends Controller
                     ->with('warning', 'User is already approved.');
             }
             
+            // 🔥 NEW: Check if email is verified before allowing approval
+            if (is_null($user->email_verified_at)) {
+                return redirect()->route('admin.users.show', $encryptedId)
+                    ->with('error', 'Cannot approve user until email is verified. The user must click the verification link sent to their email.');
+            }
+            
             // Update user approval status
             $user->update([
                 'is_approved' => true,
@@ -523,26 +618,43 @@ class UserController extends Controller
                 'approved_by' => auth()->id()
             ]);
             
-            // 🔥 FIXED: Clear user-related caches
-            $this->clearUserCaches($id);
+            // ============ 🔥 CRITICAL: CLEAR ALL CACHES ============
             
-            // Also clear the specific user cache
+            // Clear specific user caches
             Cache::forget('user_show_detail_' . $id);
             Cache::forget('user_edit_detail_' . $id);
+            Cache::forget('user_detailed_stats_' . $id);
+            Cache::forget('user_activities_' . $id);
             
-            // 🔥 FIXED: Clear admin dashboard cache for ALL admins
+            // Clear ALL user index caches
+            $this->clearAllUserIndexCaches();
+            
+            // Clear dashboard caches for ALL admins
             $admins = User::where('role', 1)->pluck('id')->toArray();
             foreach ($admins as $adminId) {
                 Cache::forget('admin_dashboard_' . $adminId);
             }
             
-            // Send approval email (optional - comment out if not needed)
+            // Clear registrar dashboard caches
+            $registrars = User::where('role', 2)->pluck('id')->toArray();
+            foreach ($registrars as $registrarId) {
+                Cache::forget('registrar_dashboard_' . $registrarId);
+            }
+            
+            // Clear stats caches
+            Cache::forget('user_stats');
+            Cache::forget('pending_users_count');
+            Cache::forget('users_this_month');
+            
+            // Set session flag to bypass cache on next load
+            session()->flash('bypass_cache', true);
+            
+            // Send approval email
             try {
                 if (class_exists(\App\Mail\UserApprovedMail::class)) {
                     Mail::to($user->email)->queue(new \App\Mail\UserApprovedMail($user));
                 }
             } catch (\Exception $e) {
-                // Log error but continue
                 \Log::error('Failed to send approval email: ' . $e->getMessage());
             }
             
@@ -562,8 +674,38 @@ class UserController extends Controller
             return redirect()->route('admin.users.index')
                 ->with('error', 'User not found.');
         } catch (\Exception $e) {
+            \Log::error('Error approving user: ' . $e->getMessage());
             return redirect()->route('admin.users.index')
                 ->with('error', 'An error occurred: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Resend verification email to user
+     */
+    public function resendVerification($encryptedId)
+    {
+        try {
+            if (!auth()->user()->isAdmin()) {
+                abort(403);
+            }
+            
+            $id = Crypt::decrypt($encryptedId);
+            $user = User::findOrFail($id);
+            
+            if (!is_null($user->email_verified_at)) {
+                return redirect()->route('admin.users.show', $encryptedId)
+                    ->with('info', 'User email is already verified.');
+            }
+            
+            $user->sendEmailVerificationNotification();
+            
+            return redirect()->route('admin.users.show', $encryptedId)
+                ->with('success', 'Verification email resent successfully.');
+                
+        } catch (\Exception $e) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Failed to resend verification email.');
         }
     }
     
@@ -574,15 +716,6 @@ class UserController extends Controller
      */
     private function clearUserCaches($userId = null)
     {
-        // Clear all user index caches using pattern matching
-        $cache = Cache::getStore();
-        if (method_exists($cache, 'tags')) {
-            Cache::tags(['users_index'])->flush();
-        } else {
-            // Fallback for cache drivers without tags
-            Cache::flush('users_index_*');
-        }
-        
         // Clear specific user caches
         if ($userId) {
             Cache::forget('user_show_detail_' . $userId);
@@ -592,14 +725,13 @@ class UserController extends Controller
             Cache::forget('approver_user_' . $userId);
         }
         
-        // 🔥 FIXED: Clear dashboard caches for ALL admins
-        // Get all admin users and clear their dashboard caches
+        // Clear dashboard caches for ALL admins
         $admins = User::where('role', 1)->pluck('id')->toArray();
         foreach ($admins as $adminId) {
             Cache::forget('admin_dashboard_' . $adminId);
         }
         
-        // Also clear registrar dashboard caches (they can also approve users)
+        // Clear registrar dashboard caches
         $registrars = User::where('role', 2)->pluck('id')->toArray();
         foreach ($registrars as $registrarId) {
             Cache::forget('registrar_dashboard_' . $registrarId);
@@ -620,10 +752,95 @@ class UserController extends Controller
         Cache::forget('user_form_suggestions');
         Cache::forget('user_role_names');
         
-        // Clear Blade cache if exists
+        // Clear tag-based caches if available
         if (Cache::getStore() instanceof \Illuminate\Cache\TaggableStore) {
-            Cache::tags(['users'])->flush();
+            Cache::tags(['users', 'users_index'])->flush();
         }
+    }
+    
+    /**
+     * Clear all user index caches for all possible filter combinations
+     */
+    private function clearAllUserIndexCaches()
+    {
+        // Clear up to page 20 to be safe
+        for ($page = 1; $page <= 20; $page++) {
+            // All possible role values
+            $roles = [null, 1, 2, 3, 4];
+            
+            // All possible status values
+            $statuses = [null, 'pending'];
+            
+            // Common search patterns
+            $searches = [null, '', 'a', 'e', 'i', 'o', 'u', 'admin', 'teacher', 'student', 'registrar'];
+            
+            foreach ($roles as $role) {
+                foreach ($statuses as $status) {
+                    foreach ($searches as $search) {
+                        // Clear admin user index cache
+                        $adminCacheKey = 'users_index_' . md5(json_encode([
+                            'search' => $search,
+                            'role' => $role,
+                            'status' => $status,
+                            'page' => $page
+                        ]));
+                        Cache::forget($adminCacheKey);
+                        
+                        // Clear registrar user index cache
+                        $registrarCacheKey = 'registrar_users_index_' . md5(json_encode([
+                            'search' => $search,
+                            'role' => $role,
+                            'status' => $status,
+                            'page' => $page
+                        ]));
+                        Cache::forget($registrarCacheKey);
+                    }
+                }
+            }
+        }
+        
+        // Also clear any caches with actual user-specific search terms
+        // Get all users to clear their name-based cache keys
+        $users = User::select('id', 'f_name', 'l_name', 'email')->get();
+        foreach ($users as $user) {
+            $searchTerms = [
+                strtolower($user->f_name),
+                strtolower($user->l_name),
+                strtolower($user->f_name . ' ' . $user->l_name),
+                strtolower($user->email)
+            ];
+            
+            foreach ($searchTerms as $term) {
+                if (strlen($term) > 2) {
+                    for ($page = 1; $page <= 5; $page++) {
+                        $cacheKey = 'users_index_' . md5(json_encode([
+                            'search' => $term,
+                            'role' => null,
+                            'status' => null,
+                            'page' => $page
+                        ]));
+                        Cache::forget($cacheKey);
+                    }
+                }
+            }
+        }
+        
+        \Log::info('All user index caches cleared');
+    }
+    
+    /**
+     * Force clear all caches (emergency use)
+     */
+    public function forceClearAllCaches()
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+        
+        Cache::flush();
+        
+        return redirect()->route('admin.users.index')
+            ->with('success', 'All caches cleared successfully.');
     }
     
     /**
@@ -638,22 +855,24 @@ class UserController extends Controller
                 SUM(CASE WHEN role = 1 THEN 1 ELSE 0 END) as admins,
                 SUM(CASE WHEN role = 2 THEN 1 ELSE 0 END) as registrars,
                 SUM(CASE WHEN role = 3 THEN 1 ELSE 0 END) as teachers,
-                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students
+                SUM(CASE WHEN role = 4 THEN 1 ELSE 0 END) as students,
+                SUM(CASE WHEN email_verified_at IS NULL THEN 1 ELSE 0 END) as unverified
             ')->first();
             
             // Add this month's count
-            $stats['this_month'] = User::whereMonth('created_at', now()->month)
+            $thisMonth = User::whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count();
             
             return [
                 'total' => $stats->total ?? 0,
                 'pending' => $stats->pending ?? 0,
+                'unverified' => $stats->unverified ?? 0,
                 'admins' => $stats->admins ?? 0,
                 'registrars' => $stats->registrars ?? 0,
                 'teachers' => $stats->teachers ?? 0,
                 'students' => $stats->students ?? 0,
-                'this_month' => $stats['this_month'] ?? 0
+                'this_month' => $thisMonth ?? 0
             ];
         });
     }
@@ -671,7 +890,9 @@ class UserController extends Controller
                 'quiz_attempts' => 0,
                 'assignments_submitted' => 0,
                 'completed_topics' => 0,
-                'gpa' => 0.0
+                'gpa' => 0.0,
+                'email_verified' => !is_null($user->email_verified_at),
+                'email_verified_at' => $user->email_verified_at
             ];
             
             try {
@@ -708,9 +929,9 @@ class UserController extends Controller
                     
                     // Get GPA
                     if ($user->enrollments()->whereNotNull('grade')->exists()) {
-                        $stats['gpa'] = $user->enrollments()
+                        $stats['gpa'] = round($user->enrollments()
                             ->whereNotNull('grade')
-                            ->avg('grade');
+                            ->avg('grade'), 2);
                     }
                 }
             } catch (\Exception $e) {

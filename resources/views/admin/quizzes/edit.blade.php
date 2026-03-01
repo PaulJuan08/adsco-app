@@ -14,7 +14,7 @@
                 <i class="fas fa-edit card-icon"></i>
                 <h2 class="card-title">Edit Quiz: {{ $quiz->title }}</h2>
             </div>
-            <a href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}" class="view-all-link">
+            <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}" class="view-all-link">
                 <i class="fas fa-arrow-left"></i> Back to Quiz Details
             </a>
         </div>

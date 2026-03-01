@@ -1,33 +1,31 @@
-/* ============================================
-   TOPIC SHOW - Topic Details Page
-   Consistent with Course Show & Form Design Patterns
-   For Admin & Teacher Topic Detail Pages
-   Version: 1.0
-   ============================================ */
+/* ============================================================
+   TOPIC SHOW  —  topic-show.css
+   Supports: PDF modal + Video modal (YouTube/Vimeo/Drive/native)
+   Version: 4.0  (with fullscreen toggle, no inline styles)
+   ============================================================ */
 
-/* ==========================================================================
-   1. Form Container - Consistent with Course Show/Form
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   1. FORM CONTAINER
+   ────────────────────────────────────────────────────────────── */
 .form-container {
     background: var(--white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border);
     overflow: hidden;
-    transition: all var(--transition-slow);
+    transition: box-shadow var(--transition-slow), transform var(--transition-slow);
     max-width: 1200px;
     width: 95%;
     margin: var(--space-6) auto;
 }
-
 .form-container:hover {
     box-shadow: var(--shadow-xl);
     transform: translateY(-2px);
 }
 
-/* ==========================================================================
-   2. Card Header - Consistent with Course Show/Form
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   2. CARD HEADER
+   ────────────────────────────────────────────────────────────── */
 .card-header {
     padding: var(--space-5) var(--space-6);
     border-bottom: 1px solid var(--border);
@@ -39,23 +37,17 @@
     justify-content: space-between;
     align-items: center;
 }
-
 .card-header::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    inset: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,.1) 50%, transparent 70%);
     animation: shimmer 3s infinite;
 }
-
 @keyframes shimmer {
-    0% { transform: translateX(-100%); }
+    0%   { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
 }
-
 .card-title-group {
     display: flex;
     align-items: center;
@@ -63,32 +55,27 @@
     position: relative;
     z-index: 1;
 }
-
 .card-icon {
-    width: 42px;
-    height: 42px;
-    background: rgba(255, 255, 255, 0.2);
+    width: 42px; height: 42px;
+    background: rgba(255,255,255,.2);
     backdrop-filter: blur(10px);
     border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     color: var(--white);
     font-size: var(--font-size-lg);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255,255,255,.3);
 }
-
 .card-title {
     font-size: var(--font-size-xl);
     font-weight: var(--font-bold);
     color: var(--white);
     margin: 0;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 2px 4px rgba(0,0,0,.1);
 }
 
-/* ==========================================================================
-   3. Top Actions - Consistent with Course Show/Form
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   3. TOP ACTION BUTTONS
+   ────────────────────────────────────────────────────────────── */
 .top-actions {
     display: flex;
     align-items: center;
@@ -96,54 +83,40 @@
     position: relative;
     z-index: 1;
 }
-
 .top-action-btn {
     color: var(--white);
     font-size: var(--font-size-sm);
     font-weight: var(--font-semibold);
     text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+    display: flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255,255,255,.15);
     border-radius: var(--radius);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255,255,255,.2);
     transition: all var(--transition-base);
     cursor: pointer;
 }
-
 .top-action-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255,255,255,.25);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    gap: var(--space-3);
 }
+.top-action-btn.delete-btn       { background: rgba(239,68,68,.3); }
+.top-action-btn.delete-btn:hover { background: rgba(239,68,68,.5); }
+.top-action-btn.unpublish-btn { background: rgba(245,158,11,.3); }
+.top-action-btn.unpublish-btn:hover { background: rgba(245,158,11,.5); }
+.top-action-btn.publish-btn { background: rgba(72,187,120,.3); }
+.top-action-btn.publish-btn:hover { background: rgba(72,187,120,.5); }
 
-.top-action-btn.delete-btn {
-    background: rgba(239, 68, 68, 0.3);
-}
+/* ──────────────────────────────────────────────────────────────
+   4. CARD BODY
+   ────────────────────────────────────────────────────────────── */
+.card-body { padding: var(--space-6); background: var(--white); }
 
-.top-action-btn.delete-btn:hover {
-    background: rgba(239, 68, 68, 0.5);
-}
-
-.top-action-btn i {
-    font-size: var(--font-size-sm);
-}
-
-/* ==========================================================================
-   4. Card Body - Consistent with Course Show/Form
-   ========================================================================== */
-.card-body {
-    padding: var(--space-6);
-    background: var(--white);
-}
-
-/* ==========================================================================
-   5. Topic Preview Section - Topic specific
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   5. TOPIC PREVIEW
+   ────────────────────────────────────────────────────────────── */
 .topic-preview {
     background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
     border-radius: var(--radius-lg);
@@ -152,101 +125,70 @@
     border: 1px solid var(--border);
     text-align: center;
 }
-
 .topic-preview-avatar {
-    width: 90px;
-    height: 90px;
+    width: 90px; height: 90px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    font-weight: var(--font-bold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; font-weight: var(--font-bold);
     margin: 0 auto var(--space-4);
     border: 4px solid var(--white);
     box-shadow: var(--shadow-lg);
 }
-
 .topic-preview-title {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-extrabold);
     color: var(--gray-900);
     margin-bottom: var(--space-2);
-    letter-spacing: -0.5px;
+    letter-spacing: -.5px;
 }
-
 .topic-preview-meta {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
+    display: flex; justify-content: center;
+    gap: var(--space-3); flex-wrap: wrap;
     margin-bottom: var(--space-3);
 }
-
 .topic-preview-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+    display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-5);
     border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-semibold);
+    font-size: var(--font-size-xs); font-weight: var(--font-semibold);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255,255,255,.2);
     transition: all var(--transition-base);
 }
-
 .topic-preview-badge.published {
     background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
     color: var(--white);
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    box-shadow: 0 4px 12px rgba(72,187,120,.3);
 }
-
 .topic-preview-badge.draft {
     background: linear-gradient(135deg, var(--warning) 0%, var(--warning-dark) 100%);
     color: var(--white);
-    box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+    box-shadow: 0 4px 12px rgba(237,137,54,.3);
 }
-
 .topic-preview-id {
-    font-size: var(--font-size-sm);
-    color: var(--gray-600);
-    background: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-size-sm); color: var(--gray-600);
+    background: rgba(255,255,255,.8);
     padding: var(--space-1) var(--space-4);
     border-radius: var(--radius-full);
     display: inline-block;
 }
 
-/* ==========================================================================
-   6. Two Column Layout - Consistent with Course Show/Form
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   6. TWO-COLUMN LAYOUT
+   ────────────────────────────────────────────────────────────── */
 .two-column-layout {
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: var(--space-6);
     align-items: start;
 }
+.form-column, .sidebar-column { min-width: 0; }
 
-@media (max-width: 992px) {
-    .two-column-layout {
-        grid-template-columns: 1fr;
-        gap: var(--space-4);
-    }
-}
-
-.form-column {
-    min-width: 0;
-}
-
-.sidebar-column {
-    min-width: 0;
-}
-
-/* ==========================================================================
-   7. Detail Sections - Consistent with Course Show
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   7. DETAIL SECTIONS
+   ────────────────────────────────────────────────────────────── */
 .detail-section {
     background: var(--white);
     border-radius: var(--radius-lg);
@@ -254,109 +196,68 @@
     margin-bottom: var(--space-5);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
+    transition: box-shadow var(--transition-base);
     position: relative;
     overflow: hidden;
 }
-
-.detail-section:hover {
-    box-shadow: var(--shadow-md);
-}
-
+.detail-section:hover { box-shadow: var(--shadow-md); }
 .detail-section::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 3px;
     background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
     border-radius: 3px 3px 0 0;
 }
-
 .detail-section-title {
     font-size: var(--font-size-base);
     font-weight: var(--font-bold);
     color: var(--gray-800);
     margin-bottom: var(--space-4);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+    display: flex; align-items: center; gap: var(--space-2);
     padding-bottom: var(--space-3);
     border-bottom: 2px solid var(--gray-100);
 }
-
 .detail-section-title i {
     color: var(--primary);
     font-size: var(--font-size-lg);
-    width: 20px;
-    text-align: center;
+    width: 20px; text-align: center;
 }
 
-/* ==========================================================================
-   8. Info Rows - Consistent with Course Show
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   8. INFO ROWS
+   ────────────────────────────────────────────────────────────── */
 .info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
     padding: var(--space-2) var(--space-3);
     background: var(--gray-50);
     border-radius: var(--radius);
     margin-bottom: var(--space-2);
 }
-
 .info-label {
-    font-size: var(--font-size-xs);
-    color: var(--gray-600);
+    font-size: var(--font-size-xs); color: var(--gray-600);
     font-weight: var(--font-medium);
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
+    display: flex; align-items: center; gap: var(--space-1);
 }
-
 .info-value {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-semibold);
-    color: var(--gray-800);
+    font-size: var(--font-size-sm); font-weight: var(--font-semibold); color: var(--gray-800);
 }
-
 .info-subvalue {
-    font-size: var(--font-size-xs);
-    color: var(--gray-500);
-    margin-top: var(--space-1);
+    font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-1);
+}
+.pdf-disk-badge {
+    font-size: .75rem;
+    background: rgba(102,126,234,.1);
+    color: var(--primary);
+    padding: .15rem .6rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(102,126,234,.25);
+    font-family: monospace;
 }
 
-.detail-label {
-    font-size: var(--font-size-xs);
-    color: var(--gray-600);
-    font-weight: var(--font-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--space-1);
-}
-
-.detail-value {
-    font-size: var(--font-size-base);
-    color: var(--gray-900);
-    font-weight: var(--font-semibold);
-    line-height: 1.5;
-    margin-bottom: var(--space-4);
-}
-
-.detail-subvalue {
-    font-size: var(--font-size-xs);
-    color: var(--gray-500);
-    margin-top: -var(--space-3);
-    margin-bottom: var(--space-4);
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-}
-
-/* ==========================================================================
-   9. Description Box - Consistent with Course Show
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   9. DESCRIPTION BOX
+   ────────────────────────────────────────────────────────────── */
 .description-box {
     padding: var(--space-4) var(--space-5);
     background: var(--white);
@@ -367,9 +268,9 @@
     color: var(--gray-700);
 }
 
-/* ==========================================================================
-   10. Resource Cards - Topic specific
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   10. RESOURCE CARDS
+   ────────────────────────────────────────────────────────────── */
 .resource-card {
     background: var(--white);
     border: 1px solid var(--border);
@@ -379,305 +280,199 @@
     box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
-
 .resource-card:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
     border-color: var(--gray-400);
 }
-
 .resource-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
     padding: var(--space-4) var(--space-5);
     border-bottom: 1px solid var(--border);
     background: var(--gray-50);
+    gap: var(--space-3);
 }
-
-.resource-content {
-    padding: var(--space-4) var(--space-5);
-}
-
+.resource-meta    { display: flex; align-items: center; gap: 1rem; }
+.resource-actions { display: flex; gap: .5rem; flex-shrink: 0; flex-wrap: wrap; }
+.resource-content { padding: var(--space-4) var(--space-5); }
 .resource-title {
-    font-weight: var(--font-bold);
-    color: var(--gray-800);
-    font-size: var(--font-size-base);
-    margin-bottom: var(--space-1);
+    font-weight: var(--font-bold); color: var(--gray-800);
+    font-size: var(--font-size-base); margin-bottom: var(--space-1);
+}
+.resource-subtitle   { font-size: .75rem; color: #718096; }
+.resource-description { color: var(--gray-600); font-size: var(--font-size-xs); line-height: 1.6; }
+.resource-description code {
+    font-family: monospace; font-size: .8125rem;
+    background: var(--gray-100); padding: .1rem .4rem;
+    border-radius: 4px; color: var(--primary);
+}
+.url-box {
+    word-break: break-all; font-family: monospace; font-size: .8125rem;
+    background: #f8fafc; padding: .625rem;
+    border-radius: 8px; border: 1px solid #e2e8f0;
 }
 
-.resource-description {
-    color: var(--gray-600);
-    font-size: var(--font-size-xs);
-    line-height: 1.6;
-}
-
-/* ==========================================================================
-   11. File Icons - Topic specific
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   11. FILE ICONS (PDF + Video only)
+   ────────────────────────────────────────────────────────────── */
 .file-icon {
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; flex-shrink: 0;
 }
+.file-pdf   { background: rgba(239,68,68,.1); color: var(--danger); }
+.file-video { background: rgba(239,68,68,.1); color: var(--danger); }
 
-.file-pdf {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger);
-}
-
-.file-video {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger);
-}
-
-.file-word {
-    background: rgba(37, 99, 235, 0.1);
-    color: #2563eb;
-}
-
-.file-excel {
-    background: rgba(5, 150, 105, 0.1);
-    color: var(--success-dark);
-}
-
-.file-powerpoint {
-    background: rgba(217, 119, 6, 0.1);
-    color: var(--warning-dark);
-}
-
-.file-image {
-    background: rgba(124, 58, 237, 0.1);
-    color: #7c3aed;
-}
-
-.file-zip {
-    background: rgba(75, 85, 99, 0.1);
-    color: var(--gray-600);
-}
-
-.file-generic {
-    background: rgba(102, 126, 234, 0.1);
-    color: var(--primary);
-}
-
-/* ==========================================================================
-   12. Resource Action Buttons - Topic specific
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   12. RESOURCE ACTION BUTTONS
+   ────────────────────────────────────────────────────────────── */
 .resource-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+    display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius);
-    font-weight: var(--font-semibold);
-    font-size: var(--font-size-xs);
-    text-decoration: none;
-    cursor: pointer;
+    font-weight: var(--font-semibold); font-size: var(--font-size-xs);
+    text-decoration: none; cursor: pointer;
     transition: all var(--transition-base);
-    border: none;
+    border: none; white-space: nowrap;
 }
-
 .resource-action-btn.primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--white);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(102,126,234,.3);
 }
-
 .resource-action-btn.primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 16px rgba(102,126,234,.4);
 }
-
 .resource-action-btn.secondary {
-    background: var(--white);
-    color: var(--gray-700);
+    background: var(--white); color: var(--gray-700);
     border: 1.5px solid var(--border);
 }
-
 .resource-action-btn.secondary:hover {
-    background: var(--gray-50);
-    border-color: var(--gray-500);
+    background: var(--gray-50); border-color: var(--gray-500);
     transform: translateY(-2px);
 }
 
-/* ==========================================================================
-   13. Course Tags - Topic specific
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   13. COURSE TAGS
+   ────────────────────────────────────────────────────────────── */
 .course-tag {
     display: inline-block;
-    background: rgba(102, 126, 234, 0.1);
-    color: var(--primary);
+    background: rgba(102,126,234,.1); color: var(--primary);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-semibold);
-    margin-right: var(--space-2);
-    margin-top: var(--space-1);
-    border: 1px solid rgba(102, 126, 234, 0.2);
-    text-decoration: none;
-    transition: all var(--transition-fast);
+    font-size: var(--font-size-xs); font-weight: var(--font-semibold);
+    margin-right: var(--space-2); margin-top: var(--space-1);
+    border: 1px solid rgba(102,126,234,.2);
+    text-decoration: none; transition: all var(--transition-fast);
 }
+.course-tag:hover { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
-.course-tag:hover {
-    background: var(--primary);
+/* ──────────────────────────────────────────────────────────────
+   14. EMPTY STATE
+   ────────────────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: var(--space-8) var(--space-4); color: var(--gray-500); }
+.empty-state i  { font-size: 2.5rem; color: var(--gray-400); margin-bottom: var(--space-3); }
+.empty-state h3 { font-size: var(--font-size-base); font-weight: var(--font-semibold); color: var(--gray-600); margin-bottom: var(--space-1); }
+.empty-state p  { font-size: var(--font-size-xs); color: var(--gray-500); }
+.empty-state .btn {
+    display: inline-block;
+    margin-top: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--white);
-    border-color: var(--primary);
-}
-
-/* ==========================================================================
-   14. Empty State - Consistent with Course Index
-   ========================================================================== */
-.empty-state {
-    text-align: center;
-    padding: var(--space-8) var(--space-4);
-    color: var(--gray-500);
-}
-
-.empty-state i {
-    font-size: 2.5rem;
-    color: var(--gray-400);
-    margin-bottom: var(--space-3);
-}
-
-.empty-state h3 {
-    font-size: var(--font-size-base);
-    font-weight: var(--font-semibold);
-    color: var(--gray-600);
-    margin-bottom: var(--space-1);
-}
-
-.empty-state p {
+    border-radius: var(--radius);
+    text-decoration: none;
     font-size: var(--font-size-xs);
-    color: var(--gray-500);
+    font-weight: var(--font-semibold);
 }
 
-/* ==========================================================================
-   15. Alerts - Consistent with Course Index
-   ========================================================================== */
+/* ──────────────────────────────────────────────────────────────
+   15. ALERTS
+   ────────────────────────────────────────────────────────────── */
 .alert {
     padding: var(--space-4) var(--space-5);
-    border-radius: var(--radius);
-    font-size: var(--font-size-xs);
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    margin-bottom: var(--space-5);
-    border-left-width: 4px;
-    border-left-style: solid;
-    animation: slideIn 0.3s ease;
+    border-radius: var(--radius); font-size: var(--font-size-xs);
+    display: flex; align-items: flex-start; gap: var(--space-3);
+    margin-bottom: var(--space-5); border-left: 4px solid;
+    animation: slideIn .3s ease;
 }
-
-.alert i {
-    font-size: var(--font-size-base);
-    flex-shrink: 0;
-    margin-top: var(--space-1);
-}
-
+.alert i { font-size: var(--font-size-base); flex-shrink: 0; margin-top: var(--space-1); }
 .alert-success {
     background: linear-gradient(135deg, var(--success-light) 0%, #c6f6d5 100%);
-    color: var(--success-dark);
-    border-left-color: var(--success);
+    color: var(--success-dark); border-left-color: var(--success);
 }
-
 .alert-error {
     background: linear-gradient(135deg, var(--danger-light) 0%, #fed7d7 100%);
-    color: var(--danger-dark);
-    border-left-color: var(--danger);
+    color: var(--danger-dark); border-left-color: var(--danger);
 }
-
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================================================
-   16. Publish Button Section
-   ========================================================================== */
-.publish-section {
-    margin-top: var(--space-6);
-    text-align: center;
-}
-
+/* ──────────────────────────────────────────────────────────────
+   16. PUBLISH BUTTON
+   ────────────────────────────────────────────────────────────── */
+.publish-section { margin-top: var(--space-6); text-align: center; }
 .publish-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-8);
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--space-2); padding: var(--space-3) var(--space-8);
     border-radius: var(--radius);
-    font-weight: var(--font-semibold);
-    font-size: var(--font-size-sm);
-    text-decoration: none;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    border: none;
+    font-weight: var(--font-semibold); font-size: var(--font-size-sm);
+    cursor: pointer; border: none;
     background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
-    color: var(--white);
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    color: var(--white); box-shadow: 0 4px 12px rgba(72,187,120,.3);
+    transition: all var(--transition-base);
 }
+.publish-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(72,187,120,.4); }
 
-.publish-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(72, 187, 120, 0.4);
-}
+/* ============================================================
+   TOPIC SHOW  —  topic-show.css
+   Supports: PDF modal + Video modal (YouTube/Vimeo/Drive/native)
+   ============================================================ */
 
-/* ==========================================================================
-   17. Modal Styles - PDF & Video Modals
-   ========================================================================== */
-.pdf-modal-overlay,
-.video-modal-overlay {
+/* ══════════════════════════════════════════════════════════════
+   17. MODAL SYSTEM  —  PDF fullscreen only
+   ══════════════════════════════════════════════════════════════ */
+
+.modal-overlay {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 9999;
+    inset: 0;
+    background: rgba(0,0,0,.95);
+    z-index: 99999;
     align-items: center;
     justify-content: center;
-    padding: var(--space-4);
+    padding: 1rem;
+    backdrop-filter: blur(5px);
+    animation: fadeIn .2s ease;
 }
 
-.pdf-modal-overlay.active,
-.video-modal-overlay.active {
-    display: flex;
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-.pdf-modal-container,
-.video-modal-container {
-    width: 90%;
-    max-width: 1000px;
-    height: 90%;
-    background: var(--white);
-    border-radius: var(--radius-lg);
+.modal-box {
+    border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-2xl);
-    animation: modalSlideIn 0.3s ease;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    animation: modalSlideUp .25s ease;
+    width: 95%;
+    max-width: 1200px;
+    height: 90vh;
+    max-height: 90vh;
+    transition: all 0.3s ease;
 }
 
-.video-modal-container {
-    background: #000;
-}
-
-@keyframes modalSlideIn {
+@keyframes modalSlideUp {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: translateY(30px);
     }
     to {
         opacity: 1;
@@ -685,281 +480,348 @@
     }
 }
 
-.modal-header {
-    padding: var(--space-4) var(--space-6);
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: var(--white);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Fullscreen state - ONLY for PDF */
+.modal-box.fullscreen {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    animation: none !important;
 }
 
-.modal-header h3 {
-    margin: 0;
-    font-weight: var(--font-semibold);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+.modal-box.fullscreen .modal-body {
+    height: calc(100vh - 56px - 40px) !important;
 }
 
-.modal-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: var(--white);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius);
-    transition: all var(--transition-base);
+/* Size variants */
+.modal-box--pdf {
+    background: #1a1a1a;
 }
 
-.modal-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-}
-
-.video-player-container {
-    position: relative;
-    width: 100%;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
+.modal-box--video,
+.modal-box--drive {
     background: #000;
 }
 
-.video-player {
-    position: absolute;
-    top: 0;
-    left: 0;
+/* Header */
+.modal-header {
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 1rem;
+    min-height: 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.modal-header--pdf {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+.modal-header--video {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.modal-header__title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modal-header__title i {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Header actions container */
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Fullscreen toggle button - ONLY for PDF */
+.modal-fullscreen {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.modal-fullscreen:hover {
+    background: rgba(255,255,255,.25);
+    transform: scale(1.05);
+}
+
+/* Close button */
+.modal-close {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
+}
+
+.modal-close:hover {
+    background: rgba(255,255,255,.25);
+    transform: rotate(90deg);
+}
+
+/* Body */
+.modal-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    height: calc(90vh - 56px - 40px);
+}
+
+.modal-body--dark,
+.modal-body--video {
+    background: #000;
+}
+
+/* Iframe styling */
+.modal-iframe {
     width: 100%;
     height: 100%;
     border: none;
+    display: block;
+    background: #fff;
 }
 
-.video-loading {
+.modal-body--dark .modal-iframe,
+.modal-body--video .modal-iframe {
+    background: #000;
+}
+
+/* Loading spinner */
+.modal-loading {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: var(--white);
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: inherit;
+    z-index: 10;
+    gap: 1rem;
 }
 
-.video-loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255,255,255,0.3);
-    border-top: 4px solid var(--primary);
+.modal-loading p {
+    color: #fff;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255,255,255,.2);
+    border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto var(--space-4);
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-.video-url-display {
-    padding: var(--space-4);
-    background: var(--gray-900);
-    color: var(--white);
-    font-size: var(--font-size-xs);
-    border-bottom-left-radius: var(--radius-lg);
-    border-bottom-right-radius: var(--radius-lg);
-    word-break: break-all;
-    opacity: 0.8;
+/* Footer */
+.modal-footer {
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
+    background: #0f172a;
+    color: rgba(255,255,255,.7);
+    font-size: 0.75rem;
+    font-family: monospace;
+    border-top: 1px solid rgba(255,255,255,.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 40px;
 }
 
-/* ==========================================================================
-   18. Loading Spinner
-   ========================================================================== */
-.loading-spinner {
-    animation: spin 1s linear infinite;
+/* PDF specific */
+.modal-box--pdf .modal-body {
+    background: #525659;
 }
 
-/* ==========================================================================
-   19. Responsive Design - Consistent with Course Index
-   ========================================================================== */
-@media (max-width: 1024px) {
-    .form-container {
-        width: 98%;
-        margin: var(--space-4) auto;
-    }
+.modal-box--pdf .modal-iframe {
+    background: #fff;
 }
 
+/* Video container */
+.video-ratio-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #000;
+}
+
+/* Native video player */
+.native-video-wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+}
+
+.native-video-player {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    background: #000;
+    outline: none;
+}
+
+/* Video error state */
+.video-error-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    text-align: center;
+    color: rgba(255,255,255,.9);
+    background: #000;
+}
+
+.video-error-state i {
+    font-size: 3rem;
+    color: #f59e0b;
+}
+
+.video-error-state p {
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+.video-error-hint {
+    font-size: 0.8125rem !important;
+    color: rgba(255,255,255,.5) !important;
+}
+
+/* Hide elements when not needed */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .form-container {
+    .modal-box {
         width: 100%;
-        margin: var(--space-3) auto;
-        border-radius: var(--radius);
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
     }
     
-    .card-header {
-        padding: var(--space-4);
-        flex-direction: column;
-        gap: var(--space-3);
-        align-items: flex-start;
+    .modal-header {
+        padding: 0.75rem 1rem;
     }
     
-    .top-actions {
-        align-self: stretch;
-        justify-content: flex-start;
-        flex-wrap: wrap;
+    .modal-header__title {
+        font-size: 0.875rem;
     }
     
-    .top-action-btn {
-        flex: 1;
-        justify-content: center;
-    }
-    
-    .card-body {
-        padding: var(--space-4);
-    }
-    
-    .two-column-layout {
-        grid-template-columns: 1fr;
-    }
-    
-    .detail-section {
-        padding: var(--space-4);
-    }
-    
-    .resource-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-4);
-    }
-    
-    .topic-preview-avatar {
-        width: 70px;
-        height: 70px;
-        font-size: 2rem;
-    }
-    
-    .topic-preview-title {
-        font-size: var(--font-size-xl);
-    }
-    
-    .pdf-modal-container,
-    .video-modal-container {
-        width: 95%;
-        height: 80%;
+    .modal-fullscreen,
+    .modal-close {
+        width: 32px;
+        height: 32px;
     }
 }
 
 @media (max-width: 576px) {
-    .form-container {
-        margin: var(--space-2) auto;
-        border-radius: var(--radius-sm);
-    }
-    
-    .card-header {
-        padding: var(--space-3);
-    }
-    
-    .card-body {
-        padding: var(--space-3);
-    }
-    
-    .card-title {
-        font-size: var(--font-size-lg);
-    }
-    
-    .card-icon {
-        width: 36px;
-        height: 36px;
-        font-size: var(--font-size-base);
-    }
-    
-    .detail-section {
-        padding: var(--space-3);
-    }
-    
-    .detail-section-title {
-        font-size: var(--font-size-sm);
-        margin-bottom: var(--space-3);
-    }
-    
-    .topic-preview {
-        padding: var(--space-4);
-    }
-    
-    .topic-preview-avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 1.75rem;
-    }
-    
-    .topic-preview-title {
-        font-size: var(--font-size-lg);
-    }
-    
-    .topic-preview-meta {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .info-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-1);
-    }
-    
-    .resource-action-btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .empty-state {
-        padding: var(--space-6) var(--space-3);
+    .modal-header__title span {
+        display: none;
     }
 }
 
-/* ==========================================================================
-   20. Print Styles
-   ========================================================================== */
+
+/* ══════════════════════════════════════════════════════════════
+   18. RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+    .two-column-layout { grid-template-columns: 1fr; gap: var(--space-4); }
+}
+@media (max-width: 768px) {
+    .form-container { width: 100%; margin: var(--space-3) auto; border-radius: var(--radius); }
+    .card-header { padding: var(--space-4); flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+    .top-actions { align-self: stretch; justify-content: flex-start; flex-wrap: wrap; }
+    .top-action-btn { flex: 1; justify-content: center; }
+    .card-body { padding: var(--space-4); }
+    .detail-section { padding: var(--space-4); }
+    .resource-header { flex-direction: column; align-items: flex-start; }
+    .resource-actions { width: 100%; }
+    .resource-action-btn { flex: 1; justify-content: center; }
+    .topic-preview-avatar { width: 70px; height: 70px; font-size: 2rem; }
+    .topic-preview-title  { font-size: var(--font-size-xl); }
+    .modal-box { width: 96%; max-height: 95vh; }
+    .modal-header { padding: .75rem 1rem; }
+    .modal-header__title { font-size: .875rem; }
+    .modal-fullscreen, .modal-close { width: 30px; height: 30px; }
+}
+@media (max-width: 576px) {
+    .form-container { margin: var(--space-2) auto; border-radius: var(--radius-sm); }
+    .card-header, .card-body { padding: var(--space-3); }
+    .card-title { font-size: var(--font-size-lg); }
+    .card-icon  { width: 36px; height: 36px; font-size: var(--font-size-base); }
+    .detail-section { padding: var(--space-3); }
+    .detail-section-title { font-size: var(--font-size-sm); margin-bottom: var(--space-3); }
+    .topic-preview { padding: var(--space-4); }
+    .topic-preview-avatar { width: 60px; height: 60px; font-size: 1.75rem; }
+    .topic-preview-title  { font-size: var(--font-size-lg); }
+    .topic-preview-meta   { flex-direction: column; align-items: center; }
+    .info-row { flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+    .modal-box { border-radius: 12px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   19. PRINT
+   ══════════════════════════════════════════════════════════════ */
 @media print {
-    .no-print,
-    .top-actions,
-    .publish-section,
-    .resource-action-btn,
-    .modal-close {
-        display: none !important;
-    }
-    
-    .form-container {
-        box-shadow: none;
-        border: 1px solid #000;
-        margin: 0;
-        width: 100%;
-    }
-    
+    .top-actions, .publish-section, .resource-actions,
+    .modal-overlay { display: none !important; }
+    .form-container { box-shadow: none; border: 1px solid #000; margin: 0; width: 100%; }
     .card-header {
-        background: #f3f4f6;
-        color: #000;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        background: #f3f4f6 !important; color: #000 !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
-    
-    .card-header::before {
-        display: none;
-    }
-    
-    .topic-preview-avatar,
-    .topic-preview-badge {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .detail-section,
-    .resource-card {
-        break-inside: avoid;
-        box-shadow: none;
-        border: 1px solid #ddd;
-    }
+    .card-header::before { display: none; }
+    .detail-section, .resource-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
 }

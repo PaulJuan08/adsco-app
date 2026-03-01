@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Teacher Dashboard')</title>
     
     <!-- Google Fonts -->
@@ -20,231 +21,154 @@
     <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     
+    <!-- Layout CSS -->
+    <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
+    
+    @stack('styles')
+    
     <style>
-        /* Sidebar-specific styles that extend dashboard.css */
-        .layout-with-sidebar {
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-            color: white;
-            position: fixed;
-            left: 0;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            box-shadow: var(--shadow-xl);
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-        
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.75rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
-        }
-
-        .sidebar-logo {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border-radius: var(--radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-        }
-
-        .sidebar-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .sidebar-title {
-            font-size: 1.375rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            white-space: nowrap;
-        }
-        
-        .sidebar-nav {
-            flex: 1;
-            padding: 1.5rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
+        /* Smooth animations for sidebar */
         .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.875rem 1rem;
-            border-radius: var(--radius-sm);
-            color: #d1d5db;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9375rem;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-        }
-        
-        .sidebar-nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: var(--primary);
-            transform: scaleY(0);
-            transition: transform 0.2s ease;
+            overflow: hidden;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
         }
         
         .sidebar-nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: white;
             transform: translateX(4px);
+            color: white;
         }
         
         .sidebar-nav-item.active {
-            background: rgba(79, 70, 229, 0.15);
+            background: rgba(102, 126, 234, 0.15);
             color: white;
-        }
-        
-        .sidebar-nav-item.active::before {
-            transform: scaleY(1);
+            border-left: 3px solid #667eea;
         }
         
         .sidebar-nav-item i {
-            width: 22px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 20px;
+            font-size: 1rem;
+        }
+        
+        .sidebar-nav-item:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Badge animation */
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.1rem 0.4rem;
+            margin-left: auto;
+            min-width: 18px;
             text-align: center;
-            font-size: 1.125rem;
-            flex-shrink: 0;
+            animation: pulse 2s infinite;
+            display: inline-block;
+            transition: transform 0.2s ease;
         }
         
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
+        .sidebar-nav-item:hover .badge-count {
+            transform: scale(1.1);
         }
         
-        .sidebar-user-profile {
-            display: flex;
-            align-items: center;
-            gap: 0.875rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        /* Profile link hover animation */
+        .sidebar-user-profile-link {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: block;
+            border-radius: 0.5rem;
+        }
+        
+        .sidebar-user-profile-link:hover {
             background: rgba(255, 255, 255, 0.08);
-            border-radius: var(--radius-sm);
+            transform: translateX(4px);
         }
         
         .sidebar-user-avatar {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.125rem;
-            flex-shrink: 0;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .sidebar-user-details {
-            flex: 1;
-            min-width: 0;
+        .sidebar-user-profile-link:hover .sidebar-user-avatar {
+            transform: scale(1.05);
         }
         
-        .sidebar-user-name {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            color: white;
-            margin-bottom: 0.125rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .sidebar-user-role {
-            font-size: 0.8125rem;
-            color: #9ca3af;
-        }
-        
+        /* Logout button animation */
         .sidebar-logout-btn {
-            background: rgba(239, 68, 68, 0.15);
-            color: #fca5a5;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
-            width: 100%;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            border-radius: 0.375rem !important;
         }
         
         .sidebar-logout-btn:hover {
-            background: rgba(239, 68, 68, 0.25);
-            color: #fecaca;
-            transform: translateX(0);
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+            transform: translateX(4px);
         }
         
-        .content-wrapper {
-            flex: 1;
-            margin-left: 280px;
-            transition: all 0.3s ease;
+        .sidebar-logout-btn:hover i {
+            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
         
-        /* Mobile Responsive */
+        @keyframes shake {
+            10%, 90% {
+                transform: translateX(-1px);
+            }
+            20%, 80% {
+                transform: translateX(2px);
+            }
+            30%, 50%, 70% {
+                transform: translateX(-2px);
+            }
+            40%, 60% {
+                transform: translateX(2px);
+            }
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        .sidebar-nav-item,
+        .sidebar-user-profile-link,
+        .sidebar-user-avatar,
+        .badge-count,
+        .sidebar-logout-btn i {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        
+        /* Mobile responsive */
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
+            .sidebar-nav-item:hover {
+                transform: translateX(2px);
             }
             
-            .sidebar.mobile-open {
-                transform: translateX(0);
+            .sidebar-user-profile-link:hover {
+                transform: translateX(2px);
             }
-            
-            .content-wrapper {
-                margin-left: 0;
-            }
-        }
-        
-        .d-none {
-            display: none !important;
         }
     </style>
-    
-    @stack('styles')
 </head>
 <body>
     <div class="layout-with-sidebar">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
                     <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo">
@@ -257,44 +181,89 @@
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
+                
                 <a href="{{ route('teacher.courses.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.courses.*') ? 'active' : '' }}">
                     <i class="fas fa-book"></i>
                     <span>My Courses</span>
                 </a>
+                
                 <a href="{{ route('teacher.topics.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.topics.*') ? 'active' : '' }}">
                     <i class="fas fa-list"></i>
                     <span>Topics</span>
                 </a>
-                <a href="{{ route('teacher.quizzes.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.quizzes.*') ? 'active' : '' }}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Quizzes</span>
+                
+                <a href="{{ route('teacher.todo.index') }}" class="sidebar-nav-item {{ request()->routeIs('teacher.todo.*') ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>To-Do</span>
+                    @php
+                        $teacherId = Auth::id();
+                        
+                        // Get pending items count for badge
+                        $pendingQuizzes = \App\Models\Quiz::where('created_by', $teacherId)
+                            ->where('is_published', 0)
+                            ->count();
+                        
+                        $pendingAssignments = \App\Models\Assignment::where('created_by', $teacherId)
+                            ->where('is_published', 0)
+                            ->count();
+                        
+                        $pendingSubmissions = \App\Models\AssignmentSubmission::whereHas('assignment', function($q) use ($teacherId) {
+                                $q->where('created_by', $teacherId);
+                            })
+                            ->where('status', 'submitted')
+                            ->count();
+                        
+                        $pendingCount = $pendingQuizzes + $pendingAssignments + $pendingSubmissions;
+                    @endphp
+                    @if($pendingCount > 0)
+                        <span class="badge-count">{{ $pendingCount }}</span>
+                    @endif
                 </a>
             </nav>  
             
             <div class="sidebar-footer">
-                <div class="sidebar-user-profile">
-                    <div class="sidebar-user-avatar">
-                        {{ strtoupper(substr(Auth::user()->f_name ?? 'T', 0, 1)) }}
-                    </div>
-                    <div class="sidebar-user-details">
-                        @php
-                            $roleMapping = [
-                                1 => 'Admin',
-                                2 => 'Registrar',
-                                3 => 'Teacher',
-                                4 => 'Student'
-                            ];
+                <!-- Profile link -->
+                <a href="{{ route('teacher.profile.show') }}" class="sidebar-user-profile-link">
+                    <div class="sidebar-user-profile">
+                        <div class="sidebar-user-avatar">
+                            @php
+                                $avatarClass = 'default';
+                                if(isset(Auth::user()->sex)) {
+                                    $avatarClass = Auth::user()->sex == 'male' ? 'male' : (Auth::user()->sex == 'female' ? 'female' : 'default');
+                                }
+                            @endphp
+                            @if(Auth::user()->avatar)
+                                <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
+                            @else
+                                @if(Auth::user()->sex == 'male')
+                                    <i class="fas fa-mars"></i>
+                                @elseif(Auth::user()->sex == 'female')
+                                    <i class="fas fa-venus"></i>
+                                @else
+                                    {{ strtoupper(substr(Auth::user()->f_name ?? 'T', 0, 1)) }}
+                                @endif
+                            @endif
+                        </div>
+                        <div class="sidebar-user-details">
+                            @php
+                                $roleMapping = [
+                                    1 => 'Admin',
+                                    2 => 'Registrar',
+                                    3 => 'Teacher',
+                                    4 => 'Student'
+                                ];
+                                
+                                $user = Auth::user();
+                                $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
+                            @endphp
                             
-                            $user = Auth::user();
-                            $roleText = $user ? ($roleMapping[$user->role] ?? 'User') : 'Guest';
-                        @endphp
-                        
-                        <div class="sidebar-user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
-                        <div class="sidebar-user-role">{{ $roleText }}</div>
+                            <div class="sidebar-user-name">{{ $user ? $user->f_name : 'Guest' }}</div>
+                            <div class="sidebar-user-role">{{ $roleText }}</div>
+                        </div>
                     </div>
-                </div>
+                </a>
                 
-                <button class="sidebar-nav-item sidebar-logout-btn" onclick="document.getElementById('logout-form').submit()">
+                <button class="sidebar-nav-item sidebar-logout-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -312,5 +281,12 @@
     </div>
     
     @stack('scripts')
+    
+    <script>
+        // Mobile sidebar toggle functionality
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+    </script>
 </body>
 </html>

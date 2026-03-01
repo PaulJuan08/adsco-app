@@ -1,0 +1,644 @@
+/* ============================================
+   COLLEGES INDEX - Reusable Styles
+   For Admin College List Pages
+   ============================================ */
+
+/* CSS Variables (matching course-index.css) */
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #818cf8;
+    --success: #10b981;
+    --success-dark: #059669;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-dark: #d97706;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-light: #fee2e2;
+    --info: #3b82f6;
+    --info-dark: #2563eb;
+    --info-light: #dbeafe;
+    --info-lighter: #eff6ff;
+    
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    --white: #ffffff;
+    --black: #000000;
+    
+    /* Spacing */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    
+    /* Typography */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    
+    /* Font weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    
+    /* Line heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    
+    /* Borders */
+    --radius-sm: 0.25rem;
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    /* Transitions */
+    --transition-base: 0.2s ease-in-out;
+    --transition-fast: 0.1s ease-in-out;
+}
+
+/* Additional styles specific to colleges index */
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-container {
+    position: relative;
+    min-width: 250px;
+}
+
+.search-container i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    z-index: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-base);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Compact Stats Cards */
+.stats-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.stats-grid-compact .stat-card {
+    padding: 1rem;
+    min-height: auto;
+}
+
+.stats-grid-compact .stat-header {
+    margin-bottom: 0.75rem;
+}
+
+.stats-grid-compact .stat-label {
+    font-size: var(--font-size-sm);
+    margin-bottom: 0.25rem;
+}
+
+.stats-grid-compact .stat-number {
+    font-size: 1.75rem;
+    font-weight: var(--font-bold);
+}
+
+.stats-grid-compact .stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.8;
+}
+
+.stats-grid-compact .stat-link {
+    padding: 0.5rem;
+    font-size: var(--font-size-xs);
+}
+
+/* Clickable Cards */
+.clickable-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.clickable-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.clickable-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.clickable-card:hover::after {
+    opacity: 0.05;
+}
+
+/* Clickable items in lists */
+.clickable-item {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clickable-item:hover {
+    background: var(--gray-50);
+    transform: translateX(4px);
+    border-color: var(--primary);
+}
+
+/* Ensure links within clickable cards don't interfere */
+.clickable-card a {
+    position: relative;
+    z-index: 1;
+}
+
+/* Make stat cards look interactive */
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+}
+
+.colleges-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+}
+
+.colleges-table thead {
+    background: var(--gray-50);
+}
+
+.colleges-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    font-size: var(--font-size-sm);
+    border-bottom: 2px solid var(--gray-300);
+    white-space: nowrap;
+}
+
+.colleges-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+}
+
+/* Clickable row styling */
+.clickable-row {
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.clickable-row:hover {
+    background: var(--gray-50);
+    transform: translateX(4px);
+    box-shadow: -4px 0 0 var(--primary-light);
+}
+
+.college-info-cell {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.college-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--white);
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.college-1 {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.college-2 {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+}
+
+.college-3 {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.college-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.college-name {
+    font-weight: var(--font-semibold);
+    color: var(--gray-900);
+    margin-bottom: 0.25rem;
+    font-size: var(--font-size-base);
+}
+
+.college-desc {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    line-height: var(--leading-snug);
+    margin-bottom: 0.5rem;
+}
+
+.college-mobile-info {
+    display: none;
+    margin-top: 0.5rem;
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+}
+
+.college-code-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 1rem;
+}
+
+.years-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.years-mobile i {
+    font-size: 0.75rem;
+}
+
+.college-years {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    background: var(--gray-100);
+    color: var(--gray-800);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-medium);
+    white-space: nowrap;
+    border: 1px solid var(--gray-300);
+}
+
+.students-count {
+    text-align: center;
+    min-width: 60px;
+}
+
+.count-number {
+    font-weight: var(--font-bold);
+    color: var(--gray-900);
+    font-size: var(--font-size-lg);
+    line-height: 1;
+}
+
+.count-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-medium);
+}
+
+.badge-success {
+    background: var(--success-light);
+    color: var(--success-dark);
+}
+
+.badge-warning {
+    background: var(--warning-light);
+    color: var(--warning-dark);
+}
+
+.item-date {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.alert {
+    margin: 0 0 1.5rem 0;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border: 1px solid;
+}
+
+.alert-success {
+    background: var(--success-light);
+    color: var(--success-dark);
+    border-color: var(--success);
+}
+
+.alert-error {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+    border-color: var(--danger);
+}
+
+.alert i {
+    font-size: 1rem;
+    margin-top: 0.125rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--gray-400);
+    margin-bottom: 1rem;
+}
+
+.empty-title {
+    font-size: 1.125rem;
+    font-weight: var(--font-bold);
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.empty-text {
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-hint {
+    margin-top: 1rem;
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.empty-hint i {
+    color: var(--warning);
+}
+
+.action-content {
+    flex: 1;
+}
+
+.action-title {
+    font-weight: var(--font-semibold);
+    font-size: var(--font-size-base);
+    margin-bottom: 0.25rem;
+}
+
+.action-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.action-arrow {
+    font-size: var(--font-size-lg);
+    opacity: 0.8;
+    transition: transform var(--transition-fast);
+}
+
+.action-card:hover .action-arrow {
+    transform: translateX(4px);
+}
+
+.action-info {
+    background: linear-gradient(135deg, var(--info-lighter), var(--info-light));
+    border-color: var(--info);
+    color: var(--info-dark);
+}
+
+.action-info:hover {
+    background: linear-gradient(135deg, var(--info), var(--info-dark));
+    color: var(--white);
+    border-color: var(--info-dark);
+}
+
+.action-info:hover .action-subtitle,
+.action-info:hover .action-icon,
+.action-info:hover .action-arrow {
+    color: var(--white);
+}
+
+/* Pagination */
+.card-footer {
+    padding: 1.25rem 1.75rem;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+    background: var(--white);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.pagination-btn:hover {
+    background: var(--gray-50);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.pagination-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hide-on-tablet {
+        display: none !important;
+    }
+    
+    .college-mobile-info {
+        display: block;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-container {
+        min-width: unset;
+        width: 100%;
+    }
+    
+    .students-count {
+        text-align: left;
+    }
+    
+    .count-number {
+        font-size: var(--font-size-base);
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .stats-grid-compact .stat-card {
+        padding: 0.75rem;
+    }
+    
+    .clickable-row:hover {
+        transform: translateX(2px);
+        box-shadow: -2px 0 0 var(--primary-light);
+    }
+    
+    .clickable-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .card-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .pagination-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+    
+    .colleges-table th,
+    .colleges-table td {
+        padding: 0.75rem;
+    }
+    
+    .college-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .college-name {
+        font-size: var(--font-size-sm);
+    }
+    
+    .stats-grid-compact {
+        grid-template-columns: 1fr;
+    }
+}

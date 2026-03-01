@@ -1,17 +1,21 @@
 <?php
+// app/Models/User.php
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Encryptable;
+use App\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\Storage; // Add this
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, Encryptable;
-    
+
     protected $fillable = [
         'f_name',
         'l_name',
@@ -23,103 +27,110 @@ class User extends Authenticatable
         'role',
         'employee_id',
         'student_id',
-        'is_approved'
+        'is_approved',
+        'approved_at',
+        'approved_by',
+        'created_by',
+        'last_login_at',
+        'college_id',
+        'program_id',
+        'college_year',
+        'email_verified_at',
     ];
-    
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
-    
+
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'is_approved' => 'boolean',
-        'approved_at' => 'datetime',
-        'last_login_at' => 'datetime'
+        'is_approved'       => 'boolean',
+        'approved_at'       => 'datetime',
+        'last_login_at'     => 'datetime',
     ];
-    
+
     protected $appends = [
         'full_name',
-        'role_name'
+        'role_name',
     ];
-    
-    // Relationships
+
+    // ── Relationships ─────────────────────────────────────────────────────────
+
+    public function college()
+    {
+        return $this->belongsTo(College::class, 'college_id');
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    public function collegeCourse()
+    {
+        return $this->belongsTo(Program::class, 'program_id');
+    }
+
     public function coursesAsTeacher()
     {
         return $this->hasMany(Course::class, 'teacher_id');
     }
-    
-    public function enrollments()
-    {
-        return $this->hasMany(Enrollment::class, 'student_id');
-    }
-    
-    public function attendances()
-    {
-        return $this->hasMany(Attendance::class);
-    }
-    
-    /**
-     * Get the audit logs for the user.
-     */
-    public function auditLogs()
-    {
-        return $this->hasMany(AuditLog::class);
-    }
 
-    /**
-     * Get the courses taught by the user (if teacher).
-     */
     public function taughtCourses()
     {
         return $this->hasMany(Course::class, 'teacher_id');
     }
 
-    /**
-     * Get the courses enrolled by the user (if student).
-     */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class, 'student_id');
+    }
+
     public function enrolledCourses()
     {
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
             ->withPivot('enrolled_at', 'status', 'grade')
             ->withTimestamps();
     }
-    
-    /**
-     * Get quiz attempts for the user
-     */
+
+    // REMOVE attendances relationship since you don't use it
+
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
     public function quizAttempts()
     {
         return $this->hasMany(QuizAttempt::class, 'user_id');
     }
-    
-    /**
-     * Get assignments submitted by the user
-     */
-    // public function submittedAssignments()
-    // {
-    //     return $this->hasMany(AssignmentSubmission::class, 'student_id');
-    // }
-    
-    /**
-     * Get grades for the user
-     */
+
+    public function quizAccess()
+    {
+        return $this->hasMany(QuizStudentAccess::class, 'student_id');
+    }
+
+    public function assignmentSubmissions()
+    {
+        return $this->hasMany(AssignmentSubmission::class, 'student_id');
+    }
+
+    public function assignmentAccess()
+    {
+        return $this->hasMany(AssignmentStudentAccess::class, 'student_id');
+    }
+
     public function grades()
     {
         return $this->hasMany(Grade::class, 'student_id');
     }
 
-    /**
-     * Get the user who approved this user
-     */
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    /**
-     * Get the user who created this user
-     */
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -137,178 +148,124 @@ class User extends Authenticatable
     {
         return $this->hasMany(Progress::class, 'student_id');
     }
-    
-    // Helper Methods
-    public function isAdmin()
+
+    // ── Model Events for Cleanup ─────────────────────────────────────────────
+
+    protected static function booted()
     {
-        return $this->role == 1;
+        static::deleting(function ($user) {
+            // Only handle file cleanup for assignment submissions
+            // Database will handle record deletions via foreign keys if set
+            if ($user->role == 4) { // Student
+                foreach ($user->assignmentSubmissions as $submission) {
+                    if ($submission->attachment_path && 
+                        Storage::disk('public')->exists($submission->attachment_path)) {
+                        Storage::disk('public')->delete($submission->attachment_path);
+                    }
+                }
+            }
+            
+            // Log the deletion
+            \Log::info('User being deleted with cleanup', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role
+            ]);
+        });
     }
-    
-    public function isRegistrar()
-    {
-        return $this->role == 2;
-    }
-    
-    public function isTeacher()
-    {
-        return $this->role == 3;
-    }
-    
-    public function isStudent()
-    {
-        return $this->role == 4;
-    }
-    
-    public function getFullNameAttribute()
+
+    // ── Role helpers ──────────────────────────────────────────────────────────
+
+    public function isAdmin():     bool { return $this->role == 1; }
+    public function isRegistrar(): bool { return $this->role == 2; }
+    public function isTeacher():   bool { return $this->role == 3; }
+    public function isStudent():   bool { return $this->role == 4; }
+
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
+    public function getFullNameAttribute(): string
     {
         return trim($this->f_name . ' ' . $this->l_name);
     }
-    
-    public function getRoleNameAttribute()
+
+    public function getRoleNameAttribute(): string
     {
-        $roles = [
-            1 => 'Admin',
-            2 => 'Registrar',
-            3 => 'Teacher',
-            4 => 'Student'
-        ];
-        
-        return $roles[$this->role] ?? 'Unknown';
-    }
-    
-    /**
-     * Check if user is approved
-     */
-    public function isApproved()
-    {
-        return $this->is_approved === true;
-    }
-    
-    /**
-     * Get the user's ID based on their role
-     */
-    public function getIdentifierAttribute()
-    {
-        if ($this->isStudent()) {
-            return $this->student_id;
-        } elseif ($this->isTeacher() || $this->isRegistrar()) {
-            return $this->employee_id;
-        }
-        
-        return $this->email;
-    }
-    
-    /**
-     * Get student's current GPA
-     */
-    public function getGpaAttribute()
-    {
-        if (!$this->isStudent()) {
-            return null;
-        }
-        
-        $grades = $this->enrollments()
-            ->whereNotNull('grade')
-            ->get();
-        
-        if ($grades->isEmpty()) {
-            return 0.0;
-        }
-        
-        return round($grades->avg('grade'), 2);
-    }
-    
-    /**
-     * Get student's completed courses count
-     */
-    public function getCompletedCoursesCountAttribute()
-    {
-        if (!$this->isStudent()) {
-            return 0;
-        }
-        
-        return $this->enrollments()
-            ->whereNotNull('grade')
-            ->count();
-    }
-    
-    /**
-     * Get student's active courses count
-     */
-    public function getActiveCoursesCountAttribute()
-    {
-        if (!$this->isStudent()) {
-            return 0;
-        }
-        
-        return $this->enrollments()
-            ->whereNull('grade')
-            ->count();
-    }
-    
-    /**
-     * Scope for approved users
-     */
-    public function scopeApproved($query)
-    {
-        return $query->where('is_approved', true);
-    }
-    
-    /**
-     * Scope for pending approval
-     */
-    public function scopePending($query)
-    {
-        return $query->where('is_approved', false);
-    }
-    
-    /**
-     * Scope by role
-     */
-    public function scopeByRole($query, $role)
-    {
-        return $query->where('role', $role);
-    }
-    
-    /**
-     * Get formatted contact number
-     */
-    public function getFormattedContactAttribute()
-    {
-        if (!$this->contact) {
-            return null;
-        }
-        
-        // Remove any non-digit characters
-        $contact = preg_replace('/\D/', '', $this->contact);
-        
-        // Format based on length
-        if (strlen($contact) === 10) {
-            return preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $contact);
-        } elseif (strlen($contact) === 11) {
-            return preg_replace('/(\d{1})(\d{3})(\d{3})(\d{4})/', '+$1 ($2) $3-$4', $contact);
-        }
-        
-        return $this->contact;
-    }
-    
-    /**
-     * Record login timestamp
-     */
-    public function recordLogin()
-    {
-        $this->update(['last_login_at' => now()]);
-    }
-    
-    /**
-     * Approve the user
-     */
-    public function approve()
-    {
-        $this->update([
-            'is_approved' => true,
-            'approved_at' => now()
-        ]);
+        return [1 => 'Admin', 2 => 'Registrar', 3 => 'Teacher', 4 => 'Student'][$this->role] ?? 'Unknown';
     }
 
+    public function getIdentifierAttribute(): string
+    {
+        if ($this->isStudent())                          return $this->student_id  ?? $this->email;
+        if ($this->isTeacher() || $this->isRegistrar()) return $this->employee_id ?? $this->email;
+        return $this->email;
+    }
+
+    public function getGpaAttribute(): ?float
+    {
+        if (!$this->isStudent()) return null;
+        $grades = $this->enrollments()->whereNotNull('grade')->get();
+        return $grades->isEmpty() ? 0.0 : round($grades->avg('grade'), 2);
+    }
+
+    public function getCompletedCoursesCountAttribute(): int
+    {
+        return $this->isStudent() ? $this->enrollments()->whereNotNull('grade')->count() : 0;
+    }
+
+    public function getActiveCoursesCountAttribute(): int
+    {
+        return $this->isStudent() ? $this->enrollments()->whereNull('grade')->count() : 0;
+    }
+
+    public function getFormattedContactAttribute(): ?string
+    {
+        if (!$this->contact) return null;
+        $c = preg_replace('/\D/', '', $this->contact);
+        if (strlen($c) === 10) return preg_replace('/(\d{3})(\d{3})(\d{4})/', '($1) $2-$3', $c);
+        if (strlen($c) === 11) return preg_replace('/(\d{1})(\d{3})(\d{3})(\d{4})/', '+$1 ($2) $3-$4', $c);
+        return $this->contact;
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopeApproved($query)      { return $query->where('is_approved', true); }
+    public function scopePending($query)        { return $query->where('is_approved', false); }
+    public function scopeByRole($query, $role)  { return $query->where('role', $role); }
+    public function scopeVerified($query)       { return $query->whereNotNull('email_verified_at'); }
+    public function scopeUnverified($query)     { return $query->whereNull('email_verified_at'); }
+
+    // ── Email Verification ───────────────────────────────────────────────────
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmail());
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
+    }
+
+    public function getEmailForVerification(): string
+    {
+        return $this->email;
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    public function isApproved(): bool { return $this->is_approved === true; }
+
+    public function recordLogin(): void { $this->update(['last_login_at' => now()]); }
+
+    public function approve(): void
+    {
+        $this->update(['is_approved' => true, 'approved_at' => now()]);
+    }
 }

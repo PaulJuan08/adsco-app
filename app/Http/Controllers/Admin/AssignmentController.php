@@ -11,12 +11,6 @@ use Illuminate\Support\Facades\Crypt;
 
 class AssignmentController extends Controller
 {
-    public function index()
-    {
-        $assignments = Assignment::with(['course', 'topic'])->latest()->paginate(10);
-        return view('admin.assignments.index', compact('assignments'));
-    }
-
     public function create()
     {
         $courses = Course::all();
@@ -27,31 +21,24 @@ class AssignmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
+            'course_id' => 'nullable|exists:courses,id',
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
-            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
-        Assignment::create($validated);
+        $assignment = Assignment::create($validated);
         
-        return redirect()->route('admin.assignments.index')
+        // Redirect to To-Do with assignment filter
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment created successfully.');
     }
 
-    public function show($encryptedId)
-    {
-        $id = Crypt::decrypt($encryptedId);
-        $assignment = Assignment::with(['course', 'topic'])->findOrFail($id);
-        return view('admin.assignments.show', compact('assignment'));
-    }
+    // REMOVED show() method - now handled by TodoController
 
     public function edit($encryptedId)
     {
@@ -59,7 +46,8 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
         $courses = Course::all();
         $topics = Topic::all();
-        return view('admin.assignments.edit', compact('assignment', 'courses', 'topics'));
+        
+        return view('admin.assignments.edit', compact('assignment', 'courses', 'topics', 'encryptedId'));
     }
 
     public function update(Request $request, $encryptedId)
@@ -68,22 +56,19 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
 
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
+            'course_id' => 'nullable|exists:courses,id',
             'topic_id' => 'nullable|exists:topics,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
-            'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
         $assignment->update($validated);
         
-        return redirect()->route('admin.assignments.index')
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment updated successfully.');
     }
 
@@ -93,7 +78,24 @@ class AssignmentController extends Controller
         $assignment = Assignment::findOrFail($id);
         $assignment->delete();
         
-        return redirect()->route('admin.assignments.index')
+        return redirect()->route('admin.todo.index', ['type' => 'assignment'])
             ->with('success', 'Assignment deleted successfully.');
+    }
+
+    /**
+     * Toggle publish status
+     */
+    public function togglePublish(Request $request, $encryptedId)
+    {
+        $id = Crypt::decrypt($encryptedId);
+        $assignment = Assignment::findOrFail($id);
+        
+        $assignment->update([
+            'is_published' => !$assignment->is_published
+        ]);
+        
+        $status = $assignment->is_published ? 'published' : 'unpublished';
+        
+        return redirect()->back()->with('success', "Assignment {$status} successfully.");
     }
 }

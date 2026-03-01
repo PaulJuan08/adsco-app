@@ -71,12 +71,16 @@ class TopicController extends Controller
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
 
-        // Handle PDF file upload
+        // 🔥 UPDATED PDF UPLOAD - Simple direct upload
         if ($request->hasFile('pdf_file')) {
             $file = $request->file('pdf_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('pdfs', $fileName, 'public');
-            $validated['pdf_file'] = '/storage/' . $filePath;
+            
+            // Store directly in public/pdf folder
+            $file->move(public_path('pdf'), $fileName);
+            
+            // Save just the filename in database
+            $validated['pdf_file'] = $fileName;
         }
 
         $topic = Topic::create($validated);
@@ -168,17 +172,21 @@ class TopicController extends Controller
                 'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
             ]);
 
-            // Handle PDF file upload
+            // 🔥 UPDATED PDF UPDATE - Simple direct upload
             if ($request->hasFile('pdf_file')) {
                 // Delete old file if exists
-                if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                    unlink(public_path($topic->pdf_file));
+                if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                    unlink(public_path('pdf/' . $topic->pdf_file));
                 }
                 
                 $file = $request->file('pdf_file');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('pdfs', $fileName, 'public');
-                $validated['pdf_file'] = '/storage/' . $filePath;
+                
+                // Store directly in public/pdf folder
+                $file->move(public_path('pdf'), $fileName);
+                
+                // Save just the filename
+                $validated['pdf_file'] = $fileName;
             } else {
                 // Keep existing pdf_file if not uploading new one
                 $validated['pdf_file'] = $topic->pdf_file;
@@ -222,9 +230,9 @@ class TopicController extends Controller
             // Get all courses that use this topic before deletion
             $courses = $topic->courses;
             
-            // Delete PDF file if exists
-            if ($topic->pdf_file && file_exists(public_path($topic->pdf_file))) {
-                unlink(public_path($topic->pdf_file));
+            // 🔥 UPDATED PDF DELETION
+            if ($topic->pdf_file && file_exists(public_path('pdf/' . $topic->pdf_file))) {
+                unlink(public_path('pdf/' . $topic->pdf_file));
             }
             
             $topic->delete();
@@ -267,7 +275,32 @@ class TopicController extends Controller
         return redirect()->route('teacher.topics.index')
             ->with('success', 'Topic caches cleared successfully.');
     }
-      
+    
+    /**
+     * 🔥 HELPER METHOD - Get PDF URL (handles both old and new formats)
+     */
+    public static function getPdfUrl($pdfFile)
+    {
+        if (empty($pdfFile)) {
+            return null;
+        }
+        
+        // If it's already a full URL or old storage path
+        if (str_contains($pdfFile, '/storage/')) {
+            // Extract just the filename
+            $filename = basename($pdfFile);
+            return asset('pdf/' . $filename);
+        }
+        
+        // If it's just a filename (new format)
+        if (!str_contains($pdfFile, '/')) {
+            return asset('pdf/' . $pdfFile);
+        }
+        
+        // If it's some other path, return as is
+        return asset($pdfFile);
+    }
+    
     /**
      * Get file type icon based on URL (Static method)
      */

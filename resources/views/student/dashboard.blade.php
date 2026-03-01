@@ -1,3 +1,5 @@
+{{-- resources/views/student/dashboard.blade.php --}}
+
 @extends('layouts.student')
 
 @section('title', 'Student Dashboard')
@@ -99,7 +101,11 @@
                                 <i class="fas fa-book"></i>
                             </div>
                             <h3 class="empty-title">No Courses Enrolled</h3>
-                            <p class="empty-text">Browse available courses to get started</p>
+                            <p class="empty-text">You don't have any enrolled courses yet. Please contact the administrator to enroll you in courses.</p>
+                            <div class="empty-hint">
+                                <i class="fas fa-info-circle"></i>
+                                Only administrators can enroll students in courses.
+                            </div>
                         </div>
                     @else
                         <div class="items-list">
@@ -107,7 +113,6 @@
                             @php
                                 $course = $enrollment->course;
                                 $encryptedId = Crypt::encrypt($course->id);
-                                // Use the progress data we calculated in the controller
                                 $progressPercentage = $enrollment->progress ?? 0;
                                 $completedTopics = $course->completed_topics ?? 0;
                                 $totalTopics = $course->total_topics ?? $course->topics_count ?? 0;
@@ -147,52 +152,7 @@
                 </div>
             </div>
 
-            <!-- Available Courses Card -->
-            @if(!$availableCourses->isEmpty())
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">
-                        <i class="fas fa-plus-circle" style="color: var(--primary); margin-right: 0.5rem;"></i>
-                        Available Courses
-                    </h2>
-                    <a href="{{ route('student.courses.index') }}" class="stat-link">
-                        Browse all <i class="fas fa-chevron-right"></i>
-                    </a>
-                </div>
-                
-                <div class="card-body">
-                    <div class="items-list">
-                        @foreach($availableCourses->take(3) as $course)
-                        <div class="list-item">
-                            <div class="item-avatar" style="border-radius: var(--radius); background: var(--info-light); color: var(--info);">
-                                <i class="fas fa-book"></i>
-                            </div>
-                            <div class="item-info">
-                                <div class="item-name">{{ $course->title }}</div>
-                                <div class="item-details">{{ $course->course_code }} • {{ $course->teacher->f_name ?? 'Instructor' }}</div>
-                                <div class="item-meta">
-                                    <span class="item-badge badge-info">
-                                        {{ $course->credits ?? 0 }} credits
-                                    </span>
-                                    <span class="item-badge badge-secondary">
-                                        {{ $course->topics_count ?? 0 }} topics
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <form action="{{ route('student.courses.enroll', Crypt::encrypt($course->id)) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="fas fa-plus"></i> Enroll
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            @endif
+            {{-- 🔥 REMOVED: Available Courses Card section --}}
         </div>
 
         <!-- Right Column -->
@@ -228,8 +188,7 @@
                             @foreach($enrolledCourses->take(3) as $enrollment)
                                 @php
                                     $course = $enrollment->course;
-                                    $courseProgress = $course->getStudentProgress(auth()->id());
-                                    $courseProgressPercentage = $courseProgress['percentage'];
+                                    $courseProgressPercentage = $enrollment->progress ?? 0;
                                 @endphp
                                 <div class="list-item" style="flex-direction: column; align-items: stretch;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
@@ -244,7 +203,7 @@
                                         <div style="height: 100%; background: {{ $courseProgressPercentage >= 80 ? 'var(--success)' : 'var(--primary)' }}; width: {{ $courseProgressPercentage }}%; transition: width 0.3s;"></div>
                                     </div>
                                     <div style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: 0.25rem;">
-                                        {{ $courseProgress['completed'] }}/{{ $courseProgress['total'] }} topics
+                                        {{ $course->completed_topics ?? 0 }}/{{ $course->total_topics ?? 0 }} topics
                                     </div>
                                 </div>
                             @endforeach
@@ -271,28 +230,12 @@
                             <div class="action-title">All Topics</div>
                             <div class="action-subtitle">{{ $stats['completed_topics'] ?? 0 }} completed</div>
                         </a>
-                        
-                        <a href="{{ route('student.quizzes.index') }}" class="action-card action-warning">
-                            <div class="action-icon">
-                                <i class="fas fa-question-circle"></i>
-                            </div>
-                            <div class="action-title">Take Quizzes</div>
-                            <div class="action-subtitle">{{ $availableQuizzesCount ?? 0 }} available</div>
-                        </a>
-                        
-                        <a href="{{ route('student.assignments.index') }}" class="action-card action-success">
-                            <div class="action-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <div class="action-title">Assignments</div>
-                            <div class="action-subtitle">{{ $totalAssignments ?? 0 }} total</div>
-                        </a>
                     </div>
                 </div>
             </div>
 
             <!-- Upcoming Deadlines Card -->
-            @if(!$upcomingQuizzes->isEmpty())
+            @if(!empty($upcomingQuizzes) && $upcomingQuizzes->count() > 0)
             <div class="dashboard-card">
                 <div class="card-header">
                     <h2 class="card-title">
@@ -312,11 +255,6 @@
                                         <i class="fas fa-calendar"></i> 
                                         {{ $quiz->available_until ? $quiz->available_until->format('M d, Y') : 'No deadline' }}
                                     </span>
-                                </div>
-                                <div style="margin-top: 0.5rem;">
-                                    <a href="{{ route('student.quizzes.take', Crypt::encrypt($quiz->id)) }}" class="btn btn-primary btn-sm" style="width: 100%;">
-                                        <i class="fas fa-play"></i> Take Quiz
-                                    </a>
                                 </div>
                             </div>
                         @endforeach

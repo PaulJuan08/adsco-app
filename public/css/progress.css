@@ -1,0 +1,674 @@
+/* ===== PROGRESS PAGE STYLES ===== */
+/* Unified styles for assignment and quiz progress tables */
+
+:root {
+    --primary: #667eea;
+    --primary-dark: #5a67d8;
+    --primary-light: rgba(102, 126, 234, 0.1);
+    --success: #48bb78;
+    --success-dark: #38a169;
+    --success-light: #f0fff4;
+    --danger: #f56565;
+    --danger-dark: #e53e3e;
+    --danger-light: #fff5f5;
+    --warning: #ed8936;
+    --warning-dark: #dd6b20;
+    --warning-light: #fffaf0;
+    --info: #4299e1;
+    --info-light: #ebf8ff;
+    --gray-100: #f7fafc;
+    --gray-200: #edf2f7;
+    --gray-300: #e2e8f0;
+    --gray-400: #cbd5e0;
+    --gray-500: #a0aec0;
+    --gray-600: #718096;
+    --gray-700: #4a5568;
+    --gray-800: #2d3748;
+    --gray-900: #1a202c;
+}
+
+/*----------------------------------------
+  PROGRESS TABLE
+----------------------------------------*/
+.progress-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.progress-table th {
+    text-align: left;
+    padding: 1rem;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--gray-300);
+    white-space: nowrap;
+}
+
+.progress-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--gray-800);
+    vertical-align: middle;
+}
+
+.progress-table tbody tr:hover td {
+    background: var(--gray-100);
+}
+
+/*----------------------------------------
+  STUDENT CELL
+----------------------------------------*/
+.student-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.student-avatar-sm {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.student-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.student-name {
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.student-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.6875rem;
+    color: var(--gray-600);
+}
+
+.student-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.student-meta i {
+    color: var(--primary);
+    width: 12px;
+}
+
+/*----------------------------------------
+  SCORE BADGES
+----------------------------------------*/
+.score-badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-align: center;
+    min-width: 60px;
+}
+
+.score-high {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+}
+
+.score-medium {
+    background: #fefcbf;
+    color: #744210;
+    border: 1px solid #faf089;
+}
+
+.score-low {
+    background: #fff5f5;
+    color: #742a2a;
+    border: 1px solid #feb2b2;
+}
+
+/*----------------------------------------
+  STATUS BADGES
+----------------------------------------*/
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.status-graded {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+}
+
+.status-late {
+    background: #fffaf0;
+    color: #744210;
+    border: 1px solid #fbd38d;
+}
+
+.status-submitted {
+    background: #ebf8ff;
+    color: #2a4365;
+    border: 1px solid #90cdf4;
+}
+
+.status-pending {
+    background: var(--gray-200);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-400);
+}
+
+.status-passed {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+}
+
+.status-failed {
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+/*----------------------------------------
+  VIEW BUTTONS
+----------------------------------------*/
+.view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: white;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin-right: 0.25rem;
+}
+
+.view-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+}
+
+.view-btn i {
+    font-size: 0.875rem;
+}
+
+/*----------------------------------------
+  EMPTY STATE
+----------------------------------------*/
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--gray-500);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--gray-400);
+}
+
+.empty-state h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.8125rem;
+    margin-bottom: 1rem;
+}
+
+/*----------------------------------------
+  PAGINATION
+----------------------------------------*/
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-top: 1px solid var(--gray-300);
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pagination-links a,
+.pagination-links span {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    color: var(--gray-700);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+}
+
+.pagination-links a:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.pagination-links .active span {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary);
+}
+
+/*----------------------------------------
+  EXCELLENT/GOOD/NEEDS IMPROVEMENT BADGES
+----------------------------------------*/
+.excellent-badge {
+    background: var(--success);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    margin-left: 0.25rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.good-badge {
+    background: var(--primary);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    margin-left: 0.25rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.needs-improvement-badge {
+    background: var(--danger);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    margin-left: 0.25rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/*----------------------------------------
+  MODAL STYLES
+----------------------------------------*/
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.5rem;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+
+/*----------------------------------------
+  ANSWER ITEM STYLES
+----------------------------------------*/
+.answer-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.answer-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.answer-question {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--gray-800);
+}
+
+.answer-box {
+    background: var(--gray-100);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.answer-result {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.answer-result.correct {
+    color: var(--success);
+}
+
+.answer-result.incorrect {
+    color: var(--danger);
+}
+
+.answer-result i {
+    font-size: 1rem;
+}
+
+/*----------------------------------------
+  UTILITY CLASSES
+----------------------------------------*/
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+
+/*----------------------------------------
+  RESPONSIVE DESIGN
+----------------------------------------*/
+@media (max-width: 1024px) {
+    .progress-table {
+        font-size: 0.8125rem;
+    }
+    
+    .progress-table th,
+    .progress-table td {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .progress-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .student-cell {
+        min-width: 200px;
+    }
+    
+    .pagination-info {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .pagination-links {
+        justify-content: center;
+    }
+    
+    .modal-content {
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-avatar-sm {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+    
+    .score-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        min-width: 50px;
+    }
+    
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.6875rem;
+    }
+    
+    .view-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .view-btn i {
+        font-size: 0.75rem;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+}
+
+/*----------------------------------------
+  ADDITIONAL UTILITY CLASSES
+----------------------------------------*/
+.fw-600 {
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--gray-600);
+}
+
+.small {
+    font-size: 0.75rem;
+}
+
+.extra-small {
+    font-size: 0.7rem;
+    color: var(--gray-600);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+.mt-1 {
+    margin-top: 0.25rem;
+}
+
+.mt-3 {
+    margin-top: 0.75rem;
+}
+
+.p-4 {
+    padding: 2rem;
+}
+
+.spinner {
+    font-size: 2rem;
+    color: var(--primary);
+}
+
+/*----------------------------------------
+  ACTION GROUP
+----------------------------------------*/
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/*----------------------------------------
+  GRADE BUTTON SPECIAL STYLE
+----------------------------------------*/
+.grade-btn {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.grade-btn:hover {
+    background: var(--success-dark);
+    border-color: var(--success-dark);
+    color: white;
+}
+
+/*----------------------------------------
+  MODAL CONTENT POSITIONING
+----------------------------------------*/
+#answersContent {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+
+/*----------------------------------------
+  BUTTON SM (for the clear filters button)
+----------------------------------------*/
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-sm-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-sm-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+}
