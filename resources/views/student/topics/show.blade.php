@@ -347,10 +347,10 @@
                                             class="resource-action-btn primary">
                                         <i class="fas fa-play"></i> Play Video
                                     </button>
-                                    <a href="{{ $vUrl }}" target="_blank"
+                                    <!-- <a href="{{ $vUrl }}" target="_blank"
                                        class="resource-action-btn secondary">
                                         <i class="fas fa-external-link-alt"></i> Open
-                                    </a>
+                                    </a> -->
                                 </div>
                             </div>
 
@@ -392,10 +392,10 @@
                                             class="resource-action-btn primary">
                                         <i class="fas fa-eye"></i> View PDF
                                     </button>
-                                    <a href="{{ $pdfUrl }}" download
+                                    <!-- <a href="{{ $pdfUrl }}" download
                                        class="resource-action-btn secondary">
                                         <i class="fas fa-download"></i> Download
-                                    </a>
+                                    </a> -->
                                 </div>
                             </div>
                         </div>
@@ -432,10 +432,10 @@
                                        class="resource-action-btn primary">
                                         <i class="fas fa-external-link-alt"></i> Open
                                     </a>
-                                    <a href="{{ $topic->attachment }}" download
+                                    <!-- <a href="{{ $topic->attachment }}" download
                                        class="resource-action-btn secondary">
                                         <i class="fas fa-download"></i> Download
-                                    </a>
+                                    </a> -->
                                 </div>
                             </div>
                             <div class="resource-content">
@@ -641,9 +641,9 @@
                     <i class="fas fa-file-pdf" style="font-size:4rem; color:#dc2626; margin-bottom:1rem;"></i>
                     <h3 style="margin-bottom:1rem;">PDF Cannot Be Displayed</h3>
                     <p style="margin-bottom:1.5rem; color:#6b7280;">Your browser cannot display this PDF inline.</p>
-                    <a href="#" id="downloadLink" class="resource-action-btn primary" target="_blank">
+                    <!-- <a href="#" id="downloadLink" class="resource-action-btn primary" target="_blank">
                         <i class="fas fa-download"></i> Download PDF
-                    </a>
+                    </a> -->
                 </div>
             </div>
         </div>

@@ -1,4 +1,6 @@
 import './bootstrap';
+import '../css/app.css';
+import '../css/welcome.css';
 
 // Common functions
 function formatDate(dateString) {
