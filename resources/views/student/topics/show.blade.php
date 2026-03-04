@@ -150,6 +150,8 @@
     display: block;
     margin-bottom: 0.5rem;
 }
+
+
 </style>
 @endpush
 
@@ -301,148 +303,80 @@
                     </div>
                     @endif
 
-                    {{-- ── RESOURCES ── --}}
-                    @if($resourceCount > 0)
-                    <div class="detail-section">
-                        <h3 class="detail-section-title">
-                            <i class="fas fa-paperclip"></i> Resources
-                            <span style="margin-left:auto; font-size:0.75rem; color:#718096;">
-                                {{ $resourceCount }} file{{ $resourceCount > 1 ? 's' : '' }}
-                            </span>
-                        </h3>
-
-                        {{-- Video --}}
-                        @if($topic->video_link)
-                        @php
-                            $vUrl    = $topic->video_link;
-                            $embedUrl = null;
-                            $platform = 'External';
-                            $platformIcon = 'fas fa-video';
-
+                    {{-- ── TOPIC MEDIA CARD ── --}}
+                    @if($topic->video_link || $topic->attachment || $topic->pdf_file)
+                    @php
+                        $vUrl     = $topic->video_link;
+                        $embedUrl = null;
+                        $videoId  = null;
+                        if ($vUrl) {
                             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $vUrl, $m)) {
-                                $embedUrl = "https://www.youtube.com/embed/{$m[1]}?rel=0";
-                                $platform = 'YouTube'; $platformIcon = 'fab fa-youtube';
+                                $videoId  = $m[1];
+                                $embedUrl = "https://www.youtube.com/embed/{$videoId}?rel=0";
                             } elseif (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/i', $vUrl, $m)) {
                                 $embedUrl = "https://player.vimeo.com/video/{$m[1]}";
-                                $platform = 'Vimeo'; $platformIcon = 'fab fa-vimeo-v';
-                            } elseif (str_contains($vUrl, 'drive.google.com')) {
-                                $platform = 'Google Drive'; $platformIcon = 'fab fa-google-drive';
                             }
-                        @endphp
-                        <div class="resource-card">
-                            <div class="resource-header">
-                                <div class="resource-meta">
-                                    <div class="file-icon file-video">
-                                        <i class="{{ $platformIcon }}"></i>
-                                    </div>
-                                    <div>
-                                        <div class="resource-title">Video Lesson</div>
-                                        <div class="resource-subtitle">
-                                            <i class="{{ $platformIcon }}"></i> {{ $platform }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="resource-actions">
-                                    <button onclick="openSmartVideoModal('{{ $vUrl }}')"
-                                            class="resource-action-btn primary">
-                                        <i class="fas fa-play"></i> Play Video
-                                    </button>
-                                    <!-- <a href="{{ $vUrl }}" target="_blank"
-                                       class="resource-action-btn secondary">
-                                        <i class="fas fa-external-link-alt"></i> Open
-                                    </a> -->
-                                </div>
-                            </div>
+                        }
+                        $pdfUrl = $topic->pdf_file
+                            ? App\Http\Controllers\Student\TopicController::getPdfUrl($topic->pdf_file)
+                            : null;
+                    @endphp
+                    <div class="topic-media-card">
 
-                            @if($embedUrl)
-                            <div class="resource-content">
-                                <div class="video-embed-wrapper">
+                        {{-- Video area --}}
+                        <div class="topic-video-area">
+                            @if($videoId)
+                                <div class="yt-preview"
+                                     data-embed="https://www.youtube.com/embed/{{ $videoId }}?autoplay=1&mute=1&rel=0"
+                                     onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    <img src="https://img.youtube.com/vi/{{ $videoId }}/hqdefault.jpg"
+                                         alt="{{ $topic->title }}" class="yt-thumb">
+                                    <div class="yt-play-overlay">
+                                        <svg viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#ff0000"/>
+                                            <path d="M45 24L27 14v20" fill="#fff"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            @elseif($topic->video_link && $embedUrl)
+                                <div class="topic-video-embed">
                                     <iframe src="{{ $embedUrl }}"
                                             title="{{ $topic->title }}"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowfullscreen>
                                     </iframe>
                                 </div>
-                            </div>
+                            @elseif($topic->video_link)
+                                <div class="video-click-placeholder"
+                                     onclick="openSmartVideoModal('{{ $topic->video_link }}')">
+                                    <i class="fas fa-play-circle"></i>
+                                    <span>Click to Play Video</span>
+                                </div>
+                            @else
+                                <div class="topic-no-video">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                </div>
                             @endif
                         </div>
-                        @endif
 
-                        {{-- PDF --}}
-                        @if($topic->pdf_file)
-                        @php
-                            $pdfUrl      = App\Http\Controllers\Student\TopicController::getPdfUrl($topic->pdf_file);
-                            $pdfFilename = basename($topic->pdf_file);
-                        @endphp
-                        <div class="resource-card">
-                            <div class="resource-header">
-                                <div class="resource-meta">
-                                    <div class="file-icon file-pdf">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </div>
-                                    <div>
-                                        <div class="resource-title">PDF Document</div>
-                                        <div class="resource-subtitle">
-                                            <i class="fas fa-file"></i> {{ $pdfFilename }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="resource-actions">
-                                    <button onclick="openPdfModal('{{ $pdfUrl }}')"
-                                            class="resource-action-btn primary">
-                                        <i class="fas fa-eye"></i> View PDF
-                                    </button>
-                                    <!-- <a href="{{ $pdfUrl }}" download
-                                       class="resource-action-btn secondary">
-                                        <i class="fas fa-download"></i> Download
-                                    </a> -->
-                                </div>
-                            </div>
-                        </div>
-                        @endif
+                        {{-- Attachment + PDF buttons --}}
+                        <div class="topic-media-actions">
+                            @if($topic->attachment)
+                                <a href="{{ $topic->attachment }}" target="_blank"
+                                   class="topic-btn-attachment">
+                                    <i class="fas fa-paperclip"></i> attachment
+                                </a>
+                            @else
+                                <span></span>
+                            @endif
 
-                        {{-- Attachment link --}}
-                        @if($topic->attachment)
-                        @php
-                            $ext  = strtolower(pathinfo($topic->attachment, PATHINFO_EXTENSION));
-                            $attIcon  = match(true) {
-                                in_array($ext, ['pdf'])              => ['fas fa-file-pdf',        'file-pdf'],
-                                in_array($ext, ['doc','docx'])       => ['fas fa-file-word',       'file-word'],
-                                in_array($ext, ['xls','xlsx','csv']) => ['fas fa-file-excel',      'file-excel'],
-                                in_array($ext, ['ppt','pptx'])       => ['fas fa-file-powerpoint', 'file-powerpoint'],
-                                in_array($ext, ['jpg','jpeg','png','gif','bmp','svg']) => ['fas fa-file-image', 'file-image'],
-                                default                              => ['fas fa-link',             'file-generic'],
-                            };
-                        @endphp
-                        <div class="resource-card">
-                            <div class="resource-header">
-                                <div class="resource-meta">
-                                    <div class="file-icon {{ $attIcon[1] }}">
-                                        <i class="{{ $attIcon[0] }}"></i>
-                                    </div>
-                                    <div>
-                                        <div class="resource-title">Attachment</div>
-                                        <div class="resource-subtitle">
-                                            <i class="fas fa-external-link-alt"></i> External Resource
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="resource-actions">
-                                    <a href="{{ $topic->attachment }}" target="_blank"
-                                       class="resource-action-btn primary">
-                                        <i class="fas fa-external-link-alt"></i> Open
-                                    </a>
-                                    <!-- <a href="{{ $topic->attachment }}" download
-                                       class="resource-action-btn secondary">
-                                        <i class="fas fa-download"></i> Download
-                                    </a> -->
-                                </div>
-                            </div>
-                            <div class="resource-content">
-                                <div class="url-box">{{ $topic->attachment }}</div>
-                            </div>
+                            @if($pdfUrl)
+                                <button onclick="openPdfModal('{{ $pdfUrl }}')"
+                                        class="topic-btn-pdf">
+                                    <i class="fas fa-file-pdf"></i> pdf
+                                </button>
+                            @endif
                         </div>
-                        @endif
 
                     </div>
                     @endif
@@ -571,8 +505,7 @@
                         </h3>
 
                         @if($topic->pdf_file)
-                        @php $pdfUrlSidebar = App\Http\Controllers\Student\TopicController::getPdfUrl($topic->pdf_file); @endphp
-                        <button onclick="openPdfModal('{{ $pdfUrlSidebar }}')" class="quick-action-link">
+                        <button onclick="openPdfModal('{{ $pdfUrl ?? App\Http\Controllers\Student\TopicController::getPdfUrl($topic->pdf_file) }}')" class="quick-action-link">
                             <i class="fas fa-file-pdf"></i><span>View PDF</span>
                         </button>
                         @endif
@@ -965,6 +898,28 @@ document.addEventListener('DOMContentLoaded', function () {
         overlay.addEventListener('click', e => { if (e.target === overlay) closeAllModals(); });
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
+
+    // YouTube hover-to-play
+    document.querySelectorAll('.yt-preview').forEach(function(el) {
+        var t;
+        el.addEventListener('mouseenter', function() {
+            t = setTimeout(function() {
+                if (el.querySelector('.yt-preview-iframe')) return;
+                var f = document.createElement('iframe');
+                f.src = el.dataset.embed;
+                f.allow = 'autoplay; encrypted-media; gyroscope; picture-in-picture';
+                f.className = 'yt-preview-iframe';
+                el.appendChild(f);
+                el.classList.add('playing');
+            }, 600);
+        });
+        el.addEventListener('mouseleave', function() {
+            clearTimeout(t);
+            var f = el.querySelector('.yt-preview-iframe');
+            if (f) f.remove();
+            el.classList.remove('playing');
+        });
+    });
 
     @if(session('success')) 
         Swal.fire({ toast:true, position:'top-end', icon:'success', title:'{{ session("success") }}', showConfirmButton:false, timer:4000, timerProgressBar:true }); 

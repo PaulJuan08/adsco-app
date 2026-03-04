@@ -1,5 +1,4 @@
 <?php
-// app/Console/Commands/CleanupOrphanedRecords.php
 
 namespace App\Console\Commands;
 

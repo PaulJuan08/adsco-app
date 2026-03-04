@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Student/DashboardController.php
 
 namespace App\Http\Controllers\Student;
 

@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Student/ProfileController.php
 
 namespace App\Http\Controllers\Student;
 

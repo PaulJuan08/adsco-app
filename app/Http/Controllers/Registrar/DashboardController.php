@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Registrar/DashboardController.php
 
 namespace App\Http\Controllers\Registrar;
 

@@ -1,5 +1,4 @@
 <?php
-// app/Models/QuizAttempt.php
 
 namespace App\Models;
 

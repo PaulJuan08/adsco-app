@@ -1,5 +1,4 @@
 <?php
-// app/Notifications/VerifyEmail.php
 
 namespace App\Notifications;
 

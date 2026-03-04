@@ -1,5 +1,4 @@
 <?php
-// app/Models/QuizStudentAccess.php
 
 namespace App\Models;
 

@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/VerificationController.php
 
 namespace App\Http\Controllers\Auth;
 

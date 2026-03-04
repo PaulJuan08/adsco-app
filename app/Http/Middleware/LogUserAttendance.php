@@ -1,5 +1,4 @@
 <?php
-// app/Http/Middleware/LogUserAttendance.php
 
 namespace App\Http\Middleware;
 

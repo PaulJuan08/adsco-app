@@ -3,6 +3,7 @@ namespace App\Observers;
 
 use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\AssignmentSubmission;
 
 class UserObserver
 {
@@ -40,6 +41,16 @@ class UserObserver
         }
     }
     
+    /**
+     * Clean up attachment files before the DB cascade removes the submission rows.
+     * Without this, the DB cascade deletes the rows but leaves the files on disk.
+     */
+    public function deleting(User $user): void
+    {
+        AssignmentSubmission::where('student_id', $user->id)
+            ->each(fn($submission) => $submission->delete());
+    }
+
     public function deleted(User $user)
     {
         if (auth()->check()) {

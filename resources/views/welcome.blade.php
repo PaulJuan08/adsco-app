@@ -11,7 +11,7 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Logo -->
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}?v=1" type="image/png" sizes="128x128">
     
@@ -580,11 +580,24 @@
                         </div>
                     </div>
 
-                    <!-- Map placeholder -->
-                    <div class="mt-8 h-48 bg-gray-200 rounded-xl overflow-hidden shadow-inner">
-                        <div class="w-full h-full flex items-center justify-center text-gray-500">
-                            <i class="fas fa-map-marked-alt text-4xl"></i>
+                    <!-- Google Maps Embed (preview) -->
+                    <div class="mt-8">
+                        <div class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm" style="height: 200px;">
+                            <iframe
+                                src="https://maps.google.com/maps?q=Agusan+Del+Sur+College+Bayugan+City+Agusan+del+Sur+Philippines&output=embed&z=17"
+                                width="100%" height="100%"
+                                style="border:0; display:block;"
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
                         </div>
+                        <button
+                            onclick="openMapModal()"
+                            class="mt-3 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-adsco-primary text-white rounded-xl font-semibold text-sm hover:bg-adsco-secondary transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5">
+                            <i class="fas fa-expand-alt"></i>
+                            Open Full Map
+                        </button>
                     </div>
                 </div>
                 
@@ -845,7 +858,7 @@
         window.addEventListener('scroll', () => {
             let current = '';
             const sections = document.querySelectorAll('section[id]');
-            
+
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
                 const sectionHeight = section.clientHeight;
@@ -862,5 +875,97 @@
             });
         });
     </script>
+
+    <!-- ═══ MAP MODAL ══════════════════════════════════ -->
+    <div id="map-modal" class="fixed inset-0 z-[9999] hidden" role="dialog" aria-modal="true" aria-label="Map modal">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeMapModal()"></div>
+
+        <!-- Modal panel -->
+        <div id="map-modal-panel"
+             class="absolute inset-4 md:inset-10 lg:inset-16 bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+             style="max-height: calc(100vh - 2rem);">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-5 py-3 bg-adsco-primary text-white flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-map-marker-alt text-adsco-accent"></i>
+                    <span class="font-semibold text-sm">Agusan Del Sur College — Bayugan City, Agusan Del Sur</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <!-- Fullscreen toggle -->
+                    <button id="fullscreen-btn"
+                            onclick="toggleMapFullscreen()"
+                            title="Toggle fullscreen"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors duration-200">
+                        <i id="fullscreen-icon" class="fas fa-expand text-sm"></i>
+                    </button>
+                    <!-- Close -->
+                    <button onclick="closeMapModal()"
+                            title="Close"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors duration-200">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map iframe -->
+            <div class="flex-1 min-h-0">
+                <iframe
+                    src="https://maps.google.com/maps?q=Agusan+Del+Sur+College+Bayugan+City+Agusan+del+Sur+Philippines&output=embed&z=17"
+                    width="100%" height="100%"
+                    style="border:0; display:block;"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ── Map Modal ── */
+        function openMapModal() {
+            document.getElementById('map-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMapModal() {
+            document.getElementById('map-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleMapFullscreen() {
+            const panel = document.getElementById('map-modal-panel');
+            const icon  = document.getElementById('fullscreen-icon');
+
+            if (!document.fullscreenElement) {
+                panel.requestFullscreen().catch(() => {});
+                icon.classList.replace('fa-expand', 'fa-compress');
+            } else {
+                document.exitFullscreen();
+                icon.classList.replace('fa-compress', 'fa-expand');
+            }
+        }
+
+        // Sync icon when fullscreen exits via Escape or browser chrome
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fullscreen-icon');
+            if (icon && !document.fullscreenElement) {
+                icon.classList.replace('fa-compress', 'fa-expand');
+            }
+        });
+
+        // Close modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('map-modal').classList.contains('hidden')) {
+                closeMapModal();
+            }
+        });
+    </script>
+
 </body>
 </html>

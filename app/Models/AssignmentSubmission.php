@@ -1,5 +1,4 @@
 <?php
-// app/Models/AssignmentSubmission.php
 
 namespace App\Models;
 
