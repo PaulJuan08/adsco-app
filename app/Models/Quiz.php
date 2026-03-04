@@ -16,8 +16,7 @@ class Quiz extends Model
         'duration',
         'total_questions',
         'passing_score',
-        'available_from',
-        'available_until',
+        'due_date',
         'course_id',
         'user_id',
         'created_by',
@@ -28,8 +27,7 @@ class Quiz extends Model
 
     protected $casts = [
         'is_published' => 'boolean',
-        'available_from' => 'datetime',
-        'available_until' => 'datetime',
+        'due_date' => 'datetime',
         'shuffle_questions' => 'boolean',
         'shuffle_options' => 'boolean',
         'created_at' => 'datetime',
@@ -98,15 +96,13 @@ class Quiz extends Model
     
     public function isAvailable(): bool
     {
-        $now = now();
-        if ($this->available_from && $this->available_from > $now) return false;
-        if ($this->available_until && $this->available_until < $now) return false;
-        return (bool) $this->is_published;
+        if (!$this->is_published) return false;
+        if ($this->due_date && $this->due_date->isPast()) return false;
+        return true;
     }
-    
-    public function getTimeRemainingAttribute()
+
+    public function isOverdue(): bool
     {
-        if (!$this->available_until) return null;
-        return now()->diffInMinutes($this->available_until, false);
+        return $this->due_date && $this->due_date->isPast();
     }
 }

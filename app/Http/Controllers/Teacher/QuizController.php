@@ -47,6 +47,9 @@ class QuizController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
+            'due_date' => 'nullable|date',
         ]);
 
         // Set default values for all other fields
@@ -54,11 +57,10 @@ class QuizController extends Controller
             'title' => $validated['title'],
             'description' => $validated['description'],
             'is_published' => 1,
-            'duration' => 60,
+            'duration' => $request->duration ?? 60,
             'total_questions' => 0,
-            'passing_score' => 70,
-            'available_from' => null,
-            'available_until' => null,
+            'passing_score' => $request->passing_score ?? 70,
+            'due_date' => $request->due_date ?? null,
             'created_by' => Auth::id(),
         ];
 
@@ -136,7 +138,7 @@ class QuizController extends Controller
                 return Quiz::with(['questions.options' => function($query) {
                         $query->select(['id', 'quiz_question_id', 'option_text', 'is_correct', 'order']);
                     }])
-                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at', 'updated_at'])
+                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'due_date', 'created_at', 'updated_at'])
                     ->withCount('questions')
                     ->findOrFail($id);
             });
@@ -209,10 +211,9 @@ class QuizController extends Controller
                 'duration' => 'nullable|integer|min:1',
                 'total_questions' => 'nullable|integer|min:1',
                 'passing_score' => 'nullable|integer|min:1|max:100',
-                'available_from' => 'nullable|date',
-                'available_until' => 'nullable|date|after:available_from',
+                'due_date' => 'nullable|date',
             ]);
-            
+
             // Update quiz basic info
             $quiz->update([
                 'title' => $request->title,
@@ -220,8 +221,7 @@ class QuizController extends Controller
                 'duration' => $request->duration ?? $quiz->duration,
                 'total_questions' => $request->total_questions ?? $quiz->total_questions,
                 'passing_score' => $request->passing_score ?? $quiz->passing_score,
-                'available_from' => $request->available_from,
-                'available_until' => $request->available_until,
+                'due_date' => $request->due_date,
             ]);
             
             // Process questions
@@ -500,6 +500,28 @@ class QuizController extends Controller
     public function results($encryptedId)
     {
         return redirect()->route('teacher.quizzes.take', $encryptedId);
+    }
+
+    public function togglePublish(Request $request, $encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            $quiz = Quiz::findOrFail($id);
+
+            $quiz->update([
+                'is_published' => !$quiz->is_published
+            ]);
+
+            $status = $quiz->is_published ? 'published' : 'unpublished';
+
+            return redirect()->back()->with('success', "Quiz {$status} successfully.");
+
+        } catch (\Exception $e) {
+            \Log::error('Error toggling teacher quiz publish status: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Failed to update quiz status.');
+        }
     }
 
     /**

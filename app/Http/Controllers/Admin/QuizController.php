@@ -34,6 +34,9 @@ class QuizController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
+            'due_date' => 'nullable|date',
         ]);
 
         // Set default values for all other fields
@@ -42,12 +45,11 @@ class QuizController extends Controller
             'description' => $validated['description'],
             // Use the checkbox value - if not present, default to 0 (draft)
             'is_published' => $request->has('is_published') ? 1 : 0,
-            'created_by' => auth()->id(), // <-- ADD THIS LINE
-            'duration' => 60,
+            'created_by' => auth()->id(),
+            'duration' => $request->duration ?? 60,
             'total_questions' => 0,
-            'passing_score' => 70,
-            'available_from' => null,
-            'available_until' => null,
+            'passing_score' => $request->passing_score ?? 70,
+            'due_date' => $request->due_date ?? null,
         ];
 
         $quiz = Quiz::create($quizData);
@@ -171,20 +173,18 @@ class QuizController extends Controller
                 'duration' => 'nullable|integer|min:1',
                 'total_questions' => 'nullable|integer|min:1',
                 'passing_score' => 'nullable|integer|min:1|max:100',
-                'available_from' => 'nullable|date',
-                'available_until' => 'nullable|date|after:available_from',
+                'due_date' => 'nullable|date',
             ]);
-            
-            // Update quiz basic info - INCLUDING is_published
+
+            // Update quiz basic info
             $quiz->update([
                 'title' => $request->title,
                 'description' => $request->description,
-                'is_published' => $request->has('is_published') ? 1 : 0, // THIS WAS MISSING
+                'is_published' => $request->has('is_published') ? 1 : 0,
                 'duration' => $request->duration ?? $quiz->duration,
                 'total_questions' => $request->total_questions ?? $quiz->total_questions,
                 'passing_score' => $request->passing_score ?? $quiz->passing_score,
-                'available_from' => $request->available_from,
-                'available_until' => $request->available_until,
+                'due_date' => $request->due_date,
             ]);
             
             // Process questions (rest of your code remains the same)

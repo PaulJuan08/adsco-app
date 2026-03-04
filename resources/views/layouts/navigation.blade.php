@@ -20,10 +20,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('admin.attendance') }}">Attendance</a>
                     </li>
-                @elseif(auth()->user()->isRegistrar())
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('registrar.users.index') }}">Users</a>
-                    </li>
                 @elseif(auth()->user()->isTeacher())
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('teacher.courses.index') }}">My Courses</a>

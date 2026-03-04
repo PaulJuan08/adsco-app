@@ -268,8 +268,23 @@
                         </div>
                         @if($course->teacher)
                         <div class="info-row-sm">
-                            <span class="lbl"><i class="fas fa-chalkboard-teacher"></i> Teacher</span>
+                            <span class="lbl"><i class="fas fa-chalkboard-teacher"></i> Primary Teacher</span>
                             <span class="val">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</span>
+                        </div>
+                        @endif
+                        @if($course->teachers && $course->teachers->count() > 0)
+                        <div class="info-row-sm" style="align-items: flex-start;">
+                            <span class="lbl" style="padding-top: 0.25rem;"><i class="fas fa-users"></i> Co-Teachers</span>
+                            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                @foreach($course->teachers as $coTeacher)
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #ddb238; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;">
+                                        {{ strtoupper(substr($coTeacher->f_name, 0, 1)) }}{{ strtoupper(substr($coTeacher->l_name, 0, 1)) }}
+                                    </div>
+                                    <span style="font-size: 0.8rem; color: #2d3748;">{{ $coTeacher->f_name }} {{ $coTeacher->l_name }}</span>
+                                </div>
+                                @endforeach
+                            </div>
                         </div>
                         @endif
                         @if($course->start_date)

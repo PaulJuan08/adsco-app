@@ -22,8 +22,8 @@ class TopicController extends Controller
     public function index()
     {
         // Get topics with creator relationship
-        $topics = Topic::with(['creator', 'courses']) // Add creator and courses relationships
-            ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at', 'created_by'])
+        $topics = Topic::with(['creator', 'updater', 'courses'])
+            ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at', 'created_by', 'updated_by'])
             ->latest()
             ->paginate(10);
         
@@ -112,8 +112,8 @@ class TopicController extends Controller
             $cacheKey = 'admin_topic_show_' . $id;
             
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
-                return Topic::with(['courses', 'creator']) // Add creator here
-                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by'])
+                return Topic::with(['courses', 'creator', 'updater'])
+                    ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by', 'updated_by'])
                     ->findOrFail($id);
             });
             
@@ -197,8 +197,9 @@ class TopicController extends Controller
                 $validated['pdf_file'] = $topic->pdf_file;
             }
 
+            $validated['updated_by'] = auth()->id();
             $topic->update($validated);
-            
+
             // Clear caches
             $this->clearAdminTopicCaches();
             Cache::forget('admin_topic_show_' . $id);

@@ -66,6 +66,13 @@ class Course extends Model
             ->withTimestamps();
     }
 
+    // Multiple teachers assigned to this course
+    public function teachers()
+    {
+        return $this->belongsToMany(User::class, 'course_teachers', 'course_id', 'teacher_id')
+            ->withTimestamps();
+    }
+
     // Accessor for status
     public function getStatusAttribute()
     {

@@ -132,7 +132,6 @@
                             @php
                                 $roleOptions = [
                                     1 => ['name' => 'Admin',     'icon' => 'user-shield',        'color' => 'danger',  'id_required' => false, 'description' => 'Full system access',  'id_type' => null],
-                                    2 => ['name' => 'Registrar', 'icon' => 'clipboard-list',      'color' => 'warning', 'id_required' => true,  'description' => 'Manage enrollments',   'id_type' => 'employee_id'],
                                     3 => ['name' => 'Teacher',   'icon' => 'chalkboard-teacher',  'color' => 'info',    'id_required' => true,  'description' => 'Manage classes',       'id_type' => 'employee_id'],
                                     4 => ['name' => 'Student',   'icon' => 'graduation-cap',      'color' => 'success', 'id_required' => true,  'description' => 'View courses',         'id_type' => 'student_id']
                                 ];

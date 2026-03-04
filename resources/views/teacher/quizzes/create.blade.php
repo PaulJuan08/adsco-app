@@ -125,7 +125,56 @@
                                 </span>
                             </div>
                             
-                            <!-- REMOVED: Passing Score and Duration Fields -->
+                            <!-- Quiz Settings Grid -->
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="duration" class="form-label">
+                                        <i class="fas fa-clock"></i> Duration (minutes)
+                                    </label>
+                                    <input type="number"
+                                           id="duration"
+                                           name="duration"
+                                           value="{{ old('duration', 60) }}"
+                                           min="1"
+                                           placeholder="60"
+                                           class="form-input">
+                                    <span class="form-help">
+                                        <i class="fas fa-info-circle"></i> Default: 60 minutes
+                                    </span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="passing_score" class="form-label">
+                                        <i class="fas fa-percent"></i> Passing Score (%)
+                                    </label>
+                                    <input type="number"
+                                           id="passing_score"
+                                           name="passing_score"
+                                           value="{{ old('passing_score', 70) }}"
+                                           min="1"
+                                           max="100"
+                                           placeholder="70"
+                                           class="form-input">
+                                    <span class="form-help">
+                                        <i class="fas fa-info-circle"></i> Default: 70%
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Due Date -->
+                            <div class="form-group">
+                                <label for="due_date" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Due Date
+                                </label>
+                                <input type="datetime-local"
+                                       id="due_date"
+                                       name="due_date"
+                                       value="{{ old('due_date') }}"
+                                       class="form-input">
+                                <span class="form-help">
+                                    <i class="fas fa-info-circle"></i> After this date, students can no longer access the quiz. Leave empty for no due date.
+                                </span>
+                            </div>
                         </div>
                         
                         <!-- Questions Section -->

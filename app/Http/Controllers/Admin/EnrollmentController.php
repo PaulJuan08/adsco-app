@@ -149,20 +149,34 @@ class EnrollmentController extends Controller
         try {
             $actualCourseId = $this->decryptId($encryptedCourseId);
             
-            $enrolledStudents = User::whereIn('id', function($query) use ($actualCourseId) {
-                    $query->select('student_id')
-                        ->from('enrollments')
-                        ->where('course_id', $actualCourseId);
-                })
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id'])
-                ->orderBy('f_name')
+            $enrolledStudents = Enrollment::where('course_id', $actualCourseId)
+                ->with([
+                    'student:id,f_name,l_name,email,student_id',
+                    'enrolledBy:id,f_name,l_name,role',
+                ])
+                ->orderBy('created_at', 'desc')
                 ->get()
-                ->map(function($student) {
+                ->map(function($enrollment) {
+                    $roles = [1 => 'Admin', 2 => 'Registrar', 3 => 'Teacher', 4 => 'Student'];
+                    $enroller = $enrollment->enrolledBy;
                     return [
-                        'id' => $student->id,
-                        'name' => $student->f_name . ' ' . $student->l_name,
-                        'email' => $student->email,
-                        'student_id' => $student->student_id
+                        'id'               => $enrollment->student->id ?? null,
+                        'name'             => $enrollment->student
+                                                ? $enrollment->student->f_name . ' ' . $enrollment->student->l_name
+                                                : 'Unknown',
+                        'email'            => $enrollment->student->email ?? '',
+                        'student_id'       => $enrollment->student->student_id ?? null,
+                        'enrolled_at'      => $enrollment->enrolled_at
+                                                ? $enrollment->enrolled_at->format('M d, Y')
+                                                : ($enrollment->created_at
+                                                    ? $enrollment->created_at->format('M d, Y')
+                                                    : null),
+                        'enrolled_by_name' => $enroller
+                                                ? $enroller->f_name . ' ' . $enroller->l_name
+                                                : null,
+                        'enrolled_by_role' => $enroller
+                                                ? ($roles[$enroller->role] ?? 'User')
+                                                : null,
                     ];
                 });
             
@@ -229,15 +243,16 @@ class EnrollmentController extends Controller
             $enrollments = [];
             foreach ($newStudentIds as $studentId) {
                 $enrollments[] = [
-                    'student_id' => $studentId,
-                    'course_id' => $actualCourseId,
+                    'student_id'  => $studentId,
+                    'course_id'   => $actualCourseId,
                     'enrolled_at' => now(),
-                    'status' => 'active',
-                    'created_at' => now(),
-                    'updated_at' => now()
+                    'status'      => 'active',
+                    'enrolled_by' => auth()->id(),
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
                 ];
             }
-            
+
             DB::table('enrollments')->insert($enrollments);
             
             // Clear caches

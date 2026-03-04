@@ -101,10 +101,9 @@
             </div>
             
             @php
-                $total = max(1, $userStats['students'] + $userStats['teachers'] + $userStats['registrars'] + $userStats['admins']);
+                $total = max(1, $userStats['students'] + $userStats['teachers'] + $userStats['admins']);
                 $studentsPercent = round(($userStats['students'] / $total) * 100, 1);
                 $teachersPercent = round(($userStats['teachers'] / $total) * 100, 1);
-                $registrarsPercent = round(($userStats['registrars'] / $total) * 100, 1);
                 $adminsPercent = round(($userStats['admins'] / $total) * 100, 1);
             @endphp
 
@@ -135,12 +134,6 @@
                             <span style="flex: 1; font-size: 0.875rem; color: var(--gray-700);">Teachers</span>
                             <span style="font-weight: 600; color: var(--gray-900);">{{ number_format($userStats['teachers']) }}</span>
                             <span style="font-size: 0.75rem; color: var(--gray-500);">({{ $teachersPercent }}%)</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <span style="width: 12px; height: 12px; border-radius: 4px; background: var(--chart-yellow);"></span>
-                            <span style="flex: 1; font-size: 0.875rem; color: var(--gray-700);">Registrars</span>
-                            <span style="font-weight: 600; color: var(--gray-900);">{{ number_format($userStats['registrars']) }}</span>
-                            <span style="font-size: 0.75rem; color: var(--gray-500);">({{ $registrarsPercent }}%)</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                             <span style="width: 12px; height: 12px; border-radius: 4px; background: var(--chart-red);"></span>

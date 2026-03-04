@@ -108,15 +108,28 @@
                     {{-- ── TOPIC MEDIA CARD ── --}}
                     @if($topic->video_link || $topic->attachment || $topic->pdf_file)
                     @php
-                        $vUrl     = $topic->video_link;
-                        $embedUrl = null;
-                        $videoId  = null;
+                        $vUrl      = $topic->video_link;
+                        $embedUrl  = null;
+                        $videoId   = null;
+                        $videoType = null;
                         if ($vUrl) {
                             if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $vUrl, $m)) {
-                                $videoId  = $m[1];
-                                $embedUrl = "https://www.youtube.com/embed/{$videoId}?rel=0";
+                                $videoId   = $m[1];
+                                $embedUrl  = "https://www.youtube.com/embed/{$videoId}?rel=0";
+                                $videoType = 'youtube';
                             } elseif (preg_match('/vimeo\.com\/(?:video\/)?(\d+)/i', $vUrl, $m)) {
-                                $embedUrl = "https://player.vimeo.com/video/{$m[1]}";
+                                $videoId   = $m[1];
+                                $embedUrl  = "https://player.vimeo.com/video/{$videoId}";
+                                $videoType = 'vimeo';
+                            } elseif (strpos($vUrl, 'drive.google.com') !== false) {
+                                $videoType = 'drive';
+                                foreach (['/\/file\/d\/([^\/?#&]+)/', '/[?&]id=([^&]+)/', '/\/open\?id=([^&]+)/'] as $p) {
+                                    if (preg_match($p, $vUrl, $dm)) { $videoId = $dm[1]; break; }
+                                }
+                            } elseif (preg_match('/\.(mp4|webm|mov|ogg|ogv|m4v)(\?.*)?$/i', $vUrl)) {
+                                $videoType = 'direct';
+                            } else {
+                                $videoType = 'other';
                             }
                         }
                         $pdfUrl    = $topic->pdf_file ? asset('pdf/' . $topic->pdf_file) : null;
@@ -124,7 +137,7 @@
                     @endphp
                     <div class="topic-media-card">
                         <div class="topic-video-area">
-                            @if($videoId)
+                            @if($videoType === 'youtube')
                                 <div class="yt-preview"
                                      data-embed="https://www.youtube.com/embed/{{ $videoId }}?autoplay=1&mute=1&rel=0"
                                      onclick="openSmartVideoModal('{{ $vUrl }}')">
@@ -137,17 +150,57 @@
                                         </svg>
                                     </div>
                                 </div>
-                            @elseif($topic->video_link && $embedUrl)
-                                <div class="topic-video-embed">
-                                    <iframe src="{{ $embedUrl }}"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                        allowfullscreen>
-                                    </iframe>
+                            @elseif($videoType === 'vimeo')
+                                <div class="yt-preview"
+                                     data-embed="https://player.vimeo.com/video/{{ $videoId }}?autoplay=1&muted=1"
+                                     data-vimeo-id="{{ $videoId }}"
+                                     onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    <img src="" alt="{{ $topic->title }}" class="yt-thumb" style="display:none;">
+                                    <div class="video-brand-placeholder" style="background:#1ab7ea;">
+                                        <i class="fab fa-vimeo-v"></i>
+                                    </div>
+                                    <div class="yt-play-overlay">
+                                        <div class="generic-play-btn" style="background:rgba(26,183,234,0.9);">
+                                            <i class="fas fa-play"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                            @elseif($topic->video_link)
-                                <div class="video-click-placeholder" onclick="openSmartVideoModal('{{ $topic->video_link }}')">
-                                    <i class="fas fa-play-circle"></i>
-                                    <span>Click to Play Video</span>
+                            @elseif($videoType === 'direct')
+                                <div class="yt-preview direct-preview" onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    <video class="yt-thumb" preload="metadata" muted playsinline>
+                                        <source src="{{ $vUrl }}">
+                                    </video>
+                                    <div class="yt-play-overlay">
+                                        <div class="generic-play-btn"><i class="fas fa-play"></i></div>
+                                    </div>
+                                </div>
+                            @elseif($videoType === 'drive')
+                                @if($videoId)
+                                <div class="yt-preview"
+                                     data-embed="https://drive.google.com/file/d/{{ $videoId }}/preview"
+                                     onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    <div class="video-brand-placeholder" style="background:#1e293b;">
+                                        <i class="fab fa-google-drive" style="color:#4285f4;"></i>
+                                    </div>
+                                    <div class="yt-play-overlay">
+                                        <div class="generic-play-btn" style="background:rgba(66,133,244,0.9);">
+                                            <i class="fas fa-play"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                @else
+                                <div class="video-generic-preview" onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    <i class="fab fa-google-drive" style="color:#4285f4;"></i>
+                                    <span>Google Drive Video</span>
+                                    <small>Click to open</small>
+                                </div>
+                                @endif
+                            @elseif($videoType === 'other')
+                                <div class="video-generic-preview" onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                    @php $host = parse_url($vUrl, PHP_URL_HOST) ?? ''; @endphp
+                                    <i class="fas fa-video"></i>
+                                    <span>{{ $host ? str_replace('www.', '', $host) : 'Video' }}</span>
+                                    <small>Click to play</small>
                                 </div>
                             @else
                                 <div class="topic-no-video"><i class="fas fa-chalkboard-teacher"></i></div>
@@ -208,6 +261,17 @@
                             <span class="val">
                                 {{ $topic->updated_at->format('M d, Y') }}
                                 <span style="display:block; font-size:0.7rem; color:#718096;">{{ $topic->updated_at->diffForHumans() }}</span>
+                            </span>
+                        </div>
+
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-user-edit"></i> Updated By</span>
+                            <span class="val">
+                                @if($topic->updater)
+                                    {{ $topic->updater->f_name }} {{ $topic->updater->l_name }}
+                                @else
+                                    <span style="color:#a0aec0;">—</span>
+                                @endif
                             </span>
                         </div>
                         
@@ -527,7 +591,6 @@ function openPdfModal(pdfUrl) {
     const finalUrl = pdfUrl + separator + 't=' + timestamp;
     
     if (downloadLink) downloadLink.href = pdfUrl;
-    if (footer) footer.textContent = 'Source: ' + pdfUrl;
 
     if (pdfEmbed) {
         pdfEmbed.src = finalUrl;
@@ -795,7 +858,6 @@ function _openEmbedPanel(embedUrl, sourceUrl, label) {
     }
     
     const footer = document.getElementById('videoFooter');
-    if (footer) footer.textContent = 'Source: ' + sourceUrl;
 }
 
 function _openDrivePanel(embedUrl, sourceUrl) {
@@ -815,7 +877,7 @@ function _openDrivePanel(embedUrl, sourceUrl) {
         };
     }
     
-    if (footer) footer.textContent = 'Source: ' + sourceUrl;
+    
 }
 
 function _openNativePanel(url) {
@@ -866,7 +928,7 @@ function _openNativePanel(url) {
         };
     }
 
-    if (footer) footer.textContent = 'Source: ' + url;
+    
 }
 
 function _extractDriveId(url) {
@@ -897,26 +959,61 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape') closeAllModals();
     });
 
-    // YouTube hover-to-play
+    // Video preview: hover-to-play (all types)
     document.querySelectorAll('.yt-preview').forEach(function(el) {
         var t;
-        el.addEventListener('mouseenter', function() {
-            t = setTimeout(function() {
-                if (el.querySelector('.yt-preview-iframe')) return;
-                var f = document.createElement('iframe');
-                f.src = el.dataset.embed;
-                f.allow = 'autoplay; encrypted-media; gyroscope; picture-in-picture';
-                f.className = 'yt-preview-iframe';
-                el.appendChild(f);
-                el.classList.add('playing');
-            }, 600);
-        });
-        el.addEventListener('mouseleave', function() {
-            clearTimeout(t);
-            var f = el.querySelector('.yt-preview-iframe');
-            if (f) f.remove();
-            el.classList.remove('playing');
-        });
+        var isDirect = el.classList.contains('direct-preview');
+        if (isDirect) {
+            var vid = el.querySelector('video.yt-thumb');
+            if (vid) {
+                el.addEventListener('mouseenter', function() {
+                    vid.play().catch(function(){});
+                    el.classList.add('playing');
+                });
+                el.addEventListener('mouseleave', function() {
+                    vid.pause();
+                    vid.currentTime = 0;
+                    el.classList.remove('playing');
+                });
+            }
+        } else {
+            el.addEventListener('mouseenter', function() {
+                t = setTimeout(function() {
+                    if (el.querySelector('.yt-preview-iframe')) return;
+                    var f = document.createElement('iframe');
+                    f.src = el.dataset.embed;
+                    f.allow = 'autoplay; encrypted-media; gyroscope; picture-in-picture';
+                    f.className = 'yt-preview-iframe';
+                    el.appendChild(f);
+                    el.classList.add('playing');
+                }, 600);
+            });
+            el.addEventListener('mouseleave', function() {
+                clearTimeout(t);
+                var f = el.querySelector('.yt-preview-iframe');
+                if (f) f.remove();
+                el.classList.remove('playing');
+            });
+        }
+    });
+
+    // Vimeo: load thumbnail async
+    document.querySelectorAll('[data-vimeo-id]').forEach(function(el) {
+        var id = el.dataset.vimeoId;
+        if (!id) return;
+        fetch('https://vimeo.com/api/v2/video/' + id + '.json')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data[0] && data[0].thumbnail_large) {
+                    var img = el.querySelector('.yt-thumb');
+                    var ph  = el.querySelector('.video-brand-placeholder');
+                    if (img) {
+                        img.src = data[0].thumbnail_large;
+                        img.style.display = 'block';
+                        img.onload = function() { if (ph) ph.style.display = 'none'; };
+                    }
+                }
+            }).catch(function() {});
     });
 
     // Session notifications

@@ -365,6 +365,16 @@
                             <span class="lbl"><i class="fas fa-star"></i> Points</span>
                             <span class="val">{{ $assignment->points }}</span>
                         </div>
+
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-clock"></i> Duration</span>
+                            <span class="val">{{ $assignment->duration ?? 60 }} min</span>
+                        </div>
+
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-trophy"></i> Passing Score</span>
+                            <span class="val highlight">{{ $assignment->passing_score ?? 70 }}%</span>
+                        </div>
                         
                         @if($assignment->course)
                         <div class="info-row-sm">

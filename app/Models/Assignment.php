@@ -17,6 +17,8 @@ class Assignment extends Model
         'instructions',
         'due_date',
         'points',
+        'duration',
+        'passing_score',
         'attachment',
         'is_published',
         'created_by',
@@ -25,6 +27,8 @@ class Assignment extends Model
     protected $casts = [
         'due_date' => 'datetime',
         'points' => 'integer',
+        'duration' => 'integer',
+        'passing_score' => 'integer',
         'is_published' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

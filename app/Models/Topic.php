@@ -11,9 +11,9 @@ class Topic extends Model
     use HasFactory;
     
     protected $fillable = [
-        'title', 'description', 'content', 'video_link', 
-        'attachment', 'pdf_file', 'course_id', 'order', 
-        'estimated_time', 'is_published', 'created_by'  // Add created_by here
+        'title', 'description', 'content', 'video_link',
+        'attachment', 'pdf_file', 'course_id', 'order',
+        'estimated_time', 'is_published', 'created_by', 'updated_by'
     ];
     
     protected $casts = [
@@ -22,10 +22,20 @@ class Topic extends Model
         'estimated_time' => 'integer'
     ];
     
-    // ============ NEW: Creator Relationship ============
+    // ============ NEW: Creator / Updater Relationships ============
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function getUpdaterNameAttribute()
+    {
+        return $this->updater ? $this->updater->f_name . ' ' . $this->updater->l_name : null;
     }
     
     // Helper to get creator name

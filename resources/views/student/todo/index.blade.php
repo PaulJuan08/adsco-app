@@ -419,8 +419,6 @@
                             <div class="meta-value">
                                 @if($isOverdue)
                                     <span style="color: #f56565;">Overdue</span>
-                                @elseif($assignment->available_from && $assignment->available_from->isFuture())
-                                    <span style="color: #718096;">Not yet</span>
                                 @else
                                     <span style="color: #48bb78;">Open</span>
                                 @endif

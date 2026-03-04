@@ -31,7 +31,10 @@ class CourseController extends Controller
                 'teacher' => function ($query) {
                     $query->select(['id', 'f_name', 'l_name', 'employee_id']);
                 },
-                'creator' => function ($query) {  // ADD THIS
+                'teachers' => function ($query) {
+                    $query->select(['users.id', 'f_name', 'l_name']);
+                },
+                'creator' => function ($query) {
                     $query->select(['id', 'f_name', 'l_name', 'role']);
                 }
             ])
@@ -126,6 +129,7 @@ class CourseController extends Controller
             $course = Cache::remember('course_show_' . $id, 600, function () use ($id) {
                 return Course::with([
                     'teacher:id,f_name,l_name,employee_id,email',
+                    'teachers:id,f_name,l_name,employee_id,email',
                     'students:id,f_name,l_name,email,student_id',
                     'topics:id,title,content,is_published,order,created_at,description',
                     'creator:id,f_name,l_name',
@@ -155,9 +159,8 @@ class CourseController extends Controller
             $encryptedId = urldecode($encryptedId);
             $id          = Crypt::decrypt($encryptedId);
 
-            $course = Cache::remember('course_edit_' . $id, 300, function () use ($id) {
-                return Course::findOrFail($id);
-            });
+            $course = Course::with('teachers')->findOrFail($id);
+            Cache::forget('course_edit_' . $id);
 
             $teachers = Cache::remember('all_teachers', 600, function () {
                 return User::where('role', 3)
@@ -166,7 +169,9 @@ class CourseController extends Controller
                     ->get();
             });
 
-            return view('admin.courses.edit', compact('course', 'teachers', 'encryptedId'));
+            $assignedTeacherIds = $course->teachers->pluck('id')->toArray();
+
+            return view('admin.courses.edit', compact('course', 'teachers', 'encryptedId', 'assignedTeacherIds'));
 
         } catch (\Exception $e) {
             Log::error('Error editing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
@@ -189,6 +194,8 @@ class CourseController extends Controller
                 'is_published' => 'nullable|boolean',
                 'credits'      => 'nullable|integer|min:1|max:10',
                 'status'       => 'nullable|string|in:active,inactive',
+                'teacher_ids'  => 'nullable|array',
+                'teacher_ids.*' => 'exists:users,id',
             ]);
 
             $course->update([
@@ -200,6 +207,9 @@ class CourseController extends Controller
                 'credits'      => $validated['credits']      ?? $course->credits,
                 'status'       => $validated['status']       ?? $course->status,
             ]);
+
+            // Sync additional teachers (pivot table)
+            $course->teachers()->sync($validated['teacher_ids'] ?? []);
 
             $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
@@ -327,6 +337,7 @@ class CourseController extends Controller
                     'student_id'  => $studentId,
                     'enrolled_at' => now(),
                     'status'      => 'active',
+                    'enrolled_by' => auth()->id(),
                 ]);
                 $message  = 'Student enrolled successfully.';
                 $enrolled = true;

@@ -28,8 +28,13 @@ class AssignmentController extends Controller
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
             'is_published' => 'boolean',
         ]);
+
+        $validated['duration'] = $validated['duration'] ?? 60;
+        $validated['passing_score'] = $validated['passing_score'] ?? 70;
 
         $assignment = Assignment::create($validated);
         
@@ -63,8 +68,13 @@ class AssignmentController extends Controller
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
             'is_published' => 'boolean',
         ]);
+
+        $validated['duration'] = $validated['duration'] ?? $assignment->duration ?? 60;
+        $validated['passing_score'] = $validated['passing_score'] ?? $assignment->passing_score ?? 70;
 
         $assignment->update($validated);
         

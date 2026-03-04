@@ -709,6 +709,16 @@
         
         let html = '';
         students.forEach(student => {
+            const enrollerInfo = student.enrolled_by_name
+                ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:#f0fdf4;color:#16a34a;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.7rem;font-weight:600;">
+                       <i class="fas fa-user-check"></i> Enrolled by: ${student.enrolled_by_name}${student.enrolled_by_role ? ' (' + student.enrolled_by_role + ')' : ''}
+                   </span>`
+                : `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:#f8fafc;color:#94a3b8;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.7rem;">
+                       <i class="fas fa-user"></i> Self-enrolled
+                   </span>`;
+            const enrolledAt = student.enrolled_at
+                ? `<span style="font-size:0.7rem;color:#94a3b8;"><i class="fas fa-calendar-alt"></i> ${student.enrolled_at}</span>`
+                : '';
             html += `
                 <div class="enrolled-item" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 0.5rem; padding: 0.75rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -717,9 +727,13 @@
                                 ${student.name ? student.name.charAt(0).toUpperCase() : '?'}
                             </div>
                             <div>
-                                <h4 style="font-weight: 600; color: #1e293b; font-size: 0.875rem; margin: 0 0 0.25rem 0;">${student.name}</h4>
+                                <h4 style="font-weight: 600; color: #1e293b; font-size: 0.875rem; margin: 0 0 0.2rem 0;">${student.name}</h4>
                                 <p style="font-size: 0.75rem; color: #64748b; margin: 0;">${student.email}</p>
-                                <p style="font-size: 0.75rem; color: #64748b; margin: 0.125rem 0 0 0;">Student ID: ${student.student_id || 'N/A'}</p>
+                                <p style="font-size: 0.75rem; color: #64748b; margin: 0.1rem 0 0.3rem 0;">Student ID: ${student.student_id || 'N/A'}</p>
+                                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                                    ${enrollerInfo}
+                                    ${enrolledAt}
+                                </div>
                             </div>
                         </div>
                         <button class="btn btn-sm btn-outline" style="color: #ef4444; border-color: #ef4444;" onclick="removeStudentFromView(${student.id}, '${student.name}', '${viewCurrentEncryptedCourseId}')">

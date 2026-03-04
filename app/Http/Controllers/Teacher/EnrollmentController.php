@@ -23,7 +23,12 @@ class EnrollmentController extends Controller
         $teacherId = auth()->id();
 
         $courses = Course::select(['id', 'title', 'course_code', 'is_published', 'credits', 'description'])
-            ->where('teacher_id', $teacherId) // Scope to teacher's own courses
+            ->where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->withCount('students')
             ->orderBy('title')
             ->get();
@@ -41,7 +46,12 @@ class EnrollmentController extends Controller
 
         $selectedCourse = null;
         if ($request->has('course_id')) {
-            $selectedCourse = Course::where('teacher_id', $teacherId)
+            $selectedCourse = Course::where(function($query) use ($teacherId) {
+                    $query->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($q) use ($teacherId) {
+                              $q->where('users.id', $teacherId);
+                          });
+                })
                 ->find($request->course_id);
             if ($selectedCourse) {
                 $selectedCourse->encrypted_id = Crypt::encrypt($selectedCourse->id);
@@ -68,8 +78,15 @@ class EnrollmentController extends Controller
      */
     private function authorizeTeacherCourse($courseId)
     {
+        $teacherId = auth()->id();
+
         $course = Course::where('id', $courseId)
-            ->where('teacher_id', auth()->id())
+            ->where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->first();
 
         if (!$course) {
@@ -163,20 +180,34 @@ class EnrollmentController extends Controller
             $actualCourseId = $this->decryptId($encryptedCourseId);
             $this->authorizeTeacherCourse($actualCourseId);
 
-            $enrolledStudents = User::whereIn('id', function ($query) use ($actualCourseId) {
-                    $query->select('student_id')
-                        ->from('enrollments')
-                        ->where('course_id', $actualCourseId);
-                })
-                ->select(['id', 'f_name', 'l_name', 'email', 'student_id'])
-                ->orderBy('f_name')
+            $enrolledStudents = Enrollment::where('course_id', $actualCourseId)
+                ->with([
+                    'student:id,f_name,l_name,email,student_id',
+                    'enrolledBy:id,f_name,l_name,role',
+                ])
+                ->orderBy('created_at', 'desc')
                 ->get()
-                ->map(function ($student) {
+                ->map(function ($enrollment) {
+                    $roles = [1 => 'Admin', 2 => 'Registrar', 3 => 'Teacher', 4 => 'Student'];
+                    $enroller = $enrollment->enrolledBy;
                     return [
-                        'id'         => $student->id,
-                        'name'       => $student->f_name . ' ' . $student->l_name,
-                        'email'      => $student->email,
-                        'student_id' => $student->student_id,
+                        'id'              => $enrollment->student->id ?? null,
+                        'name'            => $enrollment->student
+                                                ? $enrollment->student->f_name . ' ' . $enrollment->student->l_name
+                                                : 'Unknown',
+                        'email'           => $enrollment->student->email ?? '',
+                        'student_id'      => $enrollment->student->student_id ?? null,
+                        'enrolled_at'     => $enrollment->enrolled_at
+                                                ? $enrollment->enrolled_at->format('M d, Y')
+                                                : ($enrollment->created_at
+                                                    ? $enrollment->created_at->format('M d, Y')
+                                                    : null),
+                        'enrolled_by_name' => $enroller
+                                                ? $enroller->f_name . ' ' . $enroller->l_name
+                                                : null,
+                        'enrolled_by_role' => $enroller
+                                                ? ($roles[$enroller->role] ?? 'User')
+                                                : null,
                     ];
                 });
 
@@ -245,6 +276,7 @@ class EnrollmentController extends Controller
                     'course_id'   => $actualCourseId,
                     'enrolled_at' => now(),
                     'status'      => 'active',
+                    'enrolled_by' => auth()->id(),
                     'created_at'  => now(),
                     'updated_at'  => now(),
                 ];

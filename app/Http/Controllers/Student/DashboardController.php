@@ -100,27 +100,23 @@ class DashboardController extends Controller
                 ? round($totalProgress / count($enrolledCourses), 1) 
                 : 0;
             
-            // Get available quizzes
+            // Get available quizzes (published, not past due_date)
             $availableQuizzes = Quiz::where('is_published', true)
                 ->where(function($query) {
-                    $query->whereNull('available_until')
-                        ->orWhere('available_until', '>', now());
+                    $query->whereNull('due_date')
+                        ->orWhere('due_date', '>', now());
                 })
-                ->where(function($query) {
-                    $query->whereNull('available_from')
-                        ->orWhere('available_from', '<=', now());
-                })
-                ->orderBy('available_from', 'desc')
+                ->latest()
                 ->limit(5)
-                ->get(['id', 'title', 'description', 'available_from', 'available_until']);
-            
-            // Get upcoming quizzes
+                ->get(['id', 'title', 'description', 'due_date']);
+
+            // Get upcoming quizzes (due within next 7 days)
             $upcomingQuizzes = Quiz::where('is_published', true)
-                ->where('available_from', '>', now())
-                ->where('available_from', '<=', now()->addDays(7))
-                ->orderBy('available_from')
+                ->where('due_date', '>', now())
+                ->where('due_date', '<=', now()->addDays(7))
+                ->orderBy('due_date')
                 ->limit(3)
-                ->get(['id', 'title', 'available_from', 'available_until']);
+                ->get(['id', 'title', 'due_date']);
             
             // Get assignments for enrolled courses
             $studentAssignments = Assignment::whereIn('course_id', $enrolledCourseIds)

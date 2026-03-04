@@ -253,7 +253,7 @@
                                 <div class="item-meta">
                                     <span class="item-badge badge-warning">
                                         <i class="fas fa-calendar"></i> 
-                                        {{ $quiz->available_until ? $quiz->available_until->format('M d, Y') : 'No deadline' }}
+                                        {{ $quiz->due_date ? $quiz->due_date->format('M d, Y') : 'No deadline' }}
                                     </span>
                                 </div>
                             </div>

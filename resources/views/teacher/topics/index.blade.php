@@ -151,6 +151,7 @@
                                 <th>Topic Title</th>
                                 <th class="hide-on-mobile">Course(s)</th>
                                 <th class="hide-on-tablet">Created By</th>
+                                <th class="hide-on-tablet">Updated By</th>
                                 <th class="hide-on-tablet">Status</th>
                                 <th class="hide-on-tablet">Created</th>
                             </tr>
@@ -170,17 +171,14 @@
                                 $creatorRole = 'Auto-generated';
                                 $creatorAvatar = 'S';
                                 $creatorColor = '#6b7280';
-                                
+
                                 if($topic->creator) {
                                     $creatorName = $topic->creator->f_name . ' ' . $topic->creator->l_name;
                                     $creatorAvatar = strtoupper(substr($topic->creator->f_name, 0, 1)) . strtoupper(substr($topic->creator->l_name, 0, 1));
-                                    
+
                                     if($topic->creator->role == 1) {
                                         $creatorRole = 'Admin';
                                         $creatorColor = '#ef4444';
-                                    } elseif($topic->creator->role == 2) {
-                                        $creatorRole = 'Registrar';
-                                        $creatorColor = '#3b82f6';
                                     } elseif($topic->creator->role == 3) {
                                         $creatorRole = 'Teacher';
                                         $creatorColor = '#10b981';
@@ -190,6 +188,27 @@
                                     } else {
                                         $creatorRole = 'Staff';
                                         $creatorColor = '#6b7280';
+                                    }
+                                }
+
+                                // Get updater info
+                                $updaterName = null;
+                                $updaterRole = '';
+                                $updaterAvatar = '—';
+                                $updaterColor = '#6b7280';
+
+                                if($topic->updater) {
+                                    $updaterName = $topic->updater->f_name . ' ' . $topic->updater->l_name;
+                                    $updaterAvatar = strtoupper(substr($topic->updater->f_name, 0, 1)) . strtoupper(substr($topic->updater->l_name, 0, 1));
+                                    if($topic->updater->role == 1) {
+                                        $updaterRole = 'Admin';
+                                        $updaterColor = '#ef4444';
+                                    } elseif($topic->updater->role == 3) {
+                                        $updaterRole = 'Teacher';
+                                        $updaterColor = '#10b981';
+                                    } else {
+                                        $updaterRole = 'Staff';
+                                        $updaterColor = '#6b7280';
                                     }
                                 }
                             @endphp
@@ -273,6 +292,21 @@
                                             <div class="creator-role">{{ $creatorRole }}</div>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="hide-on-tablet">
+                                    @if($updaterName)
+                                    <div class="creator-info">
+                                        <div class="creator-avatar mini" style="background: {{ $updaterColor }};">
+                                            {{ $updaterAvatar }}
+                                        </div>
+                                        <div class="creator-details">
+                                            <div class="creator-name">{{ $updaterName }}</div>
+                                            <div class="creator-role">{{ $updaterRole }}</div>
+                                        </div>
+                                    </div>
+                                    @else
+                                        <span style="color:#a0aec0; font-size:0.8rem;">—</span>
+                                    @endif
                                 </td>
                                 <td class="hide-on-tablet">
                                     @if($topic->is_published)

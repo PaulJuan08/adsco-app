@@ -13,6 +13,7 @@ class Enrollment extends Model
         'grade',
         'status',
         'completed_at',
+        'enrolled_by',
     ];
 
     protected $casts = [
@@ -29,6 +30,11 @@ class Enrollment extends Model
     public function course()
     {
         return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function enrolledBy()
+    {
+        return $this->belongsTo(User::class, 'enrolled_by');
     }
     
     /**

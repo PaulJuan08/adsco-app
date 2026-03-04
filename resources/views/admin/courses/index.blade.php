@@ -167,6 +167,14 @@
                                 $teacherFirstName = $course->teacher->f_name ?? '';
                                 $teacherLastName = $course->teacher->l_name ?? '';
                                 $teacherFullName = trim($teacherFirstName . ' ' . $teacherLastName);
+
+                                // Total assigned teachers (primary + pivot, deduplicated)
+                                $pivotTeachers = $course->teachers ?? collect();
+                                $pivotIds = $pivotTeachers->pluck('id')->toArray();
+                                $primaryId = $course->teacher_id;
+                                $totalTeacherCount = count(array_unique(array_filter(
+                                    array_merge($primaryId ? [$primaryId] : [], $pivotIds)
+                                )));
                                 
                                 // Safely get creator info
                                 $creatorName = 'System';
@@ -226,7 +234,11 @@
                                                 <div class="course-code-mobile">
                                                     <i class="fas fa-code"></i> {{ $course->course_code ?? 'No code' }}
                                                 </div>
-                                                @if($course->teacher)
+                                                @if($totalTeacherCount > 1)
+                                                <div class="teacher-mobile">
+                                                    <i class="fas fa-users"></i> {{ $totalTeacherCount }} Teachers
+                                                </div>
+                                                @elseif($course->teacher)
                                                 <div class="teacher-mobile">
                                                     <i class="fas fa-user-tie"></i> {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}
                                                 </div>
@@ -276,20 +288,32 @@
                                     </div>
                                 </td>
                                 <td class="hide-on-tablet">
-                                    @if($course->teacher)
-                                    <div class="teacher-info">
-                                        <div class="teacher-avatar">
-                                            {{ strtoupper(substr($course->teacher->f_name, 0, 1)) }}
+                                    @if($totalTeacherCount > 1)
+                                        <div class="teacher-info">
+                                            <div class="teacher-avatar" style="background: #552b20;">
+                                                {{ $totalTeacherCount }}
+                                            </div>
+                                            <div class="teacher-details">
+                                                <div class="teacher-name">{{ $totalTeacherCount }} Teachers</div>
+                                                @if($course->teacher)
+                                                <div class="teacher-id">Lead: {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
+                                                @endif
+                                            </div>
                                         </div>
-                                        <div class="teacher-details">
-                                            <div class="teacher-name">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
-                                            @if($course->teacher->employee_id)
-                                            <div class="teacher-id">{{ $course->teacher->employee_id }}</div>
-                                            @endif
+                                    @elseif($course->teacher)
+                                        <div class="teacher-info">
+                                            <div class="teacher-avatar">
+                                                {{ strtoupper(substr($course->teacher->f_name, 0, 1)) }}
+                                            </div>
+                                            <div class="teacher-details">
+                                                <div class="teacher-name">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
+                                                @if($course->teacher->employee_id)
+                                                <div class="teacher-id">{{ $course->teacher->employee_id }}</div>
+                                                @endif
+                                            </div>
                                         </div>
-                                    </div>
                                     @else
-                                    <span class="no-teacher">Not assigned</span>
+                                        <span class="no-teacher">Not assigned</span>
                                     @endif
                                 </td>
                                 <td class="hide-on-tablet">
@@ -423,7 +447,15 @@
                         <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $course->course_code ?? '—' }}</td>
                         <td style="padding: 12px; border: 1px solid #e5e7eb;">{{ $creatorName }}{{ $creatorRole }}</td>
                         <td style="padding: 12px; border: 1px solid #e5e7eb;">
-                            @if($course->teacher)
+                            @php
+                                $pPivot = $course->teachers ?? collect();
+                                $pTotal = count(array_unique(array_filter(
+                                    array_merge($course->teacher_id ? [$course->teacher_id] : [], $pPivot->pluck('id')->toArray())
+                                )));
+                            @endphp
+                            @if($pTotal > 1)
+                                {{ $pTotal }} Teachers{{ $course->teacher ? ' (Lead: ' . $course->teacher->f_name . ' ' . $course->teacher->l_name . ')' : '' }}
+                            @elseif($course->teacher)
                                 {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}
                             @else
                                 Not assigned

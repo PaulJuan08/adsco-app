@@ -268,18 +268,12 @@
                         @enderror
                     </div>
 
-                    <!-- Remember Me & Forgot Password (Commented out) -->
-                    <!-- <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label class="form-check-label" for="remember">
-                                Remember me
-                            </label>
-                        </div>
-                        <a href="#" class="auth-link" style="font-size: 0.9rem;">
-                            Forgot Password?
+                    <!-- Forgot Password -->
+                    <div class="form-group" style="text-align: right; margin-top: -0.5rem;">
+                        <a href="{{ route('password.request') }}" class="auth-link" style="font-size: 0.875rem;">
+                            <i class="fas fa-key" style="font-size: 0.75rem;"></i> Forgot Password?
                         </a>
-                    </div> -->
+                    </div>
 
                     <!-- Submit Button -->
                     <button type="submit" class="btn btn-primary btn-block btn-lg">

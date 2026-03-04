@@ -190,40 +190,25 @@
                                 </div>
                             </div> -->
                             
-                            <!-- Availability Settings -->
-                            <!-- <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="available_from" class="form-label">
-                                        <i class="fas fa-calendar-alt"></i> Available From
-                                    </label>
-                                    <input type="datetime-local" 
-                                           id="available_from" 
-                                           name="available_from" 
-                                           value="{{ old('available_from', $quiz->available_from ? $quiz->available_from->format('Y-m-d\TH:i') : '') }}"
-                                           class="form-input @error('available_from') error @enderror">
-                                    @error('available_from')
-                                        <span class="form-error">
-                                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                        </span>
-                                    @enderror
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="available_until" class="form-label">
-                                        <i class="fas fa-calendar-alt"></i> Available Until
-                                    </label>
-                                    <input type="datetime-local" 
-                                           id="available_until" 
-                                           name="available_until" 
-                                           value="{{ old('available_until', $quiz->available_until ? $quiz->available_until->format('Y-m-d\TH:i') : '') }}"
-                                           class="form-input @error('available_until') error @enderror">
-                                    @error('available_until')
-                                        <span class="form-error">
-                                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div> -->
+                            <!-- Due Date -->
+                            <div class="form-group">
+                                <label for="due_date" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Due Date
+                                </label>
+                                <input type="datetime-local"
+                                       id="due_date"
+                                       name="due_date"
+                                       value="{{ old('due_date', $quiz->due_date ? $quiz->due_date->format('Y-m-d\TH:i') : '') }}"
+                                       class="form-input @error('due_date') error @enderror">
+                                @error('due_date')
+                                    <span class="form-error">
+                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                                    </span>
+                                @enderror
+                                <span class="form-help">
+                                    <i class="fas fa-info-circle"></i> After this date, students can no longer access the quiz. Leave empty for no due date.
+                                </span>
+                            </div>
                         </div>
                         
                         <!-- Questions Section -->
@@ -1089,19 +1074,7 @@
                     }
                 }
                 
-                // Validate dates
-                const availableFrom = document.getElementById('available_from').value;
-                const availableUntil = document.getElementById('available_until').value;
-                
-                if (availableFrom && availableUntil) {
-                    if (new Date(availableFrom) > new Date(availableUntil)) {
-                        isValid = false;
-                        errorMessages.push('Available until date must be after available from date.');
-                        document.getElementById('available_until').classList.add('error');
-                    } else {
-                        document.getElementById('available_until').classList.remove('error');
-                    }
-                }
+                // due_date validation is optional — no cross-field check needed
                 
                 // Validate questions
                 questionCards.forEach((card, index) => {

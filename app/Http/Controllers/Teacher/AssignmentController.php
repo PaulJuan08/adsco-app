@@ -35,14 +35,15 @@ class AssignmentController extends Controller
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
             'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
 
-        // Add the teacher ID as the creator
         $validated['created_by'] = $teacherId;
+        $validated['duration'] = $validated['duration'] ?? 60;
+        $validated['passing_score'] = $validated['passing_score'] ?? 70;
 
         Assignment::create($validated);
         
@@ -69,7 +70,7 @@ class AssignmentController extends Controller
         $assignment = Assignment::where('created_by', $teacherId)
                                ->findOrFail($id);
         
-        return view('teacher.assignments.edit', compact('assignment'));
+        return view('teacher.assignments.edit', compact('assignment', 'encryptedId'));
     }
 
     public function update(Request $request, $encryptedId)
@@ -86,11 +87,14 @@ class AssignmentController extends Controller
             'instructions' => 'nullable|string',
             'due_date' => 'nullable|date',
             'points' => 'required|integer|min:1',
+            'duration' => 'nullable|integer|min:1',
+            'passing_score' => 'nullable|integer|min:1|max:100',
             'attachment' => 'nullable|string|max:255',
             'is_published' => 'boolean',
-            'available_from' => 'nullable|date',
-            'available_until' => 'nullable|date',
         ]);
+
+        $validated['duration'] = $validated['duration'] ?? $assignment->duration ?? 60;
+        $validated['passing_score'] = $validated['passing_score'] ?? $assignment->passing_score ?? 70;
 
         $assignment->update($validated);
         

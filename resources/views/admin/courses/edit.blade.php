@@ -182,19 +182,19 @@
                             <div class="form-section-title">
                                 <i class="fas fa-cog"></i> Course Details
                             </div>
-                            
+
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="teacher_id" class="form-label">
-                                        <i class="fas fa-chalkboard-teacher"></i> Assign Teacher
+                                        <i class="fas fa-chalkboard-teacher"></i> Primary Teacher
                                     </label>
-                                    <select id="teacher_id" 
+                                    <select id="teacher_id"
                                             name="teacher_id"
                                             class="form-select @error('teacher_id') error @enderror">
                                         <option value="">-- Select Teacher (Optional) --</option>
                                         @foreach($teachers as $teacher)
                                             <option value="{{ $teacher->id }}" {{ old('teacher_id', $course->teacher_id) == $teacher->id ? 'selected' : '' }}>
-                                                {{ $teacher->f_name }} {{ $teacher->l_name }} 
+                                                {{ $teacher->f_name }} {{ $teacher->l_name }}
                                                 @if($teacher->employee_id)
                                                     ({{ $teacher->employee_id }})
                                                 @endif
@@ -233,6 +233,43 @@
                             </div>
                         </div>
                         
+                        <!-- Additional Teachers Section -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i class="fas fa-users"></i> Additional Teachers
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="fas fa-user-friends"></i> Assign Additional Teachers
+                                </label>
+                                <div style="border: 1px solid #e2e8f0; border-radius: 8px; max-height: 220px; overflow-y: auto; padding: 0.5rem;">
+                                    @forelse($teachers as $teacher)
+                                        <label style="display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; cursor: pointer; border-radius: 6px; transition: background 0.15s;" onmouseover="this.style.background='#f7fafc'" onmouseout="this.style.background='transparent'">
+                                            <input type="checkbox"
+                                                   name="teacher_ids[]"
+                                                   value="{{ $teacher->id }}"
+                                                   {{ in_array($teacher->id, old('teacher_ids', $assignedTeacherIds)) ? 'checked' : '' }}
+                                                   style="width: 16px; height: 16px; accent-color: #552b20; cursor: pointer;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #ddb238; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">
+                                                {{ strtoupper(substr($teacher->f_name, 0, 1)) }}{{ strtoupper(substr($teacher->l_name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 600; font-size: 0.875rem; color: #2d3748;">{{ $teacher->f_name }} {{ $teacher->l_name }}</div>
+                                                @if($teacher->employee_id)
+                                                    <div style="font-size: 0.75rem; color: #718096;">ID: {{ $teacher->employee_id }}</div>
+                                                @endif
+                                            </div>
+                                        </label>
+                                    @empty
+                                        <div style="padding: 1rem; color: #718096; text-align: center;">No teachers available</div>
+                                    @endforelse
+                                </div>
+                                <div class="form-hint">
+                                    <i class="fas fa-info-circle"></i> Selected teachers can view and manage this course
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Hidden fields -->
                         <input type="hidden" name="status" value="active">
                     </form>

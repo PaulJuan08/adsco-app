@@ -16,24 +16,29 @@ class DashboardController extends Controller
     {
         $teacherId = Auth::id();
         
-        // Get teacher's courses with counts
-        $myCourses = Course::where('teacher_id', $teacherId)
+        // Get teacher's courses with counts (primary or additionally assigned)
+        $myCourses = Course::where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->withCount(['enrollments as enrollments_count' => function($query) {
                 $query->where('status', 'active');
             }])
             ->get();
-        
+
+        $myCourseIds = $myCourses->pluck('id')->toArray();
+
         // Get total students across all courses
-        $totalStudents = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
-                $query->select('id')->from('courses')->where('teacher_id', $teacherId);
-            })
+        $totalStudents = Enrollment::whereIn('course_id', $myCourseIds)
             ->where('status', 'active')
             ->distinct('student_id')
             ->count();
-        
+
         // Get upcoming assignments
-        $upcomingAssignments = Assignment::whereHas('course', function($query) use ($teacherId) {
-                $query->where('teacher_id', $teacherId);
+        $upcomingAssignments = Assignment::whereHas('course', function($query) use ($myCourseIds) {
+                $query->whereIn('id', $myCourseIds);
             })
             ->where('due_date', '>', now())
             ->where('is_published', 1)
@@ -41,18 +46,18 @@ class DashboardController extends Controller
             ->orderBy('due_date', 'asc')
             ->take(5)
             ->get();
-        
+
         // Get upcoming quizzes
-        $upcomingQuizzes = Quiz::where('available_until', '>', now())
-            ->where('is_published', 1)
-            ->orderBy('available_until', 'asc')
+        $upcomingQuizzes = Quiz::where('is_published', 1)
+            ->where(function($q) {
+                $q->whereNull('due_date')->orWhere('due_date', '>', now());
+            })
+            ->orderBy('due_date', 'asc')
             ->take(5)
             ->get();
-        
+
         // Get recent enrollments
-        $recentEnrollments = Enrollment::whereIn('course_id', function($query) use ($teacherId) {
-                $query->select('id')->from('courses')->where('teacher_id', $teacherId);
-            })
+        $recentEnrollments = Enrollment::whereIn('course_id', $myCourseIds)
             ->with(['student:id,f_name,l_name', 'course:id,title'])
             ->latest()
             ->take(5)

@@ -1613,3 +1613,51 @@
     opacity: 0;
     transition: opacity 0.3s ease;
 }
+
+/* ── Non-YouTube / multi-type video previews ── */
+.video-brand-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    color: white;
+}
+
+.generic-play-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.yt-preview:hover .generic-play-btn {
+    transform: scale(1.1);
+}
+
+.video-generic-preview {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 320px;
+    color: var(--gray-500);
+    transition: opacity 0.2s;
+}
+.video-generic-preview i     { font-size: 3rem; }
+.video-generic-preview span  { font-size: 1rem; font-weight: 600; color: var(--gray-700); }
+.video-generic-preview small { font-size: 0.75rem; color: var(--gray-400); }
+.video-generic-preview:hover { opacity: 0.8; }
+
+.direct-preview.playing .yt-thumb    { opacity: 1 !important; }
+.direct-preview.playing .yt-play-overlay { opacity: 0; }

@@ -125,25 +125,22 @@
                         </div>
                     </div>
 
-                    <!-- Availability Section -->
-                    @if($quiz->available_from || $quiz->available_until)
+                    <!-- Due Date Section -->
+                    @if($quiz->due_date)
                     <div class="detail-section">
                         <div class="detail-section-title">
-                            <i class="fas fa-calendar-alt"></i> Availability
+                            <i class="fas fa-calendar-alt"></i> Due Date
                         </div>
                         <div class="info-grid">
-                            @if($quiz->available_from)
                             <div class="info-item">
-                                <div class="info-label">Available From</div>
-                                <div class="info-value">{{ $quiz->available_from->format('M d, Y h:i A') }}</div>
+                                <div class="info-label">Due Date</div>
+                                <div class="info-value {{ $quiz->isOverdue() ? 'text-danger' : '' }}">
+                                    {{ $quiz->due_date->format('M d, Y h:i A') }}
+                                    @if($quiz->isOverdue())
+                                        <span class="badge badge-danger" style="margin-left:6px;">Overdue</span>
+                                    @endif
+                                </div>
                             </div>
-                            @endif
-                            @if($quiz->available_until)
-                            <div class="info-item">
-                                <div class="info-label">Available Until</div>
-                                <div class="info-value">{{ $quiz->available_until->format('M d, Y h:i A') }}</div>
-                            </div>
-                            @endif
                         </div>
                     </div>
                     @endif

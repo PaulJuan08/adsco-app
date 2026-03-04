@@ -24,15 +24,20 @@ class CourseController extends Controller
     {
         $teacherId = Auth::id();
         
-        // Get courses with student count and topics count
-        $courses = Course::where('teacher_id', $teacherId)
+        // Get courses with student count and topics count (primary or additionally assigned)
+        $courses = Course::where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->select(['id', 'title', 'course_code', 'description', 'teacher_id', 'is_published', 'credits', 'status', 'created_at', 'updated_at', 'created_by'])
             ->withCount(['students', 'topics'])
             ->with([
                 'teacher' => function($query) {
                     $query->select(['id', 'f_name', 'l_name']);
                 },
-                'creator' => function($query) {  // ADD THIS
+                'creator' => function($query) {
                     $query->select(['id', 'f_name', 'l_name', 'role']);
                 }
             ])
@@ -55,7 +60,12 @@ class CourseController extends Controller
         }
         
         // Get statistics in ONE optimized query
-        $stats = Course::where('teacher_id', $teacherId)
+        $stats = Course::where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->selectRaw('
                 COUNT(*) as total_courses,
                 SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as active_courses,
@@ -70,12 +80,22 @@ class CourseController extends Controller
         
         // Get total topics count for the teacher
         $totalTopics = \App\Models\Topic::whereHas('courses', function($query) use ($teacherId) {
-                $query->where('teacher_id', $teacherId);
+                $query->where(function($q) use ($teacherId) {
+                    $q->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($r) use ($teacherId) {
+                          $r->where('users.id', $teacherId);
+                      });
+                });
             })
             ->count();
-        
+
         // Get draft count for teacher's courses
-        $draftCount = Course::where('teacher_id', $teacherId)
+        $draftCount = Course::where(function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($q) use ($teacherId) {
+                          $q->where('users.id', $teacherId);
+                      });
+            })
             ->where('is_published', false)
             ->count();
         
@@ -132,9 +152,15 @@ class CourseController extends Controller
             
             $course = Cache::remember($cacheKey, 600, function () use ($id, $teacherId) {
                 return Course::where('id', $id)
-                    ->where('teacher_id', $teacherId)
+                    ->where(function($query) use ($teacherId) {
+                        $query->where('teacher_id', $teacherId)
+                              ->orWhereHas('teachers', function($q) use ($teacherId) {
+                                  $q->where('users.id', $teacherId);
+                              });
+                    })
                     ->with([
                         'teacher:id,f_name,l_name',
+                        'teachers:id,f_name,l_name,employee_id',
                         'students:id,f_name,l_name,email',
                         'topics:id,title,content,description,is_published,created_at'
                     ])

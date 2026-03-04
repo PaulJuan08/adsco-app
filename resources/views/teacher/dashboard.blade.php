@@ -254,9 +254,11 @@
                                         <span class="item-badge badge-primary">
                                             <i class="fas fa-question-circle"></i> Quiz
                                         </span>
+                                        @if($quiz->due_date)
                                         <span class="item-badge badge-secondary">
-                                            <i class="fas fa-calendar"></i> Until: {{ $quiz->available_until->format('M d, Y') }}
+                                            <i class="fas fa-calendar"></i> Due: {{ $quiz->due_date->format('M d, Y') }}
                                         </span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

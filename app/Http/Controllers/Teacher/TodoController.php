@@ -699,6 +699,9 @@ class TodoController extends Controller
 
         $quizProgress = collect();
         $assignmentProgress = collect();
+        
+        // Initialize average score
+        $avgScore = null;
 
         if ($type === 'quiz') {
             $query = QuizAttempt::with(['user.college', 'user.program', 'quiz'])
@@ -719,6 +722,22 @@ class TodoController extends Controller
             if ($itemId) $query->where('quiz_id', $itemId);
 
             $quizProgress = $query->latest('completed_at')->paginate(25)->withQueryString();
+            
+            // Calculate average score for quiz attempts
+            $avgScore = QuizAttempt::whereIn('quiz_id', $quizIds)
+                ->whereHas('user', function ($q) use ($collegeId, $programId, $year, $searchName) {
+                    $q->where('role', 4);
+                    if ($collegeId) $q->where('college_id', $collegeId);
+                    if ($programId) $q->where('program_id', $programId);
+                    if ($year) $q->where('college_year', $year);
+                    if ($searchName) {
+                        $q->where(function ($sq) use ($searchName) {
+                            $sq->where('f_name', 'like', "%{$searchName}%")
+                                ->orWhere('l_name', 'like', "%{$searchName}%");
+                        });
+                    }
+                })
+                ->avg('percentage'); // Using 'percentage' column based on your quizShow method
         }
 
         if ($type === 'assignment') {
@@ -740,6 +759,31 @@ class TodoController extends Controller
             if ($itemId) $query->where('assignment_id', $itemId);
 
             $assignmentProgress = $query->latest('submitted_at')->paginate(25)->withQueryString();
+            
+            // Calculate average score for assignment submissions
+            $avgScore = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
+                ->whereHas('student', function ($q) use ($collegeId, $programId, $year, $searchName) {
+                    $q->where('role', 4);
+                    if ($collegeId) $q->where('college_id', $collegeId);
+                    if ($programId) $q->where('program_id', $programId);
+                    if ($year) $q->where('college_year', $year);
+                    if ($searchName) {
+                        $q->where(function ($sq) use ($searchName) {
+                            $sq->where('f_name', 'like', "%{$searchName}%")
+                                ->orWhere('l_name', 'like', "%{$searchName}%");
+                        });
+                    }
+                })
+                ->whereNotNull('score') // Only count graded submissions
+                ->avg('score');
+                
+            // If you need to convert to percentage based on max points
+            if ($avgScore && $itemId) {
+                $assignment = Assignment::find($itemId);
+                if ($assignment && $assignment->points > 0) {
+                    $avgScore = ($avgScore / $assignment->points) * 100;
+                }
+            }
         }
 
         $colleges = College::where('status', 1)->orderBy('college_name')->get();
@@ -753,12 +797,169 @@ class TodoController extends Controller
         $quizList = Quiz::where('created_by', $teacherId)->orderBy('title')->get(['id', 'title']);
         $assignList = Assignment::where('created_by', $teacherId)->orderBy('title')->get(['id', 'title']);
 
+        // Calculate total submissions count
+        $totalSubmissions = $type === 'quiz' 
+            ? QuizAttempt::whereIn('quiz_id', $quizIds)->count()
+            : AssignmentSubmission::whereIn('assignment_id', $assignmentIds)->count();
+
         return view('teacher.todo.progress', compact(
             'type', 'quizProgress', 'assignmentProgress',
             'colleges', 'programs', 'years',
             'collegeId', 'programId', 'year', 'searchName', 'itemId',
-            'quizList', 'assignList'
+            'quizList', 'assignList', 'avgScore', 'totalSubmissions' // Added avgScore and totalSubmissions
         ));
+    }
+
+    public function exportProgress(Request $request)
+    {
+        $teacherId = auth()->id();
+        $type = $request->get('type', 'quiz');
+        $collegeId = $request->get('college_id');
+        $programId = $request->get('program_id');
+        $year = $request->get('year');
+        $searchName = $request->get('search_name');
+        $itemId = $request->get('item_id');
+
+        // Get teacher's quiz and assignment IDs
+        $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
+        $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+
+        $data = [];
+        $filename = 'progress_export_' . now()->format('Y-m-d_His') . '.csv';
+
+        if ($type === 'quiz') {
+            $attempts = QuizAttempt::with(['user.college', 'user.program', 'quiz'])
+                ->whereIn('quiz_id', $quizIds)
+                ->whereHas('user', function ($q) use ($collegeId, $programId, $year, $searchName) {
+                    $q->where('role', 4);
+                    if ($collegeId) $q->where('college_id', $collegeId);
+                    if ($programId) $q->where('program_id', $programId);
+                    if ($year) $q->where('college_year', $year);
+                    if ($searchName) {
+                        $q->where(function ($sq) use ($searchName) {
+                            $sq->where('f_name', 'like', "%{$searchName}%")
+                                ->orWhere('l_name', 'like', "%{$searchName}%");
+                        });
+                    }
+                })
+                ->when($itemId, function ($query) use ($itemId) {
+                    return $query->where('quiz_id', $itemId);
+                })
+                ->latest('completed_at')
+                ->get();
+
+            // Prepare CSV headers
+            $data[] = ['Student Name', 'Student ID', 'College', 'Program', 'Year', 'Quiz Title', 'Score', 'Percentage', 'Passed', 'Completed At'];
+            
+            foreach ($attempts as $attempt) {
+                $data[] = [
+                    $attempt->user->f_name . ' ' . $attempt->user->l_name,
+                    $attempt->user->student_id ?? 'N/A',
+                    $attempt->user->college->college_name ?? 'N/A',
+                    $attempt->user->program->program_name ?? 'N/A',
+                    $attempt->user->college_year ?? 'N/A',
+                    $attempt->quiz->title,
+                    $attempt->score ?? 'N/A',
+                    $attempt->percentage ? round($attempt->percentage) . '%' : 'N/A',
+                    $attempt->passed ? 'Yes' : 'No',
+                    $attempt->completed_at ? $attempt->completed_at->format('Y-m-d H:i:s') : 'N/A'
+                ];
+            }
+        } else {
+            $submissions = AssignmentSubmission::with(['student.college', 'student.program', 'assignment'])
+                ->whereIn('assignment_id', $assignmentIds)
+                ->whereHas('student', function ($q) use ($collegeId, $programId, $year, $searchName) {
+                    $q->where('role', 4);
+                    if ($collegeId) $q->where('college_id', $collegeId);
+                    if ($programId) $q->where('program_id', $programId);
+                    if ($year) $q->where('college_year', $year);
+                    if ($searchName) {
+                        $q->where(function ($sq) use ($searchName) {
+                            $sq->where('f_name', 'like', "%{$searchName}%")
+                                ->orWhere('l_name', 'like', "%{$searchName}%");
+                        });
+                    }
+                })
+                ->when($itemId, function ($query) use ($itemId) {
+                    return $query->where('assignment_id', $itemId);
+                })
+                ->latest('submitted_at')
+                ->get();
+
+            // Prepare CSV headers
+            $data[] = ['Student Name', 'Student ID', 'College', 'Program', 'Year', 'Assignment Title', 'Score', 'Status', 'Submitted At', 'Graded At'];
+            
+            foreach ($submissions as $submission) {
+                $data[] = [
+                    $submission->student->f_name . ' ' . $submission->student->l_name,
+                    $submission->student->student_id ?? 'N/A',
+                    $submission->student->college->college_name ?? 'N/A',
+                    $submission->student->program->program_name ?? 'N/A',
+                    $submission->student->college_year ?? 'N/A',
+                    $submission->assignment->title,
+                    $submission->score ?? 'Not graded',
+                    $submission->status ?? 'N/A',
+                    $submission->submitted_at ? $submission->submitted_at->format('Y-m-d H:i:s') : 'N/A',
+                    $submission->graded_at ? $submission->graded_at->format('Y-m-d H:i:s') : 'N/A'
+                ];
+            }
+        }
+
+        // Create CSV response
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function showStudent($encryptedId)
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+            
+            // Ensure we're only viewing students
+            $student = User::where('role', 4) // role 4 = student
+                ->with(['college', 'program'])
+                ->withCount([
+                    'quizAttempts as total_quizzes_taken',
+                    'assignmentSubmissions as total_assignments_submitted'
+                ])
+                ->findOrFail($id);
+            
+            // Get student's quiz attempts from teacher's quizzes only
+            $teacherId = auth()->id();
+            $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
+            
+            $quizAttempts = QuizAttempt::whereIn('quiz_id', $quizIds)
+                ->where('user_id', $id)
+                ->with('quiz')
+                ->latest('completed_at')
+                ->get();
+            
+            // Get student's assignment submissions from teacher's assignments only
+            $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+            
+            $submissions = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
+                ->where('student_id', $id)
+                ->with('assignment')
+                ->latest('submitted_at')
+                ->get();
+            
+            return view('teacher.students.show', compact('student', 'quizAttempts', 'submissions'));
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Student not found.');
+        }
     }
 
     /**

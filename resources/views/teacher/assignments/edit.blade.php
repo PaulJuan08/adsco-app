@@ -178,10 +178,10 @@
 
                             <div class="form-group">
                                 <label for="points" class="form-label required">Total Points</label>
-                                <input type="number" 
-                                       id="points" 
-                                       name="points" 
-                                       class="form-input @error('points') error @enderror" 
+                                <input type="number"
+                                       id="points"
+                                       name="points"
+                                       class="form-input @error('points') error @enderror"
                                        value="{{ old('points', $assignment->points) }}"
                                        min="1"
                                        required>
@@ -191,6 +191,45 @@
                                         {{ $message }}
                                     </span>
                                 @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="duration" class="form-label">
+                                    <i class="fas fa-clock"></i> Duration (minutes)
+                                </label>
+                                <input type="number"
+                                       id="duration"
+                                       name="duration"
+                                       class="form-input @error('duration') error @enderror"
+                                       value="{{ old('duration', $assignment->duration ?? 60) }}"
+                                       min="1"
+                                       placeholder="60">
+                                @error('duration')
+                                    <span class="form-error">
+                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                                    </span>
+                                @enderror
+                                <span class="form-help">Default: 60 minutes</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="passing_score" class="form-label">
+                                    <i class="fas fa-percent"></i> Passing Score (%)
+                                </label>
+                                <input type="number"
+                                       id="passing_score"
+                                       name="passing_score"
+                                       class="form-input @error('passing_score') error @enderror"
+                                       value="{{ old('passing_score', $assignment->passing_score ?? 70) }}"
+                                       min="1"
+                                       max="100"
+                                       placeholder="70">
+                                @error('passing_score')
+                                    <span class="form-error">
+                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                                    </span>
+                                @enderror
+                                <span class="form-help">Default: 70%</span>
                             </div>
                         </div>
 

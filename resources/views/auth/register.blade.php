@@ -152,7 +152,6 @@
                                 <label for="role" class="form-label">Account Type <span class="required">*</span></label>
                                 <select class="form-select" id="role" name="role" required>
                                     <option value="">Select Role</option>
-                                    <option value="2" {{ old('role') == '2' ? 'selected' : '' }}>Registrar</option>
                                     <option value="3" {{ old('role') == '3' ? 'selected' : '' }}>Teacher</option>
                                     <option value="4" {{ old('role') == '4' ? 'selected' : '' }}>Student</option>
                                 </select>

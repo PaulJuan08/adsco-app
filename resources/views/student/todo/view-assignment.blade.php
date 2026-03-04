@@ -242,6 +242,12 @@
                 <span class="meta-badge">
                     <i class="fas fa-star"></i> {{ $assignment->points }} Points
                 </span>
+                <span class="meta-badge">
+                    <i class="fas fa-clock"></i> {{ $assignment->duration ?? 60 }} min
+                </span>
+                <span class="meta-badge">
+                    <i class="fas fa-trophy"></i> {{ $assignment->passing_score ?? 70 }}% to pass
+                </span>
                 @if($assignment->due_date)
                 <span class="meta-badge">
                     <i class="fas fa-calendar-alt"></i> Due: {{ $assignment->due_date->format('M d, Y h:i A') }}
@@ -308,29 +314,18 @@
                 </div>
                 @endif
 
-                {{-- Availability Section --}}
-                @if($assignment->available_from || $assignment->available_until)
+                {{-- Due Date Section --}}
+                @if($assignment->due_date)
                 <div class="detail-section">
                     <h3 class="detail-section-title">
-                        <i class="fas fa-clock"></i> Availability
+                        <i class="fas fa-clock"></i> Due Date
                     </h3>
                     <div class="info-row">
-                        <span class="info-label">Available From</span>
-                        <span class="info-value">
-                            @if($assignment->available_from)
-                                {{ $assignment->available_from->format('M d, Y h:i A') }}
-                            @else
-                                Immediately
-                            @endif
-                        </span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Available Until</span>
-                        <span class="info-value">
-                            @if($assignment->available_until)
-                                {{ $assignment->available_until->format('M d, Y h:i A') }}
-                            @else
-                                No end date
+                        <span class="info-label">Due Date</span>
+                        <span class="info-value {{ $assignment->isOverdue() ? 'text-danger' : '' }}">
+                            {{ $assignment->due_date->format('M d, Y h:i A') }}
+                            @if($assignment->isOverdue())
+                                <span class="badge badge-danger" style="margin-left:6px;">Overdue</span>
                             @endif
                         </span>
                     </div>

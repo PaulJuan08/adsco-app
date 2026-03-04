@@ -25,18 +25,14 @@ class QuizController extends Controller
         // 🔥 FIX: REMOVE CACHING - Get fresh data every time
         \Log::info('Student quiz index accessed by user: ' . $user->id . ' - ' . $user->email);
         
-        // Get all published and available quizzes
+        // Get all published quizzes that are not past due_date
         $quizzes = Quiz::where('is_published', 1)
             ->where(function($query) use ($now) {
-                $query->whereNull('available_from')
-                    ->orWhere('available_from', '<=', $now);
-            })
-            ->where(function($query) use ($now) {
-                $query->whereNull('available_until')
-                    ->orWhere('available_until', '>=', $now);
+                $query->whereNull('due_date')
+                    ->orWhere('due_date', '>=', $now);
             })
             ->withCount('questions')
-            ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until', 'created_at'])
+            ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'due_date', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -82,25 +78,14 @@ class QuizController extends Controller
                               ->select(['id', 'quiz_question_id', 'option_text', 'is_correct', 'order']);
                     }])
                     ->where('is_published', 1)
-                    ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'available_from', 'available_until'])
+                    ->select(['id', 'title', 'description', 'duration', 'total_questions', 'passing_score', 'due_date'])
                     ->findOrFail($quizId);
             });
-            
-            // Check if quiz is available
-            $now = now();
-            $isAvailable = true;
-            
-            if ($quiz->available_from && $quiz->available_from > $now) {
-                $isAvailable = false;
-            }
-            
-            if ($quiz->available_until && $quiz->available_until < $now) {
-                $isAvailable = false;
-            }
-            
-            if (!$isAvailable) {
+
+            // Block access if quiz is past due date
+            if ($quiz->isOverdue()) {
                 return redirect()->route('student.quizzes.index')
-                    ->with('error', 'This quiz is not currently available.');
+                    ->with('error', 'This quiz is no longer available (past due date).');
             }
             
             // Get incomplete attempt or create new one

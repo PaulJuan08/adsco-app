@@ -9,10 +9,6 @@
         @include('components.sidebar-admin')
         @break
         
-    @case('registrar')
-        @include('components.sidebar-registrar')
-        @break
-        
     @case('teacher')
         @include('components.sidebar-teacher')
         @break
