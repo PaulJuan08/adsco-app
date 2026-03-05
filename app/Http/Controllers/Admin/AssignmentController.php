@@ -33,6 +33,7 @@ class AssignmentController extends Controller
             'is_published' => 'boolean',
         ]);
 
+        $validated['created_by'] = auth()->id();
         $validated['duration'] = $validated['duration'] ?? 60;
         $validated['passing_score'] = $validated['passing_score'] ?? 70;
 
@@ -75,6 +76,7 @@ class AssignmentController extends Controller
 
         $validated['duration'] = $validated['duration'] ?? $assignment->duration ?? 60;
         $validated['passing_score'] = $validated['passing_score'] ?? $assignment->passing_score ?? 70;
+        $validated['updated_by'] = auth()->id();
 
         $assignment->update($validated);
         

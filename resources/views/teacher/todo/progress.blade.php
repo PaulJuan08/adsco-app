@@ -230,7 +230,7 @@
                 <i class="fas fa-star"></i>
             </div>
             <div class="stat-content">
-                <div class="stat-value">{{ $avgGrade ? round($avgGrade) . '%' : 'N/A' }}</div>
+                <div class="stat-value">{{ $avgScore ? round($avgScore) . '%' : 'N/A' }}</div>
                 <div class="stat-label">Average Grade</div>
             </div>
         </div>
@@ -250,14 +250,6 @@
         {{ $type === 'quiz' ? $quizProgress->appends(request()->query())->links() : $assignmentProgress->appends(request()->query())->links() }}
     </div>
     @endif
-
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Student Progress • Updated {{ now()->format('M d, Y h:i A') }}
-        </p>
-    </footer>
 </div>
 @endsection
 

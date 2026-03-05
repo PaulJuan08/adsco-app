@@ -35,6 +35,9 @@
                         <i class="fas fa-eye"></i> Publish
                     </button>
                 @endif
+                <a href="{{ route('teacher.courses.discussions', $encryptedId) }}" class="top-action-btn">
+                    <i class="fas fa-comments"></i> Discussion
+                </a>
                 <a href="{{ route('teacher.courses.edit', $encryptedId) }}" class="top-action-btn">
                     <i class="fas fa-edit"></i> Edit
                 </a>
@@ -322,6 +325,24 @@
                             <span class="val">
                                 {{ $course->created_at->format('M d, Y') }}
                                 <span style="display:block; font-size:0.7rem; color:#718096;">{{ $course->created_at->diffForHumans() }}</span>
+                            </span>
+                        </div>
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-user-edit"></i> Last Updated By</span>
+                            <span class="val">
+                                @if($course->updater)
+                                    {{ $course->updater->f_name }} {{ $course->updater->l_name }}
+                                    <span style="display:block; font-size:0.7rem; color:#718096;">
+                                        @switch($course->updater->role)
+                                            @case(1) Admin @break
+                                            @case(2) Registrar @break
+                                            @case(3) Teacher @break
+                                            @default User
+                                        @endswitch
+                                    </span>
+                                @else
+                                    <span style="color:#a0aec0;">Not yet updated</span>
+                                @endif
                             </span>
                         </div>
                     </div>

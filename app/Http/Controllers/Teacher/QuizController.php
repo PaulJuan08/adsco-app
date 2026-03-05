@@ -18,16 +18,34 @@ class QuizController extends Controller
 {
     use CacheManager;
     
+    /**
+     * Returns a base query scoped to quizzes the teacher has access to:
+     * created by them, OR belonging to a course they are assigned to.
+     */
+    private function teacherQuizQuery($teacherId)
+    {
+        return Quiz::where(function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId)
+              ->orWhereHas('course', function ($cq) use ($teacherId) {
+                  $cq->where('teacher_id', $teacherId)
+                     ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                         $tq->where('users.id', $teacherId);
+                     });
+              });
+        });
+    }
+
     public function index()
     {
         $teacherId = Auth::id();
-        
-        // 🔥 FIX: REMOVE CACHING - Get fresh data every time
-        $quizzes = Quiz::select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_at', 'updated_at'])
+
+        $quizzes = $this->teacherQuizQuery($teacherId)
+            ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_by', 'created_at', 'updated_at', 'updated_by'])
+            ->with('creator', 'updater')
             ->withCount('questions')
             ->latest()
             ->paginate(10);
-        
+
         return view('teacher.quizzes.index', compact('quizzes'));
     }
 
@@ -131,14 +149,17 @@ class QuizController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
+            // Verify access before caching
+            $this->teacherQuizQuery($teacherId)->where('id', $id)->firstOrFail();
+
             $cacheKey = 'teacher_quiz_show_' . $id . '_teacher_' . $teacherId;
-            
+
             $quiz = Cache::remember($cacheKey, 600, function() use ($id) {
                 return Quiz::with(['questions.options' => function($query) {
                         $query->select(['id', 'quiz_question_id', 'option_text', 'is_correct', 'order']);
-                    }])
-                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'due_date', 'created_at', 'updated_at'])
+                    }, 'creator', 'updater'])
+                    ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'due_date', 'created_by', 'updated_by', 'created_at', 'updated_at'])
                     ->withCount('questions')
                     ->findOrFail($id);
             });
@@ -172,16 +193,19 @@ class QuizController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
+            // Verify access
+            $this->teacherQuizQuery($teacherId)->where('id', $id)->firstOrFail();
+
             $cacheKey = 'teacher_quiz_edit_' . $id . '_teacher_' . $teacherId;
-            
+
             $quiz = Cache::remember($cacheKey, 300, function() use ($id) {
                 return Quiz::with(['questions.options' => function($query) {
                         $query->orderBy('order');
                     }])
                     ->findOrFail($id);
             });
-            
+
             return view('teacher.quizzes.edit', compact('quiz'));
             
         } catch (\Exception $e) {
@@ -201,8 +225,10 @@ class QuizController extends Controller
         DB::beginTransaction();
         try {
             $quizId = Crypt::decrypt($id);
-            $quiz = Quiz::findOrFail($quizId);
             $teacherId = Auth::id();
+
+            // Verify teacher has access to this quiz
+            $quiz = $this->teacherQuizQuery($teacherId)->where('id', $quizId)->firstOrFail();
             
             // Validate basic quiz info
             $request->validate([
@@ -218,10 +244,12 @@ class QuizController extends Controller
             $quiz->update([
                 'title' => $request->title,
                 'description' => $request->description,
+                'is_published' => $request->has('is_published') ? 1 : 0,
                 'duration' => $request->duration ?? $quiz->duration,
                 'total_questions' => $request->total_questions ?? $quiz->total_questions,
                 'passing_score' => $request->passing_score ?? $quiz->passing_score,
                 'due_date' => $request->due_date,
+                'updated_by' => $teacherId,
             ]);
             
             // Process questions
@@ -371,8 +399,8 @@ class QuizController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $quiz = Quiz::findOrFail($id);
             $teacherId = Auth::id();
+            $quiz = $this->teacherQuizQuery($teacherId)->where('id', $id)->firstOrFail();
             
             $quiz->delete();
             

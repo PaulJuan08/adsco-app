@@ -4,6 +4,114 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/topic-index.css') }}">
+<style>
+.topics-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    padding: .25rem 0;
+}
+.topic-card-item {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #f0ebe8;
+    box-shadow: 0 2px 10px rgba(85,43,32,.07);
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+    display: flex;
+    flex-direction: column;
+}
+.topic-card-item:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(85,43,32,.13); }
+.topic-card-thumb {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+    cursor: pointer;
+    overflow: hidden;
+    background: #1a1a2e;
+}
+.topic-card-thumb img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .3s;
+}
+.topic-card-item:hover .topic-card-thumb img { transform: scale(1.04); }
+.topic-card-thumb-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.45);
+}
+.topic-card-thumb-placeholder.topic-1 { background: linear-gradient(135deg,#4f46e5,#7c3aed); }
+.topic-card-thumb-placeholder.topic-2 { background: linear-gradient(135deg,#0891b2,#0e7490); }
+.topic-card-thumb-placeholder.topic-3 { background: linear-gradient(135deg,#059669,#047857); }
+.topic-card-play {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.85);
+    font-size: 2.5rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,.4);
+    transition: color .2s;
+}
+.topic-card-item:hover .topic-card-play { color: #fff; }
+.topic-card-status {
+    position: absolute;
+    top: .6rem; right: .6rem;
+    font-size: .65rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+    display: flex; align-items: center; gap: .3rem;
+}
+.topic-card-status.published { background: #d1fae5; color: #065f46; }
+.topic-card-status.draft     { background: #fef3c7; color: #92400e; }
+.topic-card-body { padding: .85rem 1rem; flex: 1; }
+.topic-card-title {
+    font-size: .92rem; font-weight: 700; color: #1a202c;
+    margin: 0 0 .4rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.topic-card-course {
+    font-size: .75rem; color: #718096;
+    display: flex; align-items: center; gap: .3rem;
+    margin-bottom: .5rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.topic-card-badges { display: flex; flex-wrap: wrap; gap: .3rem; }
+.topic-badge {
+    font-size: .65rem; font-weight: 600;
+    padding: 2px 7px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: .25rem;
+}
+.topic-badge.video      { background: #fee2e2; color: #dc2626; }
+.topic-badge.attachment { background: #dbeafe; color: #1d4ed8; }
+.topic-badge.time       { background: #f3f4f6; color: #6b7280; }
+.topic-card-footer {
+    padding: .65rem 1rem;
+    border-top: 1px solid #f7f0ec;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: .5rem;
+}
+.topic-card-creator {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .72rem; color: #718096;
+    min-width: 0;
+}
+.topic-card-creator span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.topic-card-date { font-size: .68rem; color: #a0aec0; }
+.topic-card-actions { display: flex; gap: .3rem; }
+.btn-card-action {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .75rem;
+    border: none; cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+}
+.btn-card-edit { background: #fef3c7; color: #d97706; }
+.btn-card-edit:hover { background: #d97706; color: #fff; }
+.btn-card-view { background: #eff6ff; color: #3b82f6; }
+.btn-card-view:hover { background: #3b82f6; color: #fff; }
+</style>
 @endpush
 
 @section('content')
@@ -144,184 +252,143 @@
                     </div>
                 </div>
             @else
-                <div class="table-responsive">
-                    <table class="topics-table" id="topics-table">
-                        <thead>
-                            <tr>
-                                <th>Topic Title</th>
-                                <th class="hide-on-mobile">Course(s)</th>
-                                <th class="hide-on-tablet">Created By</th>
-                                <th class="hide-on-tablet">Updated By</th>
-                                <th class="hide-on-tablet">Status</th>
-                                <th class="hide-on-tablet">Created</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($topics as $topic)
-                            @php
-                                try { $encryptedId = Crypt::encrypt($topic->id); }
-                                catch (\Exception $e) { $encryptedId = ''; }
-                                
-                                // Get primary course (first course in the relationship)
-                                $primaryCourse = $topic->primary_course;
-                                $courseCount = $topic->courses->count();
-                                
-                                // Get creator info
-                                $creatorName = 'System';
-                                $creatorRole = 'Auto-generated';
-                                $creatorAvatar = 'S';
+                <div class="topics-card-grid" id="topics-table">
+                    @foreach($topics as $topic)
+                    @php
+                        try { $encryptedId = Crypt::encrypt($topic->id); }
+                        catch (\Exception $e) { $encryptedId = ''; }
+
+                        // Get primary course (first course in the relationship)
+                        $primaryCourse = $topic->primary_course;
+                        $courseCount = $topic->courses->count();
+
+                        // Get creator info
+                        $creatorName = 'System';
+                        $creatorRole = 'Auto-generated';
+                        $creatorAvatar = 'S';
+                        $creatorColor = '#6b7280';
+
+                        if($topic->creator) {
+                            $creatorName = $topic->creator->f_name . ' ' . $topic->creator->l_name;
+                            $creatorAvatar = strtoupper(substr($topic->creator->f_name, 0, 1)) . strtoupper(substr($topic->creator->l_name, 0, 1));
+
+                            if($topic->creator->role == 1) {
+                                $creatorRole = 'Admin';
+                                $creatorColor = '#ef4444';
+                            } elseif($topic->creator->role == 3) {
+                                $creatorRole = 'Teacher';
+                                $creatorColor = '#10b981';
+                            } elseif($topic->creator->role == 4) {
+                                $creatorRole = 'Student';
+                                $creatorColor = '#8b5cf6';
+                            } else {
+                                $creatorRole = 'Staff';
                                 $creatorColor = '#6b7280';
+                            }
+                        }
 
-                                if($topic->creator) {
-                                    $creatorName = $topic->creator->f_name . ' ' . $topic->creator->l_name;
-                                    $creatorAvatar = strtoupper(substr($topic->creator->f_name, 0, 1)) . strtoupper(substr($topic->creator->l_name, 0, 1));
+                        // Get updater info
+                        $updaterName = null;
+                        $updaterRole = '';
+                        $updaterAvatar = '—';
+                        $updaterColor = '#6b7280';
 
-                                    if($topic->creator->role == 1) {
-                                        $creatorRole = 'Admin';
-                                        $creatorColor = '#ef4444';
-                                    } elseif($topic->creator->role == 3) {
-                                        $creatorRole = 'Teacher';
-                                        $creatorColor = '#10b981';
-                                    } elseif($topic->creator->role == 4) {
-                                        $creatorRole = 'Student';
-                                        $creatorColor = '#8b5cf6';
-                                    } else {
-                                        $creatorRole = 'Staff';
-                                        $creatorColor = '#6b7280';
-                                    }
-                                }
-
-                                // Get updater info
-                                $updaterName = null;
-                                $updaterRole = '';
-                                $updaterAvatar = '—';
+                        if($topic->updater) {
+                            $updaterName = $topic->updater->f_name . ' ' . $topic->updater->l_name;
+                            $updaterAvatar = strtoupper(substr($topic->updater->f_name, 0, 1)) . strtoupper(substr($topic->updater->l_name, 0, 1));
+                            if($topic->updater->role == 1) {
+                                $updaterRole = 'Admin';
+                                $updaterColor = '#ef4444';
+                            } elseif($topic->updater->role == 3) {
+                                $updaterRole = 'Teacher';
+                                $updaterColor = '#10b981';
+                            } else {
+                                $updaterRole = 'Staff';
                                 $updaterColor = '#6b7280';
+                            }
+                        }
 
-                                if($topic->updater) {
-                                    $updaterName = $topic->updater->f_name . ' ' . $topic->updater->l_name;
-                                    $updaterAvatar = strtoupper(substr($topic->updater->f_name, 0, 1)) . strtoupper(substr($topic->updater->l_name, 0, 1));
-                                    if($topic->updater->role == 1) {
-                                        $updaterRole = 'Admin';
-                                        $updaterColor = '#ef4444';
-                                    } elseif($topic->updater->role == 3) {
-                                        $updaterRole = 'Teacher';
-                                        $updaterColor = '#10b981';
-                                    } else {
-                                        $updaterRole = 'Staff';
-                                        $updaterColor = '#6b7280';
-                                    }
-                                }
-                            @endphp
-                            <tr class="clickable-row"
-                                data-href="{{ $encryptedId ? route('admin.topics.show', ['encryptedId' => $encryptedId]) : '#' }}"
-                                data-title="{{ strtolower($topic->title) }}"
-                                data-course="{{ strtolower($primaryCourse->title ?? '') }}"
-                                data-course-id="{{ $primaryCourse->id ?? '' }}"
-                                data-creator="{{ strtolower($creatorName) }}"
-                                data-topic-id="{{ $topic->id }}"
-                                data-encrypted="{{ $encryptedId }}">
-                                <td>
-                                    <div class="topic-info-cell">
-                                        <div class="topic-icon topic-{{ ($loop->index % 3) + 1 }}">
-                                            <i class="fas fa-file-alt"></i>
-                                        </div>
-                                        <div class="topic-details">
-                                            <div class="topic-name">{{ $topic->title }}</div>
-                                            @if($topic->hasVideo())
-                                            <div class="topic-video-indicator">
-                                                <i class="fas fa-video"></i> Has video content
-                                            </div>
-                                            @endif
-                                            @if($topic->estimated_time)
-                                            <div class="topic-time-indicator">
-                                                <i class="fas fa-clock"></i> {{ $topic->formatted_estimated_time }}
-                                            </div>
-                                            @endif
-                                            <div class="topic-mobile-info">
-                                                @if($primaryCourse)
-                                                <div class="course-mobile">
-                                                    <i class="fas fa-book"></i> {{ Str::limit($primaryCourse->title, 30) }}
-                                                    @if($courseCount > 1)
-                                                    <span class="badge-count">+{{ $courseCount - 1 }}</span>
-                                                    @endif
-                                                </div>
-                                                @else
-                                                <div class="course-mobile">
-                                                    <i class="fas fa-book"></i> No course
-                                                </div>
-                                                @endif
-                                                <div class="creator-mobile">
-                                                    <i class="fas fa-user"></i> {{ $creatorName }}
-                                                </div>
-                                                @if($topic->is_published)
-                                                    <span class="item-badge badge-success"><i class="fas fa-check-circle"></i> Published</span>
-                                                @else
-                                                    <span class="item-badge badge-warning"><i class="fas fa-clock"></i> Draft</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="hide-on-mobile">
+                        // YouTube thumbnail extraction
+                        $videoLink = $topic->video_link ?? '';
+                        $youtubeThumbnail = null;
+                        if ($videoLink) {
+                            if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_\-]{11})/', $videoLink, $m)) {
+                                $youtubeThumbnail = 'https://img.youtube.com/vi/' . $m[1] . '/mqdefault.jpg';
+                            }
+                        }
+                    @endphp
+                    <div class="topic-card-item"
+                        data-title="{{ strtolower($topic->title) }}"
+                        data-course="{{ strtolower($primaryCourse->title ?? '') }}"
+                        data-course-id="{{ $primaryCourse->id ?? '' }}"
+                        data-creator="{{ strtolower($creatorName) }}"
+                        data-topic-id="{{ $topic->id }}"
+                        data-encrypted="{{ $encryptedId }}">
+
+                        {{-- Thumbnail --}}
+                        <a href="{{ $encryptedId ? route('admin.topics.show', ['encryptedId' => $encryptedId]) : '#' }}" class="topic-card-thumb" style="display:block;">
+                            @if($youtubeThumbnail)
+                                <img src="{{ $youtubeThumbnail }}" alt="{{ $topic->title }}" loading="lazy">
+                                <div class="topic-card-play"><i class="fab fa-youtube"></i></div>
+                            @else
+                                <div class="topic-card-thumb-placeholder topic-{{ ($loop->index % 3) + 1 }}">
+                                    <i class="fas fa-{{ $topic->hasVideo() ? 'play-circle' : 'chalkboard' }}" style="font-size:3rem;"></i>
+                                </div>
+                                @if($topic->hasVideo())
+                                <div class="topic-card-play"><i class="fas fa-play-circle"></i></div>
+                                @endif
+                            @endif
+                            <span class="topic-card-status {{ $topic->is_published ? 'published' : 'draft' }}">
+                                <i class="fas fa-{{ $topic->is_published ? 'check-circle' : 'clock' }}"></i>
+                                {{ $topic->is_published ? 'Published' : 'Draft' }}
+                            </span>
+                        </a>
+
+                        {{-- Card body --}}
+                        <div class="topic-card-body">
+                            <p class="topic-card-title">{{ $topic->title }}</p>
+                            <div class="topic-card-course">
+                                <i class="fas fa-book" style="flex-shrink:0;"></i>
+                                <span style="overflow:hidden;text-overflow:ellipsis;">
                                     @if($primaryCourse)
-                                    <div class="course-info">
-                                        <div class="course-avatar">
-                                            {{ strtoupper(substr($primaryCourse->title, 0, 1)) }}
-                                        </div>
-                                        <div class="course-details">
-                                            <div class="course-name">{{ Str::limit($primaryCourse->title, 25) }}</div>
-                                            <div class="course-code">{{ $primaryCourse->course_code }}</div>
-                                            @if($courseCount > 1)
-                                            <div class="course-count">
-                                                <i class="fas fa-layer-group"></i> +{{ $courseCount - 1 }} more
-                                            </div>
-                                            @endif
-                                        </div>
-                                    </div>
+                                        {{ Str::limit($primaryCourse->title, 30) }}
+                                        @if($courseCount > 1)
+                                            <span style="color:#a0aec0;">+{{ $courseCount - 1 }} more</span>
+                                        @endif
                                     @else
-                                    <span class="no-course">No course assigned</span>
+                                        No course assigned
                                     @endif
-                                </td>
-                                <td class="hide-on-tablet">
-                                    <div class="creator-info">
-                                        <div class="creator-avatar mini" style="background: {{ $creatorColor }};">
-                                            {{ $creatorAvatar }}
-                                        </div>
-                                        <div class="creator-details">
-                                            <div class="creator-name">{{ $creatorName }}</div>
-                                            <div class="creator-role">{{ $creatorRole }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="hide-on-tablet">
-                                    @if($updaterName)
-                                    <div class="creator-info">
-                                        <div class="creator-avatar mini" style="background: {{ $updaterColor }};">
-                                            {{ $updaterAvatar }}
-                                        </div>
-                                        <div class="creator-details">
-                                            <div class="creator-name">{{ $updaterName }}</div>
-                                            <div class="creator-role">{{ $updaterRole }}</div>
-                                        </div>
-                                    </div>
-                                    @else
-                                        <span style="color:#a0aec0; font-size:0.8rem;">—</span>
-                                    @endif
-                                </td>
-                                <td class="hide-on-tablet">
-                                    @if($topic->is_published)
-                                        <span class="item-badge badge-success"><i class="fas fa-check-circle"></i> Published</span>
-                                    @else
-                                        <span class="item-badge badge-warning"><i class="fas fa-clock"></i> Draft</span>
-                                    @endif
-                                </td>
-                                <td class="hide-on-tablet">
-                                    <span class="item-date">{{ $topic->created_at->format('M d, Y') }}</span>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                </span>
+                            </div>
+                            <div class="topic-card-badges">
+                                @if($topic->hasVideo())
+                                    <span class="topic-badge video topic-video-indicator"><i class="fas fa-video"></i> Video</span>
+                                @endif
+                                @if($topic->hasAttachment())
+                                    <span class="topic-badge attachment topic-attachment-indicator"><i class="fas fa-paperclip"></i> Attachment</span>
+                                @endif
+                                @if($topic->estimated_time)
+                                    <span class="topic-badge time"><i class="fas fa-clock"></i> {{ $topic->formatted_estimated_time }}</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Card footer --}}
+                        <div class="topic-card-footer">
+                            <div class="topic-card-creator">
+                                <div class="creator-avatar mini" style="background:{{ $creatorColor }};width:22px;height:22px;font-size:.6rem;flex-shrink:0;">{{ $creatorAvatar }}</div>
+                                <span>{{ $creatorName }}</span>
+                            </div>
+                            <span class="topic-card-date item-date">{{ $topic->created_at->format('M d, Y') }}</span>
+                            <div class="topic-card-actions">
+                                @if($encryptedId)
+                                    <a href="{{ route('admin.topics.edit', ['encryptedId' => $encryptedId]) }}" class="btn-card-action btn-card-edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
+                                    <a href="{{ route('admin.topics.show', ['encryptedId' => $encryptedId]) }}" class="btn-card-action btn-card-view" title="View"><i class="fas fa-eye"></i></a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
             @endif
         </div>
@@ -355,14 +422,6 @@
         </div>
         @endif
     </div>
-
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Topic Management • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
 
     <!-- Hidden Print Content -->
     <div id="print-content" style="display: none;">
@@ -466,16 +525,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Clickable rows
-    document.querySelectorAll('.clickable-row').forEach(row => {
-        row.style.cursor = 'pointer';
-        row.addEventListener('click', function (e) {
-            if (e.target.closest('a, button')) return;
-            const href = this.dataset.href;
-            if (href && href !== '#') window.location.href = href;
-        });
-    });
-
     // Search + course filter
     const searchInput = document.getElementById('search-topics');
     const courseFilter = document.getElementById('course-filter');
@@ -483,13 +532,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function filterRows() {
         const term = searchInput?.value.toLowerCase() ?? '';
         const courseId = courseFilter?.value ?? '';
-        document.querySelectorAll('.clickable-row').forEach(row => {
-            const matchSearch = !term || 
-                row.dataset.title.includes(term) || 
-                (row.dataset.course && row.dataset.course.includes(term)) ||
-                (row.dataset.creator && row.dataset.creator.includes(term));
-            const matchCourse = !courseId || row.dataset.courseId === courseId;
-            row.style.display = matchSearch && matchCourse ? '' : 'none';
+        document.querySelectorAll('.topic-card-item').forEach(card => {
+            const matchSearch = !term ||
+                card.dataset.title.includes(term) ||
+                (card.dataset.course && card.dataset.course.includes(term)) ||
+                (card.dataset.creator && card.dataset.creator.includes(term));
+            const matchCourse = !courseId || card.dataset.courseId === courseId;
+            card.style.display = matchSearch && matchCourse ? '' : 'none';
         });
     }
 
@@ -525,56 +574,37 @@ document.addEventListener('DOMContentLoaded', function () {
     // Export CSV
     document.getElementById('export-csv')?.addEventListener('click', function () {
         const rows = [['Topic Title', 'Course(s)', 'Created By', 'Has Video', 'Has Attachment', 'Status', 'Created']];
-        document.querySelectorAll('#topics-table tbody tr').forEach(row => {
-            if (row.style.display === 'none') return;
-            
-            // Get course names
-            const courseCell = row.querySelector('.course-info');
-            let courseText = 'No course assigned';
-            if (courseCell) {
-                const courseName = courseCell.querySelector('.course-name')?.textContent.trim() || '';
-                const courseCode = courseCell.querySelector('.course-code')?.textContent.trim() || '';
-                const courseCount = courseCell.querySelector('.course-count')?.textContent.trim() || '';
-                courseText = courseName + (courseCode ? ' (' + courseCode + ')' : '') + (courseCount ? ' ' + courseCount : '');
-            }
-            
-            // Get creator name
-            const creatorCell = row.querySelector('.creator-info');
-            let creatorText = 'System';
-            if (creatorCell) {
-                const creatorName = creatorCell.querySelector('.creator-name')?.textContent.trim() || 'System';
-                creatorText = creatorName;
-            }
-            
-            // Get has video status
-            const hasVideo = row.querySelector('.topic-video-indicator') ? 'Yes' : 'No';
-            
-            // Get has attachment status
-            const hasAttachment = row.querySelector('.topic-attachment-indicator') ? 'Yes' : 'No';
-            
-            // Get status
-            const statusBadge = row.querySelector('.item-badge');
+        document.querySelectorAll('.topic-card-item').forEach(card => {
+            if (card.style.display === 'none') return;
+
+            // Title
+            const title = card.querySelector('.topic-card-title')?.textContent.trim() || '';
+
+            // Course
+            const courseText = card.querySelector('.topic-card-course span')?.textContent.trim() || 'No course assigned';
+
+            // Creator
+            const creatorText = card.querySelector('.topic-card-creator span')?.textContent.trim() || 'System';
+
+            // Badges
+            const hasVideo = card.querySelector('.topic-video-indicator') ? 'Yes' : 'No';
+            const hasAttachment = card.querySelector('.topic-attachment-indicator') ? 'Yes' : 'No';
+
+            // Status
+            const statusBadge = card.querySelector('.topic-card-status');
             const status = statusBadge ? statusBadge.textContent.trim() : 'Unknown';
-            
-            // Get date
-            const dateCell = row.querySelector('.item-date');
-            const date = dateCell ? dateCell.textContent.trim() : '';
-            
-            rows.push([
-                row.querySelector('.topic-name')?.textContent.trim() || '',
-                courseText,
-                creatorText,
-                hasVideo,
-                hasAttachment,
-                status,
-                date
-            ].map(v => `"${v.replace(/"/g, '""')}"`));
+
+            // Date
+            const date = card.querySelector('.item-date')?.textContent.trim() || '';
+
+            rows.push([title, courseText, creatorText, hasVideo, hasAttachment, status, date]
+                .map(v => `"${v.replace(/"/g, '""')}"`));
         });
-        
+
         const blob = new Blob(['\uFEFF' + rows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const a = Object.assign(document.createElement('a'), { 
-            href: URL.createObjectURL(blob), 
-            download: `topics_${new Date().toISOString().slice(0,10)}.csv` 
+        const a = Object.assign(document.createElement('a'), {
+            href: URL.createObjectURL(blob),
+            download: `topics_${new Date().toISOString().slice(0,10)}.csv`
         });
         document.body.appendChild(a); a.click(); a.remove();
     });

@@ -185,6 +185,7 @@ class QuizController extends Controller
                 'total_questions' => $request->total_questions ?? $quiz->total_questions,
                 'passing_score' => $request->passing_score ?? $quiz->passing_score,
                 'due_date' => $request->due_date,
+                'updated_by' => auth()->id(),
             ]);
             
             // Process questions (rest of your code remains the same)

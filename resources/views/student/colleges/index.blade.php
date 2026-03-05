@@ -134,10 +134,6 @@
         @endif
     @endif
 
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-    </footer>
 </div>
 @endsection
 

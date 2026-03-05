@@ -79,7 +79,7 @@
             transform: scale(1.1);
         }
         
-        @keyframes pulse {
+        @@keyframes pulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
             }
@@ -127,7 +127,7 @@
             animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
         }
         
-        @keyframes shake {
+        @@keyframes shake {
             10%, 90% {
                 transform: translateX(-1px);
             }
@@ -233,8 +233,10 @@
                         <div class="sidebar-user-avatar">
                             @if(Auth::user()->avatar)
                                 <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                            @elseif(Auth::user()->sex === 'female')
+                                <i class="fas fa-person-dress" style="font-size:1.25rem;"></i>
                             @else
-                                {{ strtoupper(substr(Auth::user()->f_name ?? 'S', 0, 1)) }}
+                                <i class="fas fa-person" style="font-size:1.25rem;"></i>
                             @endif
                         </div>
                         <div class="sidebar-user-details">
@@ -254,12 +256,31 @@
             </div>
         </aside>
         
+        <!-- Mobile sidebar toggle -->
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Main Content -->
-        <div class="content-wrapper">
-            @yield('content')
+        <div class="content-wrapper" style="display:flex; flex-direction:column; min-height:100vh;">
+            @include('components.announcement-banner')
+            <div style="flex:1;">
+                @yield('content')
+            </div>
+            @include('components.dashboard-footer')
         </div>
     </div>
-    
+
     @stack('scripts')
+
+    @include('components.legal-modal')
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
 </body>
 </html>

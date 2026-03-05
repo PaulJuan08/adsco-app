@@ -294,10 +294,6 @@
         </div>
     </div>
 
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p class="footer-note">Student Dashboard • Last accessed {{ now()->format('M d, Y h:i A') }}</p>
-    </footer>
 </div>
 @endsection
 

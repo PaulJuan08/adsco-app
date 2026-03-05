@@ -505,11 +505,6 @@
     </div>
 </div>
 
-<!-- Footer -->
-<div class="footer">
-    © {{ date('Y') }} ADSCO. All rights reserved. Version 1.0.0
-</div>
-
 @push('scripts')
 <!-- Flatpickr Datepicker -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

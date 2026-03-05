@@ -35,6 +35,9 @@
                         <i class="fas fa-eye"></i> Publish
                     </button>
                 @endif
+                <a href="{{ route('admin.courses.discussions', $encryptedId) }}" class="top-action-btn">
+                    <i class="fas fa-comments"></i> Discussion
+                </a>
                 <a href="{{ route('admin.courses.edit', $encryptedId) }}" class="top-action-btn">
                     <i class="fas fa-edit"></i> Edit
                 </a>

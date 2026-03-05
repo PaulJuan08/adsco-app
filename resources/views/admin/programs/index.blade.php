@@ -269,14 +269,6 @@
         @endif
     </div>
 
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Program Management • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
-
     <!-- Hidden Print Content -->
     <div id="print-content" style="display: none;">
         <div style="padding: 20px; font-family: Arial, sans-serif;">

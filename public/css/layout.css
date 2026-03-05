@@ -412,9 +412,51 @@
    RESPONSIVE — MOBILE
    ============================================================ */
 
+/* ============================================================
+   MOBILE SIDEBAR TOGGLE BUTTON
+   ============================================================ */
+
+.sidebar-toggle-btn {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1100;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
+    border: none;
+    border-radius: 11px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(85,43,32,.35);
+    transition: transform .2s, box-shadow .2s;
+}
+.sidebar-toggle-btn:hover {
+    transform: scale(1.07);
+    box-shadow: 0 6px 18px rgba(85,43,32,.45);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    cursor: pointer;
+}
+.sidebar-overlay.active { display: block; }
+
 @media (max-width: 768px) {
+    .sidebar-toggle-btn { display: flex; }
+
     .sidebar {
         transform: translateX(-100%);
+        z-index: 1050;
     }
 
     .sidebar.mobile-open {

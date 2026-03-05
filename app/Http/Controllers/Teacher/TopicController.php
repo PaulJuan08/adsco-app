@@ -19,24 +19,46 @@ class TopicController extends Controller
 {
     use CacheManager;
     
+    /**
+     * Returns a base query scoped to topics the teacher has access to:
+     * created by them, OR attached to a course they teach (primary or co-teacher).
+     */
+    private function teacherTopicQuery($teacherId)
+    {
+        return Topic::where(function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId)
+              ->orWhereHas('courses', function ($cq) use ($teacherId) {
+                  $cq->where('teacher_id', $teacherId)
+                     ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                         $tq->where('users.id', $teacherId);
+                     });
+              });
+        });
+    }
+
     public function index()
     {
         $teacherId = Auth::id();
-        
-        // Get topics with creator relationship - teachers can see all topics
-        $topics = Topic::with(['creator', 'updater', 'courses'])
+
+        $topics = $this->teacherTopicQuery($teacherId)
+            ->with(['creator', 'updater', 'courses'])
             ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'created_at', 'updated_at', 'created_by', 'updated_by'])
             ->latest()
             ->paginate(10);
-        
-        // Get all courses for the filter dropdown (only teacher's courses)
-        $courses = Course::where('teacher_id', $teacherId)
+
+        // Get courses related to this teacher for the filter dropdown
+        $courses = Course::where(function ($q) use ($teacherId) {
+                $q->where('teacher_id', $teacherId)
+                  ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                      $tq->where('users.id', $teacherId);
+                  });
+            })
             ->select(['id', 'title', 'course_code'])
             ->orderBy('title')
             ->get();
-        
-        // Get all statistics in ONE optimized query
-        $stats = Topic::selectRaw('
+
+        // Statistics scoped to teacher's topics
+        $stats = $this->teacherTopicQuery($teacherId)->selectRaw('
             COUNT(*) as total_topics,
             SUM(CASE WHEN is_published = 1 THEN 1 ELSE 0 END) as published_topics,
             SUM(CASE WHEN is_published = 0 THEN 1 ELSE 0 END) as draft_topics,
@@ -111,9 +133,13 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            
+            $teacherId = Auth::id();
+
+            // Verify access
+            $this->teacherTopicQuery($teacherId)->where('id', $id)->firstOrFail();
+
             $cacheKey = 'teacher_topic_show_' . $id;
-            
+
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
                 return Topic::with(['courses', 'creator', 'updater'])
                     ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by', 'updated_by'])
@@ -145,9 +171,13 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            
+            $teacherId = Auth::id();
+
+            // Verify access
+            $this->teacherTopicQuery($teacherId)->where('id', $id)->firstOrFail();
+
             $cacheKey = 'teacher_topic_edit_' . $id;
-            
+
             $topic = Cache::remember($cacheKey, 300, function() use ($id) {
                 return Topic::findOrFail($id);
             });
@@ -169,7 +199,7 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $topic = Topic::findOrFail($id);
+            $topic = $this->teacherTopicQuery(Auth::id())->where('id', $id)->firstOrFail();
 
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
@@ -231,7 +261,7 @@ class TopicController extends Controller
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            $topic = Topic::findOrFail($id);
+            $topic = $this->teacherTopicQuery(Auth::id())->where('id', $id)->firstOrFail();
             
             $courses = $topic->courses;
             
@@ -440,8 +470,8 @@ class TopicController extends Controller
 
         try {
             $id = Crypt::decrypt($encryptedId);
-            $topic = Topic::findOrFail($id);
-            
+            $topic = $this->teacherTopicQuery(Auth::id())->where('id', $id)->firstOrFail();
+
             // Toggle publish status
             $oldStatus = $topic->is_published;
             // AFTER (correct)

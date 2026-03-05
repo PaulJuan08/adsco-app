@@ -9,7 +9,11 @@
         <div class="header-content">
             <div class="user-greeting">
                 <div class="user-avatar">
-                    {{ strtoupper(substr(auth()->user()->f_name, 0, 1)) }}
+                    @if(auth()->user()->sex === 'female')
+                        <i class="fas fa-person-dress"></i>
+                    @else
+                        <i class="fas fa-person"></i>
+                    @endif
                 </div>
                 <div class="greeting-text">
                     <h1 class="welcome-title">Welcome back, {{ auth()->user()->f_name }}</h1>
@@ -639,13 +643,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Version 1.0.0 • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
 </div>
 
 @push('scripts')

@@ -10,13 +10,33 @@ use Illuminate\Support\Facades\Crypt;
 
 class AssignmentController extends Controller
 {
+    /**
+     * Check if the teacher has access to an assignment.
+     * Access is granted if:
+     * 1. The teacher created it (created_by), OR
+     * 2. The assignment belongs to a course the teacher is assigned to (primary or co-teacher)
+     */
+    private function teacherAssignmentQuery($teacherId)
+    {
+        return Assignment::where(function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId)
+              ->orWhereHas('course', function ($cq) use ($teacherId) {
+                  $cq->where('teacher_id', $teacherId)
+                     ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                         $tq->where('users.id', $teacherId);
+                     });
+              });
+        });
+    }
+
     public function index()
     {
         $teacherId = Auth::id();
-        $assignments = Assignment::where('created_by', $teacherId)
-                               ->latest()
-                               ->paginate(10);
-        
+        $assignments = $this->teacherAssignmentQuery($teacherId)
+                           ->with('creator')
+                           ->latest()
+                           ->paginate(10);
+
         return view('teacher.assignments.index', compact('assignments'));
     }
 
@@ -28,7 +48,7 @@ class AssignmentController extends Controller
     public function store(Request $request)
     {
         $teacherId = Auth::id();
-        
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -42,11 +62,12 @@ class AssignmentController extends Controller
         ]);
 
         $validated['created_by'] = $teacherId;
+        $validated['updated_by'] = $teacherId;
         $validated['duration'] = $validated['duration'] ?? 60;
         $validated['passing_score'] = $validated['passing_score'] ?? 70;
 
         Assignment::create($validated);
-        
+
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment created successfully.');
     }
@@ -55,10 +76,11 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
-        
-        $assignment = Assignment::where('created_by', $teacherId)
-                               ->findOrFail($id);
-        
+
+        $assignment = $this->teacherAssignmentQuery($teacherId)
+                          ->with('creator', 'updater')
+                          ->findOrFail($id);
+
         return view('teacher.assignments.show', compact('assignment'));
     }
 
@@ -66,10 +88,10 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
-        
-        $assignment = Assignment::where('created_by', $teacherId)
-                               ->findOrFail($id);
-        
+
+        $assignment = $this->teacherAssignmentQuery($teacherId)
+                          ->findOrFail($id);
+
         return view('teacher.assignments.edit', compact('assignment', 'encryptedId'));
     }
 
@@ -77,9 +99,9 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
-        
-        $assignment = Assignment::where('created_by', $teacherId)
-                               ->findOrFail($id);
+
+        $assignment = $this->teacherAssignmentQuery($teacherId)
+                          ->findOrFail($id);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -93,11 +115,12 @@ class AssignmentController extends Controller
             'is_published' => 'boolean',
         ]);
 
+        $validated['updated_by'] = $teacherId;
         $validated['duration'] = $validated['duration'] ?? $assignment->duration ?? 60;
         $validated['passing_score'] = $validated['passing_score'] ?? $assignment->passing_score ?? 70;
 
         $assignment->update($validated);
-        
+
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment updated successfully.');
     }
@@ -106,12 +129,12 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
-        
-        $assignment = Assignment::where('created_by', $teacherId)
-                               ->findOrFail($id);
-        
+
+        $assignment = $this->teacherAssignmentQuery($teacherId)
+                          ->findOrFail($id);
+
         $assignment->delete();
-        
+
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment deleted successfully.');
     }
@@ -123,16 +146,17 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
-        
-        $assignment = Assignment::where('created_by', $teacherId)
-                               ->findOrFail($id);
-        
+
+        $assignment = $this->teacherAssignmentQuery($teacherId)
+                          ->findOrFail($id);
+
         $assignment->update([
-            'is_published' => !$assignment->is_published
+            'is_published' => !$assignment->is_published,
+            'updated_by' => $teacherId,
         ]);
-        
+
         $status = $assignment->is_published ? 'published' : 'unpublished';
-        
+
         return redirect()->back()->with('success', "Assignment {$status} successfully.");
     }
 }

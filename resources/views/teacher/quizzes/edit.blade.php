@@ -1049,28 +1049,30 @@
                 }
                 
                 // Validate passing score if provided
-                const passingScore = document.getElementById('passing_score').value;
+                const passingScoreEl = document.getElementById('passing_score');
+                const passingScore = passingScoreEl ? passingScoreEl.value : '';
                 if (passingScore) {
                     const score = parseInt(passingScore);
                     if (score < 1 || score > 100) {
                         isValid = false;
                         errorMessages.push('Passing score must be between 1 and 100.');
-                        document.getElementById('passing_score').classList.add('error');
+                        passingScoreEl.classList.add('error');
                     } else {
-                        document.getElementById('passing_score').classList.remove('error');
+                        passingScoreEl.classList.remove('error');
                     }
                 }
-                
+
                 // Validate duration if provided
-                const duration = document.getElementById('duration').value;
+                const durationEl = document.getElementById('duration');
+                const duration = durationEl ? durationEl.value : '';
                 if (duration) {
                     const dur = parseInt(duration);
                     if (dur < 1) {
                         isValid = false;
                         errorMessages.push('Duration must be at least 1 minute.');
-                        document.getElementById('duration').classList.add('error');
+                        durationEl.classList.add('error');
                     } else {
-                        document.getElementById('duration').classList.remove('error');
+                        durationEl.classList.remove('error');
                     }
                 }
                 

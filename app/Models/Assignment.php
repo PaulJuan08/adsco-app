@@ -22,6 +22,7 @@ class Assignment extends Model
         'attachment',
         'is_published',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -62,6 +63,11 @@ class Assignment extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
     
     public function isAccessibleByStudent(int $studentId): bool

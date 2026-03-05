@@ -206,6 +206,7 @@ class CourseController extends Controller
                 'is_published' => $request->has('is_published') ? true : false,
                 'credits'      => $validated['credits']      ?? $course->credits,
                 'status'       => $validated['status']       ?? $course->status,
+                'updated_by'   => auth()->id(),
             ]);
 
             // Sync additional teachers (pivot table)

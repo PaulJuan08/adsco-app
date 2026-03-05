@@ -156,8 +156,9 @@
             <div class="absolute inset-0 bg-adsco-primary"></div>
             <div 
                 class="absolute inset-0 opacity-20 bg-cover bg-center"
-                style="background-image: url('/assets/img/adsco-image1.jpg');"
-            ></div>
+                style="background-image: url('/assets/img/adsco-image2.jpg');">
+                <!-- style="background-image: url('/assets/img/adsco-image1.jpg');"> -->
+            </div>
             <div class="absolute inset-0 hero-gradient"></div>
         </div>
         
@@ -714,12 +715,24 @@
                 </div>
                 
                 <!-- Legal -->
+                @php
+                    $welcomeFooterLegals = \App\Models\LegalPage::where('is_published', true)
+                        ->orderByRaw("FIELD(type, 'privacy_policy', 'terms_conditions', 'cookie_policy')")
+                        ->get();
+                @endphp
                 <div>
                     <h3 class="text-lg font-bold mb-6 text-adsco-accent">Legal</h3>
                     <ul class="space-y-3">
-                        <li><a href="#" class="text-gray-300 hover:text-white hover:pl-2 transition-all duration-300 inline-block">Privacy Policy</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-white hover:pl-2 transition-all duration-300 inline-block">Terms & Conditions</a></li>
-                        <li><a href="#" class="text-gray-300 hover:text-white hover:pl-2 transition-all duration-300 inline-block">Cookie Policy</a></li>
+                        @forelse($welcomeFooterLegals as $legal)
+                            <li>
+                                <a href="javascript:void(0)" onclick="openLegalModal('{{ $legal->type }}')"
+                                    class="text-gray-300 hover:text-white hover:pl-2 transition-all duration-300 inline-block">
+                                    {{ $legal->title }}
+                                </a>
+                            </li>
+                        @empty
+                            <li><span class="text-gray-500 text-sm italic">No legal pages published yet.</span></li>
+                        @endforelse
                     </ul>
                 </div>
             </div>
@@ -966,6 +979,9 @@
             }
         });
     </script>
+
+    {{-- Legal Modal --}}
+    @include('components.legal-modal')
 
 </body>
 </html>

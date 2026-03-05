@@ -222,7 +222,14 @@
                                     @if($course->creator)
                                         <div class="creator-info">
                                             <div class="creator-name">{{ $course->creator->f_name }} {{ $course->creator->l_name }}</div>
-                                            <div class="creator-role">Teacher</div>
+                                            <div class="creator-role">
+                                                @switch($course->creator->role)
+                                                    @case(1) Admin @break
+                                                    @case(2) Registrar @break
+                                                    @case(3) Teacher @break
+                                                    @default User
+                                                @endswitch
+                                            </div>
                                         </div>
                                     @else
                                         <span class="no-creator">System</span>
@@ -293,14 +300,6 @@
         </div>
         @endif
     </div>
-
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            My Courses • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
 
     <!-- Hidden Print Content -->
     <div id="print-content" style="display: none;">

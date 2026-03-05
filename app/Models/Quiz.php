@@ -20,6 +20,7 @@ class Quiz extends Model
         'course_id',
         'user_id',
         'created_by',
+        'updated_by',
         'user_type',
         'shuffle_questions',
         'shuffle_options',
@@ -80,6 +81,11 @@ class Quiz extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
     
     public function isAccessibleByStudent(int $studentId): bool

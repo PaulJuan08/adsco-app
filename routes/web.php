@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\DiscussionController;
 
 // ==================== ADMIN CONTROLLERS ====================
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -22,6 +23,8 @@ use App\Http\Controllers\Admin\CollegeController as AdminCollegeController;
 use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\LegalPageController as AdminLegalPageController;
 
 // ==================== TEACHER CONTROLLERS ====================
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
@@ -132,6 +135,11 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('/courses/{encryptedId}/add-topics', [AdminCourseController::class, 'addTopics'])->name('courses.add-topics');
         Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])->name('courses.remove-topic');
 
+        // ============ DISCUSSION ============
+        Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
+        Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
+        Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
+
         // ============ TOPIC MANAGEMENT ============
         Route::resource('topics', AdminTopicController::class)->parameters(['topics' => 'encryptedId']);
         // Topic publish/unpublish
@@ -240,6 +248,21 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             // Quiz Access Modal (AJAX) - NEW ROUTE
             Route::get('/quiz/{encryptedId}/access-modal', [AdminTodoController::class, 'quizAccessModal'])->name('quiz.access.modal');
         });
+
+        // ============ ANNOUNCEMENTS ============
+        Route::prefix('announcements')->name('announcements.')->group(function () {
+            Route::get('/', [AdminAnnouncementController::class, 'index'])->name('index');
+            Route::post('/', [AdminAnnouncementController::class, 'store'])->name('store');
+            Route::put('/{announcement}', [AdminAnnouncementController::class, 'update'])->name('update');
+            Route::delete('/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('destroy');
+            Route::patch('/{announcement}/toggle-publish', [AdminAnnouncementController::class, 'togglePublish'])->name('toggle-publish');
+        });
+
+        // ============ LEGAL PAGES ============
+        Route::prefix('legals')->name('legals.')->group(function () {
+            Route::get('/', [AdminLegalPageController::class, 'index'])->name('index');
+            Route::put('/{legalPage}', [AdminLegalPageController::class, 'update'])->name('update');
+        });
     });
     
     // ==================== TEACHER ROUTES ====================
@@ -268,6 +291,11 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('courses/{encryptedId}/add-topic', [TeacherCourseController::class, 'addTopic'])->name('courses.add-topic');
         Route::post('courses/{encryptedId}/add-topics', [TeacherCourseController::class, 'addTopics'])->name('courses.add-topics');
         Route::post('courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
+
+        // ============ DISCUSSION ============
+        Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
+        Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
+        Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
 
         // ============ TOPIC MANAGEMENT ============
         Route::resource('topics', TeacherTopicController::class)->parameters(['topics' => 'encryptedId']);
@@ -375,6 +403,11 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/courses/{encryptedId}', [StudentCourseController::class, 'show'])->name('courses.show');
         Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
         Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
+
+        // ============ DISCUSSION ============
+        Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
+        Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
+        Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
         
         // Topics
         Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');

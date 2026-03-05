@@ -19,7 +19,50 @@ use Illuminate\Support\Facades\Crypt;
 class TodoController extends Controller
 {
     /**
-     * Display a listing of quizzes and assignments created by the teacher
+     * Base query for quizzes the teacher has access to:
+     * created by them, OR belonging to a course they are assigned to.
+     */
+    private function teacherQuizQuery($teacherId)
+    {
+        return Quiz::where(function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId)
+              ->orWhereHas('course', function ($cq) use ($teacherId) {
+                  $cq->where('teacher_id', $teacherId)
+                     ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                         $tq->where('users.id', $teacherId);
+                     });
+              });
+        });
+    }
+
+    /**
+     * Base query for assignments the teacher has access to.
+     */
+    private function teacherAssignmentQuery($teacherId)
+    {
+        return Assignment::where(function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId)
+              ->orWhereHas('course', function ($cq) use ($teacherId) {
+                  $cq->where('teacher_id', $teacherId)
+                     ->orWhereHas('teachers', function ($tq) use ($teacherId) {
+                         $tq->where('users.id', $teacherId);
+                     });
+              });
+        });
+    }
+
+    private function teacherAccessibleQuizIds($teacherId)
+    {
+        return $this->teacherQuizQuery($teacherId)->pluck('id');
+    }
+
+    private function teacherAccessibleAssignmentIds($teacherId)
+    {
+        return $this->teacherAssignmentQuery($teacherId)->pluck('id');
+    }
+
+    /**
+     * Display a listing of quizzes and assignments related to the teacher
      */
     public function index(Request $request)
     {
@@ -30,10 +73,10 @@ class TodoController extends Controller
         $quizzes = collect();
         $assignments = collect();
 
-        // Get ONLY quizzes created by this teacher
+        // Get quizzes related to this teacher
         if ($type === 'all' || $type === 'quiz') {
-            $quizQuery = Quiz::where('created_by', $teacherId)
-                ->with(['creator'])
+            $quizQuery = $this->teacherQuizQuery($teacherId)
+                ->with(['creator', 'updater'])
                 ->withCount(['studentAccess as allowed_students_count' => function ($q) {
                     $q->where('status', 'allowed');
                 }])
@@ -49,10 +92,10 @@ class TodoController extends Controller
             $quizzes = $quizQuery->latest()->get();
         }
 
-        // Get ONLY assignments created by this teacher
+        // Get assignments related to this teacher
         if ($type === 'all' || $type === 'assignment') {
-            $assignQuery = Assignment::where('created_by', $teacherId)
-                ->with(['course', 'creator'])
+            $assignQuery = $this->teacherAssignmentQuery($teacherId)
+                ->with(['course', 'creator', 'updater'])
                 ->withCount(['allowedStudents as allowed_students_count'])
                 ->withCount('submissions');
 
@@ -66,13 +109,13 @@ class TodoController extends Controller
             $assignments = $assignQuery->latest()->get();
         }
 
-        // Calculate totals from teacher's quizzes and assignments
-        $totalQuizzes = Quiz::where('created_by', $teacherId)->count();
-        $totalAssignments = Assignment::where('created_by', $teacherId)->count();
-        
-        // Calculate total access grants from teacher's quizzes and assignments
-        $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
-        $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+        // Calculate totals from teacher's related quizzes and assignments
+        $totalQuizzes = $this->teacherQuizQuery($teacherId)->count();
+        $totalAssignments = $this->teacherAssignmentQuery($teacherId)->count();
+
+        // Calculate total access grants
+        $quizIds = $this->teacherAccessibleQuizIds($teacherId);
+        $assignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
         
         $totalAccess = QuizStudentAccess::whereIn('quiz_id', $quizIds)
                 ->where('status', 'allowed')->count()
@@ -693,9 +736,9 @@ class TodoController extends Controller
         $searchName = $request->get('search_name');
         $itemId = $request->get('item_id');
 
-        // Get teacher's quiz and assignment IDs
-        $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
-        $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+        // Get teacher's accessible quiz and assignment IDs
+        $quizIds = $this->teacherAccessibleQuizIds($teacherId);
+        $assignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
 
         $quizProgress = collect();
         $assignmentProgress = collect();
@@ -793,9 +836,9 @@ class TodoController extends Controller
         $years = User::where('role', 4)->whereNotNull('college_year')
             ->distinct()->pluck('college_year')->sort()->values();
         
-        // Get ONLY teacher's quizzes and assignments for filters
-        $quizList = Quiz::where('created_by', $teacherId)->orderBy('title')->get(['id', 'title']);
-        $assignList = Assignment::where('created_by', $teacherId)->orderBy('title')->get(['id', 'title']);
+        // Get teacher's accessible quizzes and assignments for filters
+        $quizList = $this->teacherQuizQuery($teacherId)->orderBy('title')->get(['id', 'title']);
+        $assignList = $this->teacherAssignmentQuery($teacherId)->orderBy('title')->get(['id', 'title']);
 
         // Calculate total submissions count
         $totalSubmissions = $type === 'quiz' 
@@ -820,9 +863,9 @@ class TodoController extends Controller
         $searchName = $request->get('search_name');
         $itemId = $request->get('item_id');
 
-        // Get teacher's quiz and assignment IDs
-        $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
-        $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+        // Get teacher's accessible quiz and assignment IDs
+        $quizIds = $this->teacherAccessibleQuizIds($teacherId);
+        $assignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
 
         $data = [];
         $filename = 'progress_export_' . now()->format('Y-m-d_His') . '.csv';
@@ -936,18 +979,18 @@ class TodoController extends Controller
                 ])
                 ->findOrFail($id);
             
-            // Get student's quiz attempts from teacher's quizzes only
+            // Get student's quiz attempts from teacher's accessible quizzes
             $teacherId = auth()->id();
-            $quizIds = Quiz::where('created_by', $teacherId)->pluck('id');
-            
+            $quizIds = $this->teacherAccessibleQuizIds($teacherId);
+
             $quizAttempts = QuizAttempt::whereIn('quiz_id', $quizIds)
                 ->where('user_id', $id)
                 ->with('quiz')
                 ->latest('completed_at')
                 ->get();
             
-            // Get student's assignment submissions from teacher's assignments only
-            $assignmentIds = Assignment::where('created_by', $teacherId)->pluck('id');
+            // Get student's assignment submissions from teacher's accessible assignments
+            $assignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
             
             $submissions = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
                 ->where('student_id', $id)
@@ -969,10 +1012,9 @@ class TodoController extends Controller
     {
         $teacherId = auth()->id();
         
+        $accessibleAssignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
         $submission = AssignmentSubmission::with(['student', 'assignment', 'gradedBy'])
-            ->whereHas('assignment', function ($q) use ($teacherId) {
-                $q->where('created_by', $teacherId);
-            })
+            ->whereIn('assignment_id', $accessibleAssignmentIds)
             ->findOrFail($submissionId);
 
         return view('teacher.todo.submission-detail', compact('submission'));
@@ -985,10 +1027,9 @@ class TodoController extends Controller
     {
         $teacherId = auth()->id();
         
+        $accessibleAssignmentIds = $this->teacherAccessibleAssignmentIds($teacherId);
         $submission = AssignmentSubmission::with('assignment')
-            ->whereHas('assignment', function ($q) use ($teacherId) {
-                $q->where('created_by', $teacherId);
-            })
+            ->whereIn('assignment_id', $accessibleAssignmentIds)
             ->findOrFail($submissionId);
 
         $request->validate([

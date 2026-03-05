@@ -140,13 +140,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Enrollment Management • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
 </div>
 
 <!-- Enroll Students Modal -->

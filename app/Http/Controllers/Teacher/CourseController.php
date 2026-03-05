@@ -162,7 +162,9 @@ class CourseController extends Controller
                         'teacher:id,f_name,l_name',
                         'teachers:id,f_name,l_name,employee_id',
                         'students:id,f_name,l_name,email',
-                        'topics:id,title,content,description,is_published,created_at'
+                        'topics:id,title,content,description,is_published,created_at',
+                        'creator:id,f_name,l_name,role',
+                        'updater:id,f_name,l_name,role',
                     ])
                     ->withCount('students')
                     ->firstOrFail();
@@ -192,10 +194,15 @@ class CourseController extends Controller
             
             $course = Cache::remember($cacheKey, 300, function() use ($id, $teacherId) {
                 return Course::where('id', $id)
-                    ->where('teacher_id', $teacherId)
+                    ->where(function($q) use ($teacherId) {
+                        $q->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($tq) use ($teacherId) {
+                              $tq->where('users.id', $teacherId);
+                          });
+                    })
                     ->firstOrFail();
             });
-            
+
             return view('teacher.courses.edit', compact('course', 'encryptedId'));
             
         } catch (\Exception $e) {
@@ -217,9 +224,14 @@ class CourseController extends Controller
             $teacherId = Auth::id();
             
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($q) use ($teacherId) {
+                    $q->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($tq) use ($teacherId) {
+                          $tq->where('users.id', $teacherId);
+                      });
+                })
                 ->firstOrFail();
-        
+
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'course_code' => 'required|string|max:20|unique:courses,course_code,' . $course->id,
@@ -229,7 +241,8 @@ class CourseController extends Controller
             ]);
             
             $validated['is_published'] = $request->has('is_published') ? 1 : 0;
-            
+            $validated['updated_by'] = $teacherId;
+
             $course->update($validated);
             
             $this->clearTeacherCourseCaches($teacherId);
@@ -261,9 +274,14 @@ class CourseController extends Controller
             $teacherId = Auth::id();
             
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($q) use ($teacherId) {
+                    $q->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($tq) use ($teacherId) {
+                          $tq->where('users.id', $teacherId);
+                      });
+                })
                 ->firstOrFail();
-            
+
             if ($course->students()->exists()) {
                 return redirect()->route('teacher.courses.index')
                     ->with('error', 'Cannot delete course with enrolled students.');
@@ -298,15 +316,28 @@ class CourseController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($query) use ($teacherId) {
+                    $query->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($q) use ($teacherId) {
+                              $q->where('users.id', $teacherId);
+                          });
+                })
                 ->firstOrFail();
             
             $cacheKey = 'teacher_available_topics_' . $id;
             
             $availableTopics = Cache::remember($cacheKey, 300, function() use ($id, $course, $teacherId) {
-                $allTopics = Topic::where('created_by', $teacherId)
+                $allTopics = Topic::where(function($q) use ($teacherId) {
+                        $q->where('created_by', $teacherId)
+                          ->orWhereHas('courses', function($cq) use ($teacherId) {
+                              $cq->where('teacher_id', $teacherId)
+                                 ->orWhereHas('teachers', function($tq) use ($teacherId) {
+                                     $tq->where('users.id', $teacherId);
+                                 });
+                          });
+                    })
                     ->select(['id', 'title', 'content', 'description', 'is_published', 'created_at'])
                     ->orderBy('title')
                     ->get();
@@ -338,9 +369,14 @@ class CourseController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($query) use ($teacherId) {
+                    $query->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($q) use ($teacherId) {
+                              $q->where('users.id', $teacherId);
+                          });
+                })
                 ->firstOrFail();
             
             $request->validate([
@@ -389,9 +425,14 @@ class CourseController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($query) use ($teacherId) {
+                    $query->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($q) use ($teacherId) {
+                              $q->where('users.id', $teacherId);
+                          });
+                })
                 ->firstOrFail();
             
             $request->validate([
@@ -450,9 +491,14 @@ class CourseController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($query) use ($teacherId) {
+                    $query->where('teacher_id', $teacherId)
+                          ->orWhereHas('teachers', function($q) use ($teacherId) {
+                              $q->where('users.id', $teacherId);
+                          });
+                })
                 ->firstOrFail();
             
             $request->validate([
@@ -543,7 +589,12 @@ class CourseController extends Controller
             $teacherId = Auth::id();
             
             $course = Course::where('id', $id)
-                ->where('teacher_id', $teacherId)
+                ->where(function($q) use ($teacherId) {
+                    $q->where('teacher_id', $teacherId)
+                      ->orWhereHas('teachers', function($tq) use ($teacherId) {
+                          $tq->where('users.id', $teacherId);
+                      });
+                })
                 ->firstOrFail();
 
             $course->update(['is_published' => !$course->is_published]);

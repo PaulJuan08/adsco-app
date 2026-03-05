@@ -164,13 +164,6 @@
         @include('admin.todo.partials.assignment-progress', ['submissions' => $assignmentProgress])
     @endif
 
-    <!-- Footer -->
-    <footer class="dashboard-footer">
-        <p>© {{ date('Y') }} School Management System. All rights reserved.</p>
-        <p style="font-size: var(--font-size-xs); color: var(--gray-500); margin-top: var(--space-2);">
-            Student Progress • Updated {{ now()->format('M d, Y') }}
-        </p>
-    </footer>
 </div>
 @endsection
 

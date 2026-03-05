@@ -31,6 +31,11 @@
             <a href="{{ route('student.courses.index') }}" class="top-action-btn">
                 <i class="fas fa-arrow-left"></i> Back to Courses
             </a>
+            @if(isset($enrollment) && $enrollment)
+            <a href="{{ route('student.courses.discussions', $encryptedId) }}" class="top-action-btn">
+                <i class="fas fa-comments"></i> Discussion
+            </a>
+            @endif
             @if(isset($enrollment) && $enrollment && $enrollment->grade)
             <a href="{{ route('student.courses.grades', $encryptedId) }}" class="top-action-btn">
                 <i class="fas fa-chart-bar"></i> View Grades

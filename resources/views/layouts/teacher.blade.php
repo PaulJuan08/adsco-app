@@ -135,8 +135,10 @@
                         <div class="sidebar-user-avatar">
                             @if(Auth::user()->avatar)
                                 <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
+                            @elseif(Auth::user()->sex === 'female')
+                                <i class="fas fa-person-dress" style="font-size:1.25rem;"></i>
                             @else
-                                {{ strtoupper(substr(Auth::user()->f_name ?? 'T', 0, 1)) }}
+                                <i class="fas fa-person" style="font-size:1.25rem;"></i>
                             @endif
                         </div>
                         <div class="sidebar-user-details">
@@ -168,16 +170,29 @@
         </aside>
         
         <!-- Main Content -->
-        <div class="content-wrapper">
-            @yield('content')
+        <!-- Mobile sidebar toggle -->
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <div class="content-wrapper" style="display:flex; flex-direction:column; min-height:100vh;">
+            @include('components.announcement-banner')
+            <div style="flex:1;">
+                @yield('content')
+            </div>
+            @include('components.dashboard-footer')
         </div>
     </div>
-    
+
     @stack('scripts')
-    
+
+    @include('components.legal-modal')
+
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('mobile-open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
         }
 
         document.addEventListener('DOMContentLoaded', function () {
