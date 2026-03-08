@@ -57,8 +57,16 @@ class TopicController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->ajax()) {
+            $html = view('admin.topics._form', [
+                'editing' => false,
+                'formAction' => route('admin.topics.store'),
+                'topic' => null,
+            ])->render();
+            return response()->json(['html' => $html]);
+        }
         return view('admin.topics.create');
     }
 
@@ -76,7 +84,8 @@ class TopicController extends Controller
         // Add default values
         $validated['is_published'] = $validated['is_published'] ?? 1;
         $validated['order'] = Topic::max('order') + 1;
-        $validated['created_by'] = Auth::id(); // This will now work with Auth imported
+        $validated['created_by'] = Auth::id();
+        $validated['updated_by'] = Auth::id();
 
         // 🔥 SIMPLE PDF UPLOAD - Works on both local and live
         if ($request->hasFile('pdf_file')) {
@@ -99,31 +108,41 @@ class TopicController extends Controller
         $this->clearTeacherDashboardCaches();
         
         \Log::info('New topic created - ID: ' . $topic->id . ', Title: ' . $topic->title);
-        
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Topic created successfully.', 'redirect' => route('admin.topics.index')]);
+        }
+
         return redirect()->route('admin.topics.index')
             ->with('success', 'Topic created successfully.');
     }
 
-    public function show($encryptedId)
+    public function show(Request $request, $encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            
+
             $cacheKey = 'admin_topic_show_' . $id;
-            
+
             $topic = Cache::remember($cacheKey, 600, function() use ($id) {
                 return Topic::with(['courses', 'creator', 'updater'])
                     ->select(['id', 'title', 'video_link', 'attachment', 'pdf_file', 'is_published', 'order', 'learning_outcomes', 'description', 'created_at', 'updated_at', 'created_by', 'updated_by'])
                     ->findOrFail($id);
             });
-            
+
+            if ($request->ajax()) {
+                $editUrl = route('admin.topics.edit', ['encryptedId' => $encryptedId]);
+                $html = view('topics._show', compact('topic', 'encryptedId', 'editUrl'))->render();
+                return response()->json(['html' => $html]);
+            }
+
             // Debug log to check PDF file
             Log::info('Loading topic show page', [
                 'topic_id' => $topic->id,
                 'pdf_file' => $topic->pdf_file,
                 'pdf_url' => self::getPdfUrl($topic->pdf_file)
             ]);
-            
+
             // PASS THE ENCRYPTED ID TO THE VIEW
             return view('admin.topics.show', compact('topic', 'encryptedId'));
             
@@ -138,25 +157,38 @@ class TopicController extends Controller
         }
     }
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
-            
+
             $cacheKey = 'admin_topic_edit_' . $id;
-            
+
             $topic = Cache::remember($cacheKey, 300, function() use ($id) {
                 return Topic::findOrFail($id);
             });
-            
+
+            if ($request->ajax()) {
+                $html = view('admin.topics._form', [
+                    'editing' => true,
+                    'topic' => $topic,
+                    'formAction' => route('admin.topics.update', ['encryptedId' => Crypt::encrypt($topic->id)]),
+                ])->render();
+                return response()->json(['html' => $html]);
+            }
+
             return view('admin.topics.edit', compact('topic'));
-            
+
         } catch (\Exception $e) {
             \Log::error('Error editing topic', [
                 'encryptedId' => $encryptedId,
                 'error' => $e->getMessage()
             ]);
-            
+
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Topic not found.'], 404);
+            }
+
             return redirect()->route('admin.topics.index')
                 ->with('error', 'Topic not found or invalid link.');
         }
@@ -209,16 +241,24 @@ class TopicController extends Controller
             foreach ($courses as $course) {
                 $this->clearStudentCachesForCourse($course->id);
             }
-            
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Topic updated successfully.', 'redirect' => route('admin.topics.index')]);
+            }
+
             return redirect()->route('admin.topics.show', $encryptedId)
                 ->with('success', 'Topic updated successfully.');
-                
+
         } catch (\Exception $e) {
             \Log::error('Error updating topic', [
                 'encryptedId' => $encryptedId,
                 'error' => $e->getMessage()
             ]);
-            
+
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Failed to update topic.'], 500);
+            }
+
             return redirect()->route('admin.topics.index')
                 ->with('error', 'Failed to update topic.');
         }
@@ -449,7 +489,7 @@ class TopicController extends Controller
             }
             
             // Use the encryptedId parameter directly, not re-encrypting
-            return redirect()->route('admin.topics.show', $encryptedId)
+            return redirect()->route('admin.topics.index')
                 ->with('success', "Topic {$status} successfully!");
                 
         } catch (\Exception $e) {

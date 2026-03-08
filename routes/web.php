@@ -146,10 +146,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::patch('/topics/{encryptedId}/publish', [AdminTopicController::class, 'publish'])->name('topics.publish');
 
         // ============ ASSIGNMENT MANAGEMENT ============
-        // REMOVED INDEX - redirect to todo
-        Route::get('/assignments', function() {
-            return redirect()->route('admin.todo.index', ['type' => 'assignment']);
-        })->name('assignments.index');
+        Route::get('/assignments', [AdminAssignmentController::class, 'index'])->name('assignments.index');
         
         Route::get('/assignments/create', [AdminAssignmentController::class, 'create'])->name('assignments.create');
         Route::post('/assignments', [AdminAssignmentController::class, 'store'])->name('assignments.store');
@@ -160,10 +157,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::patch('/assignments/{encryptedId}/publish', [AdminAssignmentController::class, 'togglePublish'])->name('assignments.publish');
 
         // ============ QUIZ MANAGEMENT ============
-        // REMOVED INDEX - redirect to todo
-        Route::get('/quizzes', function() {
-            return redirect()->route('admin.todo.index', ['type' => 'quiz']);
-        })->name('quizzes.index');
+        Route::get('/quizzes', [AdminQuizController::class, 'index'])->name('quizzes.index');
         
         Route::get('/quizzes/create', [AdminQuizController::class, 'create'])->name('quizzes.create');
         Route::post('/quizzes', [AdminQuizController::class, 'store'])->name('quizzes.store');
@@ -262,6 +256,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::prefix('legals')->name('legals.')->group(function () {
             Route::get('/', [AdminLegalPageController::class, 'index'])->name('index');
             Route::put('/{legalPage}', [AdminLegalPageController::class, 'update'])->name('update');
+            Route::patch('/{legalPage}/toggle-publish', [AdminLegalPageController::class, 'togglePublish'])->name('toggle-publish');
         });
     });
     
@@ -303,9 +298,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('topics/clear-cache', [TeacherTopicController::class, 'clearCache'])->name('topics.clear-cache');
 
         // ============ QUIZ MANAGEMENT ============
-        Route::get('/quizzes', function() {
-            return redirect()->route('teacher.todo.index', ['type' => 'quiz']);
-        })->name('quizzes.index');
+        Route::get('/quizzes', [TeacherQuizController::class, 'index'])->name('quizzes.index');
         
         Route::get('/quizzes/create', [TeacherQuizController::class, 'create'])->name('quizzes.create');
         Route::post('/quizzes', [TeacherQuizController::class, 'store'])->name('quizzes.store');
@@ -317,9 +310,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/quizzes/{encryptedId}/results', [TeacherQuizController::class, 'results'])->name('quizzes.results');
         
         // ============ ASSIGNMENT MANAGEMENT ============
-        Route::get('/assignments', function() {
-            return redirect()->route('teacher.todo.index', ['type' => 'assignment']);
-        })->name('assignments.index');
+        Route::get('/assignments', [TeacherAssignmentController::class, 'index'])->name('assignments.index');
 
         Route::get('/assignments/create', [TeacherAssignmentController::class, 'create'])->name('assignments.create');
         Route::post('/assignments', [TeacherAssignmentController::class, 'store'])->name('assignments.store');
@@ -402,6 +393,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
         Route::get('/courses/{encryptedId}', [StudentCourseController::class, 'show'])->name('courses.show');
         Route::post('/courses/{encryptedId}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
+        Route::delete('/courses/{encryptedId}/unenroll', [StudentCourseController::class, 'unenroll'])->name('courses.unenroll');
         Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
 
         // ============ DISCUSSION ============

@@ -35,18 +35,26 @@ class QuizController extends Controller
         });
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $teacherId = Auth::id();
+        $search    = $request->get('search', '');
 
         $quizzes = $this->teacherQuizQuery($teacherId)
-            ->select(['id', 'title', 'description', 'is_published', 'duration', 'total_questions', 'passing_score', 'created_by', 'created_at', 'updated_at', 'updated_by'])
-            ->with('creator', 'updater')
-            ->withCount('questions')
+            ->with('creator')
+            ->withCount(['studentAccess as allowed_students_count' => fn($q) => $q->where('status', 'allowed')])
+            ->withCount('attempts')
+            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            }))
             ->latest()
-            ->paginate(10);
+            ->paginate(15);
 
-        return view('teacher.quizzes.index', compact('quizzes'));
+        $totalQuizzes   = $this->teacherQuizQuery($teacherId)->count();
+        $publishedCount = $this->teacherQuizQuery($teacherId)->where('is_published', 1)->count();
+
+        return view('teacher.quizzes.index', compact('quizzes', 'search', 'totalQuizzes', 'publishedCount'));
     }
 
     public function create()
@@ -80,6 +88,7 @@ class QuizController extends Controller
             'passing_score' => $request->passing_score ?? 70,
             'due_date' => $request->due_date ?? null,
             'created_by' => Auth::id(),
+            'updated_by' => Auth::id(),
         ];
 
         $quiz = Quiz::create($quizData);
@@ -410,18 +419,17 @@ class QuizController extends Controller
             Cache::forget('teacher_quiz_edit_' . $id . '_teacher_' . $teacherId);
             Cache::forget('teacher_quiz_take_' . $id . '_teacher_' . $teacherId);
 
-            return redirect()->route('teacher.quizzes.index')
-                ->with('success', 'Quiz deleted successfully.');
-                
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Quiz deleted successfully.']);
+            }
+            return redirect()->route('teacher.quizzes.index')->with('success', 'Quiz deleted successfully.');
+
         } catch (\Exception $e) {
-            \Log::error('Error deleting teacher quiz', [
-                'encryptedId' => $encryptedId,
-                'teacher_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('teacher.quizzes.index')
-                ->with('error', 'Quiz not found or invalid link.');
+            \Log::error('Error deleting teacher quiz', ['encryptedId' => $encryptedId, 'teacher_id' => Auth::id(), 'error' => $e->getMessage()]);
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Quiz not found or invalid link.', 'type' => 'error'], 404);
+            }
+            return redirect()->route('teacher.quizzes.index')->with('error', 'Quiz not found or invalid link.');
         }
     }
 
@@ -537,18 +545,24 @@ class QuizController extends Controller
             $quiz = Quiz::findOrFail($id);
 
             $quiz->update([
-                'is_published' => !$quiz->is_published
+                'is_published' => !$quiz->is_published,
+                'updated_by'   => Auth::id(),
             ]);
 
             $status = $quiz->is_published ? 'published' : 'unpublished';
 
-            return redirect()->back()->with('success', "Quiz {$status} successfully.");
+            $msg = "Quiz {$status} successfully.";
+            if (request()->ajax()) {
+                return response()->json(['message' => $msg]);
+            }
+            return redirect()->route('teacher.quizzes.index')->with('success', $msg);
 
         } catch (\Exception $e) {
             \Log::error('Error toggling teacher quiz publish status: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->with('error', 'Failed to update quiz status.');
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Failed to update quiz status.', 'type' => 'error'], 500);
+            }
+            return redirect()->route('teacher.quizzes.index')->with('error', 'Failed to update quiz status.');
         }
     }
 

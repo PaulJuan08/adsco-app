@@ -13,18 +13,7 @@
     <div class="auth-particle auth-particle-2"></div>
     <div class="auth-particle auth-particle-3"></div>
 
-    <nav class="auth-navbar">
-        <div class="container">
-            <a href="/" class="brand">
-                <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo" class="brand-logo">
-                <span class="brand-text">ADS<span class="accent">CO</span></span>
-            </a>
-            <div class="nav-links">
-                <a href="/" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="{{ route('login') }}" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
-            </div>
-        </div>
-    </nav>
+    @include('partials.navbar', ['activePage' => 'login'])
 
     <div class="auth-container">
         <div class="auth-card">

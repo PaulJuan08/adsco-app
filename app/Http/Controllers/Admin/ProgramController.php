@@ -65,9 +65,19 @@ class ProgramController extends Controller
     /**
      * Show the form for creating a new program.
      */
-    public function create()
+    public function create(Request $request)
     {
         $colleges = College::orderBy('college_name')->get(['id', 'college_name']);
+
+        if ($request->ajax()) {
+            $html = view('admin.programs._form', [
+                'editing'    => false,
+                'colleges'   => $colleges,
+                'formAction' => route('admin.programs.store'),
+            ])->render();
+            return response()->json(['html' => $html, 'css' => asset('css/programs-form.css')]);
+        }
+
         return view('admin.programs.create', compact('colleges'));
     }
 
@@ -93,6 +103,10 @@ class ProgramController extends Controller
         ]);
 
         $this->clearProgramCaches($program->college_id);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Program created successfully!', 'redirect' => route('admin.programs.index')]);
+        }
 
         return redirect()
             ->route('admin.programs.show', Crypt::encrypt($program->id))
@@ -134,16 +148,29 @@ class ProgramController extends Controller
     /**
      * Show the form for editing the specified program.
      */
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $id      = Crypt::decrypt($encryptedId);
             $program = Program::with('college')->findOrFail($id);
             $colleges = College::orderBy('college_name')->get(['id', 'college_name']);
 
+            if ($request->ajax()) {
+                $html = view('admin.programs._form', [
+                    'editing'    => true,
+                    'program'    => $program,
+                    'colleges'   => $colleges,
+                    'formAction' => route('admin.programs.update', urlencode(Crypt::encrypt($program->id))),
+                ])->render();
+                return response()->json(['html' => $html, 'css' => asset('css/programs-form.css')]);
+            }
+
             return view('admin.programs.edit', compact('program', 'colleges'));
         } catch (\Exception $e) {
             Log::error('Error editing program', ['error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Program not found.'], 404);
+            }
             return redirect()
                 ->route('admin.programs.index')
                 ->with('error', 'Program not found or invalid link.');
@@ -175,11 +202,18 @@ class ProgramController extends Controller
                 $this->clearProgramCaches($program->college_id);
             }
 
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Program updated successfully!', 'redirect' => route('admin.programs.index')]);
+            }
+
             return redirect()
                 ->route('admin.programs.show', Crypt::encrypt($program->id))
                 ->with('success', 'Program updated successfully!');
         } catch (\Exception $e) {
             Log::error('Error updating program', ['error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Failed to update program.'], 500);
+            }
             return redirect()
                 ->route('admin.programs.index')
                 ->with('error', 'Failed to update program.');

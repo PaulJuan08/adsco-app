@@ -70,6 +70,6 @@ class AnnouncementController extends Controller
 
         $status = $announcement->is_published ? 'published' : 'unpublished';
 
-        return back()->with('success', "Announcement {$status}.");
+        return redirect()->route('admin.announcements.index')->with('success', "Announcement {$status}.");
     }
 }

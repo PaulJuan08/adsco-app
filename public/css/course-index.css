@@ -5,9 +5,9 @@
 
 /* CSS Variables (inherited from programs-index.css, adding course-specific) */
 :root {
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
-    --primary-light: #818cf8;
+    --primary: #552b20;
+    --primary-dark: #3d1f17;
+    --primary-light: #c49a80;
     --success: #10b981;
     --success-dark: #059669;
     --success-light: #d1fae5;
@@ -290,7 +290,7 @@
 }
 
 .course-3 {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #ddb238 0%, #ddb238 100%);
 }
 
 .course-details {
@@ -379,7 +379,7 @@
     font-weight: var(--font-semibold);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
-    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #ddb238 100%);
 }
 
 .program-details {
@@ -409,7 +409,7 @@
     width: 36px;
     height: 36px;
     background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
-    border-radius: var(--radius-sm);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -417,6 +417,46 @@
     font-weight: var(--font-semibold);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+/* ── Avatar stack (overlapping circles) ── */
+.avatar-stack {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.avatar-stack-item {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    object-fit: cover;
+    margin-left: -8px;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 0 0 1.5px rgba(85,43,32,0.10);
+}
+
+.avatar-stack-item:first-child {
+    margin-left: 0;
+}
+
+.avatar-stack-initials {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+}
+
+.avatar-stack-more {
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
+    font-size: 0.65rem;
+    letter-spacing: -0.02em;
 }
 
 .teacher-details {
@@ -663,7 +703,7 @@
 
 /* Dashboard Header - Exact match from programs-index.css */
 .dashboard-header {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    background: linear-gradient(135deg, #2d1208 0%, #552b20 60%, #6d3624 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     margin-bottom: var(--space-8);

@@ -7,9 +7,9 @@
    VARIABLES & BASE SETUP
    ============================================ */
 :root {
-    --primary: #667eea;
-    --primary-dark: #5a67d8;
-    --primary-light: #ebf4ff;
+    --primary: #552b20;
+    --primary-dark: #3d1f17;
+    --primary-light: #f5ede8;
     --success: #48bb78;
     --success-dark: #38a169;
     --success-light: #f0fff4;
@@ -115,7 +115,7 @@
 .search-input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(85, 43, 32, 0.10);
 }
 
 .search-input::placeholder {
@@ -148,7 +148,7 @@
 .todo-tab.active {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
-    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 10px rgba(85, 43, 32, 0.3);
 }
 
 .todo-tab:not(.active) {
@@ -364,7 +364,7 @@
 }
 
 .todo-card-icon.quiz {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
 }
 
@@ -558,7 +558,7 @@
 
 .status-graded {
     background: var(--primary);
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 2px rgba(85, 43, 32, 0.2);
 }
 
 .status-late {
@@ -679,12 +679,12 @@
 .btn-xs-primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 2px 8px rgba(85, 43, 32, 0.2);
 }
 
 .btn-xs-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.3);
     color: white;
     text-decoration: none;
 }
@@ -931,7 +931,7 @@
    TEACHER-SPECIFIC STYLES
    ============================================ */
 .badge-teacher {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, #3d1f17 0%, #552b20 100%);
     color: white;
 }
 

@@ -57,9 +57,7 @@
         <p>Track and manage attendance records</p>
     </div>
     <div class="user-info">
-        <div class="user-avatar">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-        </div>
+        @include('partials.user_avatar')
     </div>
 </div>
 

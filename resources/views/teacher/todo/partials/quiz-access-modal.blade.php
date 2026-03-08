@@ -45,19 +45,14 @@
                        value="{{ $searchName }}">
             </div>
             
-            <button type="submit" class="btn-sm btn-sm-primary" style="align-self: flex-end;">
-                <i class="fas fa-filter"></i> Apply
-            </button>
-            
-            <a href="{{ route('teacher.todo.quiz.access.modal', $encryptedId) }}" 
-               class="btn-sm btn-sm-outline" style="align-self: flex-end;">
+            <button type="button" id="modal-clear-btn" class="btn-sm btn-sm-outline" style="align-self: flex-end;">
                 <i class="fas fa-times"></i> Clear
-            </a>
+            </button>
         </div>
     </form>
 
     {{-- Bulk Actions Form --}}
-    <form method="POST" id="bulk-form">
+    <form method="POST" id="bulk-form" data-no-crud="1">
         @csrf
         <div class="student-table-wrap">
             <div class="bulk-bar">
@@ -162,3 +157,40 @@
         </div>
     </form>
 </div>
+<script>
+(function(){
+    document.querySelectorAll('#crudModalBody .toggle-access').forEach(function(toggle){
+        toggle.addEventListener('change', function(){
+            var url = this.dataset.url;
+            var checked = this.checked;
+            var el = this;
+            fetch(url, {
+                method: 'POST',
+                headers: {'X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'Accept':'application/json'}
+            }).then(function(r){ return r.json(); }).catch(function(){ el.checked = !checked; });
+        });
+    });
+    var selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function(){
+            document.querySelectorAll('#crudModalBody .student-checkbox').forEach(function(cb){ cb.checked = selectAll.checked; });
+        });
+    }
+    var filterForm = document.getElementById('modal-filter-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e){ e.preventDefault(); });
+        function _submitModalFilter() {
+            var url = filterForm.action + '?' + new URLSearchParams(new FormData(filterForm)).toString();
+            document.getElementById('crudModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#552b20;font-size:2rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}})
+                .then(function(r){ return r.json(); })
+                .then(function(data){ document.getElementById('crudModalBody').innerHTML = data.html; document.querySelectorAll('#crudModalBody script').forEach(function(s){var n=document.createElement('script');n.textContent=s.textContent;document.head.appendChild(n);s.remove();}); })
+                .catch(function(){ document.getElementById('crudModalBody').innerHTML='<p style="color:#dc2626;text-align:center;padding:1rem;">Failed to load. Please try again.</p>'; });
+        }
+        filterForm.querySelectorAll('select').forEach(function(sel){ sel.addEventListener('change', _submitModalFilter); });
+        var _ft; filterForm.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.addEventListener('input', function(){ clearTimeout(_ft); _ft = setTimeout(_submitModalFilter, 500); }); });
+        var clearBtn = document.getElementById('modal-clear-btn');
+        if (clearBtn) { clearBtn.addEventListener('click', function(){ filterForm.querySelectorAll('select').forEach(function(s){ s.value=''; }); filterForm.querySelectorAll('input[type="text"]').forEach(function(i){ i.value=''; }); _submitModalFilter(); }); }
+    }
+})();
+</script>

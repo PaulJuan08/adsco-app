@@ -23,27 +23,9 @@
                 <h1 class="card-title">{{ $course->title }}</h1>
             </div>
             <div class="top-actions">
-                <button type="button" class="top-action-btn grant-access" onclick="openAccessModal()">
-                    <i class="fas fa-user-plus"></i> Grant Access
-                </button>
-                @if($course->is_published)
-                    <button type="button" class="top-action-btn unpublish-btn" onclick="confirmUnpublish()">
-                        <i class="fas fa-eye-slash"></i> Unpublish
-                    </button>
-                @else
-                    <button type="button" class="top-action-btn publish-btn" onclick="confirmPublish()">
-                        <i class="fas fa-eye"></i> Publish
-                    </button>
-                @endif
                 <a href="{{ route('admin.courses.discussions', $encryptedId) }}" class="top-action-btn">
                     <i class="fas fa-comments"></i> Discussion
                 </a>
-                <a href="{{ route('admin.courses.edit', $encryptedId) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <button type="button" class="top-action-btn delete-btn" onclick="confirmDelete()">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
                 <a href="{{ route('admin.courses.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
@@ -269,22 +251,44 @@
                             <span class="lbl"><i class="fas fa-star"></i> Credits</span>
                             <span class="val">{{ $course->credits ?? 3 }}</span>
                         </div>
-                        @if($course->teacher)
-                        <div class="info-row-sm">
-                            <span class="lbl"><i class="fas fa-chalkboard-teacher"></i> Primary Teacher</span>
-                            <span class="val">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</span>
-                        </div>
-                        @endif
-                        @if($course->teachers && $course->teachers->count() > 0)
-                        <div class="info-row-sm" style="align-items: flex-start;">
-                            <span class="lbl" style="padding-top: 0.25rem;"><i class="fas fa-users"></i> Co-Teachers</span>
-                            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
-                                @foreach($course->teachers as $coTeacher)
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #ddb238; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;">
-                                        {{ strtoupper(substr($coTeacher->f_name, 0, 1)) }}{{ strtoupper(substr($coTeacher->l_name, 0, 1)) }}
-                                    </div>
-                                    <span style="font-size: 0.8rem; color: #2d3748;">{{ $coTeacher->f_name }} {{ $coTeacher->l_name }}</span>
+                        @php
+                            $showTeachers = collect();
+                            if($course->teacher) $showTeachers->push($course->teacher);
+                            foreach(($course->teachers ?? collect()) as $ct) {
+                                if(!$showTeachers->contains('id', $ct->id)) $showTeachers->push($ct);
+                            }
+                        @endphp
+                        @if($showTeachers->isNotEmpty())
+                        <div class="info-row-sm" style="align-items:flex-start;">
+                            <span class="lbl" style="padding-top:0.35rem;"><i class="fas fa-chalkboard-teacher"></i> Teachers</span>
+                            <div style="display:flex;flex-direction:column;gap:0.45rem;">
+                                <div style="display:flex;align-items:center;">
+                                    {{-- Avatar stack --}}
+                                    @foreach($showTeachers->take(4) as $t)
+                                        @if($t->profile_photo_url)
+                                            <img src="{{ $t->profile_photo_url }}" alt="{{ $t->f_name }}"
+                                                 title="{{ $t->f_name }} {{ $t->l_name }}"
+                                                 style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #fff;margin-left:{{ $loop->first ? '0' : '-8px' }};box-shadow:0 0 0 1.5px rgba(85,43,32,0.12);flex-shrink:0;">
+                                        @else
+                                            <div title="{{ $t->f_name }} {{ $t->l_name }}"
+                                                 style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ddb238,#c49a00);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;border:2px solid #fff;margin-left:{{ $loop->first ? '0' : '-8px' }};box-shadow:0 0 0 1.5px rgba(85,43,32,0.12);flex-shrink:0;">
+                                                {{ strtoupper(substr($t->f_name,0,1)) }}
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                    @if($showTeachers->count() > 4)
+                                        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#552b20,#3d1f17);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;border:2px solid #fff;margin-left:-8px;flex-shrink:0;">
+                                            +{{ $showTeachers->count() - 4 }}
+                                        </div>
+                                    @endif
+                                </div>
+                                {{-- Name list --}}
+                                @foreach($showTeachers as $t)
+                                <div style="display:flex;align-items:center;gap:0.4rem;">
+                                    <span style="font-size:0.8rem;color:#2d3748;">{{ $t->f_name }} {{ $t->l_name }}</span>
+                                    @if($t->id === $course->teacher_id)
+                                        <span style="font-size:0.65rem;background:#fef3c7;color:#92400e;padding:0.1rem 0.4rem;border-radius:4px;font-weight:600;">Lead</span>
+                                    @endif
                                 </div>
                                 @endforeach
                             </div>
@@ -327,6 +331,19 @@
                                 <span style="display:block; font-size:0.7rem; color:#718096;">{{ $course->created_at->diffForHumans() }}</span>
                             </span>
                         </div>
+                        @if($course->updater)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-user-edit"></i> Last Updated By</span>
+                            <span class="val">{{ $course->updater->f_name }} {{ $course->updater->l_name }}
+                                <span style="display:block; font-size:0.7rem; color:#718096;">{{ $course->updated_at->format('M d, Y') }}</span>
+                            </span>
+                        </div>
+                        @elseif($course->updated_at != $course->created_at)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-clock"></i> Last Updated</span>
+                            <span class="val">{{ $course->updated_at->format('M d, Y') }}</span>
+                        </div>
+                        @endif
                     </div>
 
                     <div class="sidebar-card">

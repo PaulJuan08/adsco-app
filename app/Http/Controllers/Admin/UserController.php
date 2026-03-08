@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Mail\UserApprovedMail;
 use App\Models\College;
@@ -54,7 +55,7 @@ class UserController extends Controller
         
         // Cache for 1 minute (reduced from 2 for fresher data)
         $users = Cache::remember($cacheKey, 60, function() use ($search, $role, $status) {
-            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at', 'email_verified_at']);
+            $query = User::select(['id', 'f_name', 'l_name', 'email', 'role', 'is_approved', 'created_at', 'email_verified_at', 'profile_photo']);
             
             // Apply search filter
             if ($search) {
@@ -81,11 +82,26 @@ class UserController extends Controller
         return view('admin.users.index', compact('users', 'stats', 'roleNames'));
     }
     
-    public function create()
+    public function create(Request $request)
     {
         // Only admin can create users
         if (!auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized action. Only admins can create users.');
+        }
+
+        // Pass active colleges for the academic section
+        $colleges = College::where('status', 1)
+                        ->orderBy('college_name')
+                        ->get(['id', 'college_name', 'college_year']);
+
+        if ($request->ajax()) {
+            $html = view('admin.users._form', [
+                'editing'    => false,
+                'formAction' => route('admin.users.store'),
+                'user'       => null,
+                'colleges'   => $colleges,
+            ])->render();
+            return response()->json(['html' => $html]);
         }
 
         // Use the main getStats() method instead of separate cache
@@ -95,31 +111,31 @@ class UserController extends Controller
         $roleOptions = Cache::remember('user_role_options', 3600, function() {
             return [
                 1 => [
-                    'name' => 'Admin', 
-                    'icon' => 'user-shield', 
+                    'name' => 'Admin',
+                    'icon' => 'user-shield',
                     'color' => 'danger',
                     'description' => 'Full system access and management',
                     'id_required' => false
                 ],
                 2 => [
-                    'name' => 'Registrar', 
-                    'icon' => 'clipboard-list', 
+                    'name' => 'Registrar',
+                    'icon' => 'clipboard-list',
                     'color' => 'primary',
                     'description' => 'Manage student registrations and records',
                     'id_required' => true,
                     'id_type' => 'employee_id'
                 ],
                 3 => [
-                    'name' => 'Teacher', 
-                    'icon' => 'chalkboard-teacher', 
+                    'name' => 'Teacher',
+                    'icon' => 'chalkboard-teacher',
                     'color' => 'success',
                     'description' => 'Create courses and manage students',
                     'id_required' => true,
                     'id_type' => 'employee_id'
                 ],
                 4 => [
-                    'name' => 'Student', 
-                    'icon' => 'user-graduate', 
+                    'name' => 'Student',
+                    'icon' => 'user-graduate',
                     'color' => 'info',
                     'description' => 'Enroll in courses and view materials',
                     'id_required' => true,
@@ -139,11 +155,6 @@ class UserController extends Controller
                 'random_suffix' => rand(1000, 9999)
             ];
         });
-
-        // Pass active colleges for the academic section
-        $colleges = College::where('status', 1)
-                        ->orderBy('college_name')
-                        ->get(['id', 'college_name', 'college_year']);
 
         return view('admin.users.create', compact('roleOptions', 'stats', 'suggestions', 'colleges'));
     }
@@ -218,24 +229,28 @@ class UserController extends Controller
         }
         
         $user = User::create($userData);
-        
+
         // Clear all user-related caches
         $this->clearUserCaches();
-        
+
         // Clear specific caches
         Cache::forget('user_role_options');
         Cache::forget('user_form_suggestions');
         Cache::forget('create_user_stats_' . auth()->id());
-        
+
         // Cache the new user for quick access
         $cacheKey = 'user_show_' . $user->id;
         Cache::put($cacheKey, $user, 300);
-        
+
         // Log the creation
         if (class_exists(\App\Helpers\AuditHelper::class)) {
             \App\Helpers\AuditHelper::log('create', "Created new user: {$user->email}", $user);
         }
-        
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'User created successfully.', 'redirect' => route('admin.users.index')]);
+        }
+
         return redirect()->route('admin.users.index')
             ->with('success', 'User created successfully.')
             ->with('user_id', $user->id);
@@ -298,52 +313,67 @@ class UserController extends Controller
         }
     }
     
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
             $user = User::findOrFail($id);
-            
+
             // Only admin can edit users, or users can edit their own profile
             if (!auth()->user()->isAdmin() && auth()->user()->id != $user->id) {
                 abort(403, 'Unauthorized action. Only admins can edit other users.');
             }
-            
+
             // Cache individual user for edit (2 minutes for fresh data)
             $cacheKey = 'user_edit_detail_' . $id;
             $user = Cache::remember($cacheKey, 120, function() use ($id) {
                 return User::with(['approvedBy', 'college', 'program'])->findOrFail($id);
             });
-            
+
+            // Pass active colleges for the academic section
+            $colleges = College::where('status', 1)
+                            ->orderBy('college_name')
+                            ->get(['id', 'college_name', 'college_year']);
+
+            if ($request->ajax()) {
+                $html = view('admin.users._form', [
+                    'editing'    => true,
+                    'formAction' => route('admin.users.update', $encryptedId),
+                    'user'       => $user,
+                    'colleges'   => $colleges,
+                ])->render();
+                return response()->json(['html' => $html]);
+            }
+
             // Cache role options
             $roleOptions = Cache::remember('user_role_options', 3600, function() {
                 return [
                     1 => [
-                        'name' => 'Admin', 
-                        'icon' => 'user-shield', 
+                        'name' => 'Admin',
+                        'icon' => 'user-shield',
                         'color' => 'danger',
                         'description' => 'Full system access and management',
                         'id_required' => false
                     ],
                     2 => [
-                        'name' => 'Registrar', 
-                        'icon' => 'clipboard-list', 
+                        'name' => 'Registrar',
+                        'icon' => 'clipboard-list',
                         'color' => 'primary',
                         'description' => 'Manage student registrations and records',
                         'id_required' => true,
                         'id_type' => 'employee_id'
                     ],
                     3 => [
-                        'name' => 'Teacher', 
-                        'icon' => 'chalkboard-teacher', 
+                        'name' => 'Teacher',
+                        'icon' => 'chalkboard-teacher',
                         'color' => 'success',
                         'description' => 'Create courses and manage students',
                         'id_required' => true,
                         'id_type' => 'employee_id'
                     ],
                     4 => [
-                        'name' => 'Student', 
-                        'icon' => 'user-graduate', 
+                        'name' => 'Student',
+                        'icon' => 'user-graduate',
                         'color' => 'info',
                         'description' => 'Enroll in courses and view materials',
                         'id_required' => true,
@@ -351,12 +381,12 @@ class UserController extends Controller
                     ]
                 ];
             });
-            
+
             // Get user stats for the header
             $stats = Cache::remember('user_edit_stats_' . auth()->id(), 300, function() {
                 return $this->getStats();
             });
-            
+
             // Cache form suggestions
             $suggestions = Cache::remember('user_form_suggestions', 1800, function() {
                 $currentYear = now()->year;
@@ -367,13 +397,8 @@ class UserController extends Controller
                 ];
             });
 
-            // Pass active colleges for the academic section
-            $colleges = College::where('status', 1)
-                            ->orderBy('college_name')
-                            ->get(['id', 'college_name', 'college_year']);
-            
             return view('admin.users.edit', compact('user', 'encryptedId', 'roleOptions', 'stats', 'suggestions', 'colleges'));
-            
+
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');
         }
@@ -427,6 +452,7 @@ class UserController extends Controller
                 'college_id'   => 'nullable|exists:colleges,id',
                 'program_id'   => 'nullable|exists:programs,id',
                 'college_year' => 'nullable|string|max:50',
+                'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ], $idRules));
             
             // Prepare update data
@@ -484,17 +510,36 @@ class UserController extends Controller
             if ($request->filled('password')) {
                 $updateData['password'] = bcrypt($request->password);
             }
-            
+
+            // Handle profile photo
+            if ($request->hasFile('profile_photo')) {
+                if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                    Storage::disk('public')->delete($user->profile_photo);
+                }
+                $updateData['profile_photo'] = $request->file('profile_photo')->store('profile-photos', 'public');
+            } elseif ($request->boolean('remove_photo') && $user->profile_photo) {
+                Storage::disk('public')->delete($user->profile_photo);
+                $updateData['profile_photo'] = null;
+            }
+
             $user->update($updateData);
-            
+
+            // Clear individual user caches (including show/detail so fresh photo is loaded)
+            Cache::forget('user_show_detail_' . $id);
+            Cache::forget('user_edit_detail_' . $id);
+
             // Clear user-related caches
             $this->clearUserCaches($id);
-            
+
             // Log the update
             if (class_exists(\App\Helpers\AuditHelper::class)) {
                 \App\Helpers\AuditHelper::log('update', "Updated user: {$user->email}", $user);
             }
-            
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'User updated successfully.', 'redirect' => route('admin.users.index')]);
+            }
+
             return redirect()->route('admin.users.index')
                 ->with('success', 'User updated successfully.')
                 ->with('user_id', $user->id);

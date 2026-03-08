@@ -28,38 +28,7 @@
                 <h1 class="card-title">{{ $assignment->title }}</h1>
             </div>
             <div class="top-actions">
-                {{-- Grant Access Button --}}
-                <button type="button" 
-                        class="top-action-btn" 
-                        style="background: #48bb78;"
-                        onclick="openAccessModal()">
-                    <i class="fas fa-user-plus"></i> Grant Access
-                </button>
-                
-                {{-- Publish/Unpublish Button --}}
-                @if($assignment->is_published)
-                    <button type="button" 
-                            class="top-action-btn" 
-                            style="background: #f56565;"
-                            onclick="confirmUnpublish('{{ $encryptedId }}')">
-                        <i class="fas fa-eye-slash"></i> Unpublish
-                    </button>
-                @else
-                    <button type="button" 
-                            class="top-action-btn"
-                            style="background: #48bb78;"
-                            onclick="confirmPublish('{{ $encryptedId }}')">
-                        <i class="fas fa-eye"></i> Publish
-                    </button>
-                @endif
-                
-                <a href="{{ route('teacher.assignments.edit', $encryptedId) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <a href="{{ route('teacher.todo.progress', ['type' => 'assignment', 'item_id' => $assignment->id]) }}" class="top-action-btn">
-                    <i class="fas fa-chart-bar"></i> Progress
-                </a>
-                <a href="{{ route('teacher.todo.index', ['type' => 'assignment']) }}" class="top-action-btn">
+                <a href="{{ route('teacher.assignments.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
             </div>
@@ -117,6 +86,21 @@
                             @if($assignment->due_date->isPast())
                                 <span style="color: #f56565;">(Overdue)</span>
                             @endif
+                        </span>
+                        @endif
+                        @if($assignment->creator)
+                        <span>
+                            <i class="fas fa-user-plus"></i> Created by: {{ $assignment->creator->f_name }} {{ $assignment->creator->l_name }}
+                        </span>
+                        @endif
+                        @if($assignment->updater)
+                        <span>
+                            <i class="fas fa-user-edit"></i> Last updated by: {{ $assignment->updater->f_name }} {{ $assignment->updater->l_name }}
+                            on {{ $assignment->updated_at->format('M d, Y') }}
+                        </span>
+                        @elseif($assignment->updated_at != $assignment->created_at)
+                        <span>
+                            <i class="fas fa-clock"></i> Last updated: {{ $assignment->updated_at->format('M d, Y') }}
                         </span>
                         @endif
                     </div>
@@ -348,7 +332,7 @@
                                             @if($submission->gradedBy)
                                                 <div style="font-size: 0.75rem; color: #718096; text-align: right;">
                                                     <div>Graded by {{ $submission->gradedBy->full_name }}</div>
-                                                    <div>{{ $submission->graded_at->format('M d, Y h:i A') }}</div>
+                                                    <div>{{ $submission->graded_at->format('M d, Y M d, Y') }}') }}</div>
                                                 </div>
                                             @endif
                                         </div>

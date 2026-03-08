@@ -14,23 +14,13 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-                </div>
+                @include('partials.user_avatar')
                 <div class="greeting-text">
                     <h1 class="welcome-title">Enrollment Management</h1>
                     <p class="welcome-subtitle">
                         <i class="fas fa-user-graduate"></i> Manage course enrollments
                     </p>
                 </div>
-            </div>
-            <div class="header-actions">
-                <a href="{{ route('admin.courses.create') }}" class="top-action-btn">
-                    <i class="fas fa-plus-circle"></i> Create Course
-                </a>
-                <a href="{{ route('admin.users.index') }}?role=4" class="top-action-btn">
-                    <i class="fas fa-users"></i> Manage Students
-                </a>
             </div>
         </div>
     </div>

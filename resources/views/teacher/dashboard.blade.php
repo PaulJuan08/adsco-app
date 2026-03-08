@@ -9,7 +9,9 @@
         <div class="header-content">
             <div class="user-greeting">
                 <div class="user-avatar">
-                    @if(auth()->user()->sex === 'female')
+                    @if(auth()->user()->profile_photo_url)
+                        <img src="{{ auth()->user()->profile_photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
+                    @elseif(auth()->user()->sex === 'female')
                         <i class="fas fa-person-dress"></i>
                     @else
                         <i class="fas fa-person"></i>
@@ -75,6 +77,60 @@
         </div>
     </div>
 
+    {{-- ── COURSE CHARTS ────────────────────────────────────────── --}}
+    <div class="teacher-charts-grid">
+
+        {{-- Course Performance: avg quiz score per course --}}
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-bar" style="color:var(--primary); margin-right:0.5rem;"></i>
+                    Course Performance
+                </h2>
+                <span style="font-size:0.7rem; color:var(--gray-400);">Avg quiz score per course</span>
+            </div>
+            <div class="card-body">
+                @if($courseChartData->count() > 0)
+                    <canvas id="courseChart"></canvas>
+                @else
+                    <div class="chart-empty-state">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>No quiz data yet</p>
+                        <small>Scores appear once students complete quizzes</small>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Assignment Submission Status --}}
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-tasks" style="color:#f59e0b; margin-right:0.5rem;"></i>
+                    Assignment Submissions
+                </h2>
+                <span style="font-size:0.7rem; color:var(--gray-400);">Status overview</span>
+            </div>
+            <div class="card-body chart-donut-body">
+                @php $totalSubs = array_sum($submissionStats); @endphp
+                @if($totalSubs > 0)
+                    <canvas id="submissionChart" style="max-width:180px; max-height:180px;"></canvas>
+                    <div class="donut-legend">
+                        <div><span class="legend-dot" style="background:#ef4444;"></span>Pending: {{ $submissionStats['pending'] }}</div>
+                        <div><span class="legend-dot" style="background:#f59e0b;"></span>Submitted: {{ $submissionStats['submitted'] }}</div>
+                        <div><span class="legend-dot" style="background:#10b981;"></span>Graded: {{ $submissionStats['graded'] }}</div>
+                    </div>
+                @else
+                    <div class="chart-empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No submissions yet</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+    </div>
+
     <!-- Main Content Grid -->
     <div class="content-grid">
         <!-- Left Column -->
@@ -103,7 +159,7 @@
                     @else
                         <div class="items-list">
                             @foreach($myCourses->take(5) as $course)
-                            <div class="list-item">
+                            <div class="list-item clickable-row" onclick="window.location='{{ route('teacher.courses.show', Crypt::encrypt($course->id)) }}'">
                                 <div class="item-avatar" style="border-radius: var(--radius);">
                                     <i class="fas fa-book-open"></i>
                                 </div>
@@ -111,18 +167,15 @@
                                     <div class="item-name">{{ $course->course_name ?? $course->title }}</div>
                                     <div class="item-details">{{ $course->course_code }} • {{ $course->credits ?? 0 }} credits</div>
                                     <div class="item-meta">
+                                        @if($course->schedule)
                                         <span class="item-badge badge-primary">
-                                            {{ $course->schedule ?? 'Schedule TBD' }}
+                                            {{ $course->schedule }}
                                         </span>
+                                        @endif
                                         <span class="item-badge badge-secondary">
                                             <i class="fas fa-users"></i> {{ $course->enrollments_count ?? 0 }} students
                                         </span>
                                     </div>
-                                </div>
-                                <div>
-                                    <a href="{{ route('teacher.courses.show', Crypt::encrypt($course->id)) }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
                                 </div>
                             </div>
                             @endforeach
@@ -280,9 +333,96 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 <style>
-.separator {
-    opacity: 0.5;
-    margin: 0 0.5rem;
+.separator { opacity: 0.5; margin: 0 0.5rem; }
+.clickable-row { cursor: pointer; transition: background 0.15s, transform 0.1s; }
+.clickable-row:hover { background: var(--gray-50, #f9fafb); transform: translateX(2px); }
+.teacher-charts-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
+.chart-card { margin-bottom: 0 !important; }
+.chart-empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 160px; gap: 0.4rem;
+}
+.chart-empty-state i { font-size: 2.5rem; color: var(--gray-300); }
+.chart-empty-state p { font-size: 0.875rem; color: var(--gray-500); margin: 0; }
+.chart-empty-state small { font-size: 0.75rem; color: var(--gray-400); }
+.chart-donut-body { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.donut-legend { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; color: var(--gray-600); }
+.donut-legend div { display: flex; align-items: center; gap: 0.4rem; }
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+@media (max-width: 768px) { .teacher-charts-grid { grid-template-columns: 1fr; } }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const P = { brown: '#552b20', gold: '#c49a24', orange: '#d3541b', teal: '#2a8a72', blue: '#2d7fa8', neutral: '#e8ddd9' };
+    const tipOpts = { backgroundColor: '#fff', titleColor: '#1e293b', bodyColor: '#475569', borderColor: '#e2e8f0', borderWidth: 1, padding: 10, cornerRadius: 6 };
+
+    @if($courseChartData->count() > 0)
+    (function () {
+        const data = @json($courseChartData);
+        const bg = data.map(d => d.avg_score >= 70 ? P.teal : d.avg_score >= 50 ? P.gold : P.orange);
+        new Chart(document.getElementById('courseChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.title),
+                datasets: [{
+                    label: 'Avg Quiz Score (%)',
+                    data: data.map(d => d.avg_score),
+                    backgroundColor: bg,
+                    borderWidth: 0,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tipOpts, callbacks: { label: c => [`  Avg score: ${c.parsed.x}%`, `  Enrolled: ${data[c.dataIndex].students}`] } }
+                },
+                scales: {
+                    x: { min: 0, max: 100, grid: { color: 'rgba(0,0,0,0.05)' }, border: { display: false }, ticks: { callback: v => v + '%', color: '#94a3b8', font: { size: 11 } } },
+                    y: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } }
+                }
+            }
+        });
+    })();
+    @endif
+
+    @php $totalSubs = array_sum($submissionStats); @endphp
+    @if($totalSubs > 0)
+    (function () {
+        const stats = @json($submissionStats);
+        new Chart(document.getElementById('submissionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Pending', 'Submitted', 'Graded'],
+                datasets: [{
+                    data: [stats.pending || 0, stats.submitted || 0, stats.graded || 0],
+                    backgroundColor: [P.orange, P.gold, P.teal],
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                    hoverOffset: 5
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true, cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tipOpts, callbacks: { label: c => `  ${c.label}: ${c.parsed}` } }
+                }
+            }
+        });
+    })();
+    @endif
+});
+</script>
 @endpush

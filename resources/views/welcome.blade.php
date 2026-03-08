@@ -38,8 +38,8 @@
     
     <script>
         setTimeout(() => {
-            const stylesLoaded = Array.from(document.styleSheets).some(sheet => 
-                sheet.href && (sheet.href.includes('app.css') || sheet.href.includes('welcome.css'))
+            const stylesLoaded = Array.from(document.styleSheets).some(sheet =>
+                sheet.href && (sheet.href.includes('/build/') || sheet.href.includes('app.css') || sheet.href.includes('welcome.css'))
             );
             
             if (!stylesLoaded) {
@@ -73,17 +73,18 @@
         }, 2000);
     </script>
     @endenv
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 
 <body class="font-sans antialiased bg-white">
-    <!-- Navigation -->
     <nav class="bg-white/95 backdrop-blur-sm border-b border-gray-200 fixed w-full z-50 transition-all duration-300" id="navbar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
                 <!-- Logo -->
                 <div class="flex-shrink-0 flex items-center group">
-                    <img class="h-16 w-auto transition-transform duration-300 group-hover:scale-110" 
-                         src="{{ asset('assets/img/adsco-logo.png') }}" 
+                    <img class="h-16 w-auto transition-transform duration-300 group-hover:scale-110"
+                         src="{{ asset('assets/img/adsco-logo.png') }}"
                          alt="ADSCO Logo">
                     <span class="ml-3 text-xl font-bold text-adsco-primary transition-colors duration-300 group-hover:text-adsco-accent">ADSCO</span>
                 </div>
@@ -108,7 +109,7 @@
                     <a href="#contact" class="nav-link text-gray-900 hover:text-adsco-primary font-medium transition-colors duration-300 relative">
                         Contact
                     </a>
-                    
+
                     @if (Route::has('login'))
                         @auth
                             <a href="{{ url('/dashboard') }}" class="nav-link text-gray-900 hover:text-adsco-primary font-medium transition-colors duration-300 relative">
@@ -663,6 +664,7 @@
                         </div>
                         
                         <div>
+                            <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" style="margin-bottom: 1rem;"></div>
                             <button type="submit" class="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white btn-submit hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
                                 <span>Send Message</span>
                                 <i class="fas fa-paper-plane ml-2"></i>
@@ -760,7 +762,7 @@
         // Mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-        
+
         if (mobileMenuButton && mobileMenu) {
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');

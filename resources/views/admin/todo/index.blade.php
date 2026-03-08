@@ -157,15 +157,13 @@
                 <input type="hidden" name="type" value="{{ $type }}">
                 <div class="search-container">
                     <i class="fas fa-search"></i>
-                    <input type="text" 
-                           name="search" 
+                    <input type="text"
+                           name="search"
                            value="{{ $search }}"
-                           placeholder="Search by title..." 
-                           class="search-input">
+                           placeholder="Search by title..."
+                           class="search-input"
+                           data-client-filter=".todo-card">
                 </div>
-                <button type="submit" class="btn-xs btn-xs-primary">
-                    <i class="fas fa-search"></i> Search
-                </button>
                 @if($search)
                 <a href="{{ route('admin.todo.index', ['type' => $type]) }}" class="btn-xs btn-xs-outline">
                     <i class="fas fa-times"></i> Clear
@@ -177,9 +175,9 @@
                 <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
                     <i class="fas fa-plus-circle"></i> New Quiz
                 </a>
-                <a href="{{ route('admin.assignments.create') }}" class="btn-xs btn-xs-success">
+                <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                     <i class="fas fa-plus-circle"></i> New Assignment
-                </a>
+                </button>
                 <a href="{{ route('admin.todo.progress') }}" class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
                 </a>
@@ -328,7 +326,7 @@
             <div class="todo-card-actions" onclick="event.stopPropagation()">
                 <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}" 
                 class="btn-xs btn-xs-primary">
-                    <i class="fas fa-user-shield"></i> Manage Access
+                    <i class="fas fa-key"></i> Grant Access
                 </a>
                 <a href="{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
                 class="btn-xs btn-xs-outline">
@@ -523,12 +521,12 @@
             <div class="todo-card-actions" onclick="event.stopPropagation()">
                 <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}" 
                 class="btn-xs btn-xs-primary">
-                    <i class="fas fa-user-shield"></i> Manage Access
+                    <i class="fas fa-key"></i> Grant Access
                 </a>
-                <a href="{{ route('admin.assignments.edit', Crypt::encrypt($assignment->id)) }}" 
+                <button onclick="openCrudModal('{{ route('admin.assignments.edit', Crypt::encrypt($assignment->id)) }}', 'Edit Assignment')"
                 class="btn-xs btn-xs-outline">
                     <i class="fas fa-edit"></i> Edit
-                </a>
+                </button>
                 <a href="{{ route('admin.todo.progress', ['type' => 'assignment', 'item_id' => $assignment->id]) }}" 
                 class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
@@ -557,9 +555,9 @@
             <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
                 <i class="fas fa-plus-circle"></i> New Quiz
             </a>
-            <a href="{{ route('admin.assignments.create') }}" class="btn-xs btn-xs-success">
+            <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                 <i class="fas fa-plus-circle"></i> New Assignment
-            </a>
+            </button>
             @if($search)
             <a href="{{ route('admin.todo.index', ['type' => $type]) }}" class="btn-xs btn-xs-outline">
                 <i class="fas fa-times"></i> Clear Search

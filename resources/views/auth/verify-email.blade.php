@@ -86,20 +86,7 @@
     <div class="auth-particle auth-particle-2"></div>
     <div class="auth-particle auth-particle-3"></div>
 
-    <nav class="auth-navbar">
-        <div class="container">
-            <a href="/" class="brand">
-                <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo" class="brand-logo">
-                <span class="brand-text">ADS<span class="accent">CO</span></span>
-            </a>
-            <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
-            <div class="nav-links" id="navLinks">
-                <a href="/" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="{{ route('login') }}" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
-                <a href="{{ route('register') }}" class="nav-link active"><i class="fas fa-user-plus"></i><span>Register</span></a>
-            </div>
-        </div>
-    </nav>
+    @include('partials.navbar')
 
     <div class="auth-container">
         <div class="auth-card">
@@ -207,15 +194,6 @@
     </footer>
 
     <script>
-        // Mobile menu toggle
-        document.getElementById('mobileMenuBtn')?.addEventListener('click', function() {
-            const navLinks = document.getElementById('navLinks');
-            navLinks.classList.toggle('show');
-            const icon = this.querySelector('i');
-            icon.classList.toggle('fa-bars');
-            icon.classList.toggle('fa-times');
-        });
-
         // Auto-dismiss alerts
         setTimeout(() => {
             document.querySelectorAll('.alert-dismissible').forEach(a => {

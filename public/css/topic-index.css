@@ -5,9 +5,9 @@
 
 /* CSS Variables (inherited from programs-index.css, adding topic-specific) */
 :root {
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
-    --primary-light: #818cf8;
+    --primary: #552b20;
+    --primary-dark: #3d1f17;
+    --primary-light: #c49a80;
     --success: #10b981;
     --success-dark: #059669;
     --success-light: #d1fae5;
@@ -290,7 +290,7 @@
 }
 
 .topic-3 {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #ddb238 0%, #ddb238 100%);
 }
 
 .topic-4 {
@@ -364,7 +364,7 @@
 
 .creator-mobile i {
     font-size: 0.75rem;
-    color: #667eea;
+    color: #552b20;
 }
 
 /* Course Info - Following program pattern */
@@ -385,7 +385,7 @@
     font-weight: var(--font-semibold);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
-    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #ddb238 100%);
 }
 
 .course-details {
@@ -693,7 +693,7 @@
 
 /* Dashboard Header - Exact match from programs-index.css */
 .dashboard-header {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    background: linear-gradient(135deg, #2d1208 0%, #552b20 60%, #6d3624 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     margin-bottom: var(--space-8);

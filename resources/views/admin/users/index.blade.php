@@ -13,9 +13,7 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}{{ strtoupper(substr(Auth::user()->l_name, 0, 1)) }}
-                </div>
+                @include('partials.user_avatar')
                 <div class="greeting-text">
                     <h1 class="welcome-title">User Management</h1>
                     <p class="welcome-subtitle">
@@ -26,14 +24,6 @@
                         </span>
                     </p>
                 </div>
-            </div>
-            <div class="header-actions">
-                <a href="{{ route('admin.users.create') }}" class="top-action-btn">
-                    <i class="fas fa-plus-circle"></i> Add User
-                </a>
-                <a href="{{ route('admin.users.index') }}?status=pending" class="top-action-btn">
-                    <i class="fas fa-user-clock"></i> Pending ({{ $stats['pending'] }})
-                </a>
             </div>
         </div>
     </div>
@@ -119,9 +109,9 @@
                 <button id="export-csv" class="btn btn-secondary">
                     <i class="fas fa-file-csv"></i> Export
                 </button>
-                <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                <button onclick="openCrudModal('{{ route('admin.users.create') }}', 'Add User', 'modal-lg')" class="btn btn-primary">
                     <i class="fas fa-plus-circle"></i> Add User
-                </a>
+                </button>
             </div>
         </div>
 
@@ -152,9 +142,9 @@
                     <div class="empty-icon"><i class="fas fa-users"></i></div>
                     <h3 class="empty-title">No users found</h3>
                     <p class="empty-text">No users match your current filters.</p>
-                    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                    <button onclick="openCrudModal('{{ route('admin.users.create') }}', 'Add User', 'modal-lg')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Add Your First User
-                    </a>
+                    </button>
                     <div class="empty-hint">
                         <i class="fas fa-lightbulb"></i> Try adjusting your search or filters
                     </div>
@@ -169,6 +159,7 @@
                                 <th class="hide-on-tablet">Role</th>
                                 <th class="hide-on-tablet">Status</th>
                                 <th class="hide-on-tablet">Joined</th>
+                                <th class="action-col">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -220,9 +211,16 @@
                                 data-encrypted="{{ $encryptedId }}">
                                 <td>
                                     <div class="user-info-cell">
-                                        <div class="user-icon user-{{ ($loop->index % 3) + 1 }}">
-                                            <i class="fas fa-user"></i>
-                                        </div>
+                                        @if($user->profile_photo_url)
+                                            <div class="user-icon" style="padding:0;">
+                                                <img src="{{ $user->profile_photo_url }}" alt="{{ $user->full_name }}"
+                                                     style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                            </div>
+                                        @else
+                                            <div class="user-icon user-{{ ($loop->index % 3) + 1 }}">
+                                                {{ strtoupper(substr($user->f_name,0,1).substr($user->l_name,0,1)) }}
+                                            </div>
+                                        @endif
                                         <div class="user-details">
                                             <div class="user-name">{{ $user->f_name }} {{ $user->l_name }}</div>
                                             @if($user->email)
@@ -265,6 +263,37 @@
                                 <td class="hide-on-tablet">
                                     <span class="item-date">{{ $user->created_at->format('M d, Y') }}</span>
                                 </td>
+                                <td class="action-col" onclick="event.stopPropagation()">
+                                    @if($encryptedId)
+                                    <div class="action-dropdown-wrapper">
+                                        <button class="btn-action-dots" onclick="toggleActionDropdown(this)">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="action-dropdown-menu">
+                                            <a href="{{ route('admin.users.show', $encryptedId) }}" class="dropdown-item">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <button onclick="openCrudModal('{{ route('admin.users.edit', $encryptedId) }}', 'Edit User', 'modal-lg')" class="dropdown-item">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            @if(!$user->is_approved)
+                                            <form method="POST" action="{{ route('admin.users.approve', $encryptedId) }}" style="margin:0;">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item" style="color:#16a34a;">
+                                                    <i class="fas fa-check-circle"></i> Approve
+                                                </button>
+                                            </form>
+                                            @endif
+                                            @if(auth()->user()->isAdmin() && $user->id !== auth()->id())
+                                            <div class="dropdown-divider"></div>
+                                            <button onclick="confirmDeleteUser('{{ $encryptedId }}', '{{ addslashes($user->f_name . ' ' . $user->l_name) }}')" class="dropdown-item text-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endif
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -302,6 +331,12 @@
         </div>
         @endif
     </div>
+
+    <!-- Hidden delete form -->
+    <form id="itemDeleteForm" method="POST" style="display:none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
     <!-- Hidden Print Content -->
     <div id="print-content" style="display: none;">
@@ -393,6 +428,54 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // Action dropdown
+    window.toggleActionDropdown = function(btn) {
+        if (!btn._menu) btn._menu = btn.nextElementSibling;
+        var menu = btn._menu;
+        var isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+            if (menu.parentNode !== document.body) document.body.appendChild(menu);
+            var rect = btn.getBoundingClientRect();
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+            if (rect.top > 130) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.bottom = 'auto';
+            }
+            menu.classList.add('open');
+        }
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-wrapper'))
+            document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    });
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    }, true);
+
+    // Confirm delete user
+    window.confirmDeleteUser = function(encId, name) {
+        Swal.fire({
+            title: 'Delete User?',
+            text: `"${name}" will be permanently deleted.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete',
+        }).then(result => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('itemDeleteForm');
+                form.action = `{{ url('admin/users') }}/${encId}`;
+                form.submit();
+            }
+        });
+    };
 
     // Clickable rows
     document.querySelectorAll('.clickable-row').forEach(row => {

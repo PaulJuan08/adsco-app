@@ -31,8 +31,6 @@ class Quiz extends Model
         'due_date' => 'datetime',
         'shuffle_questions' => 'boolean',
         'shuffle_options' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     public function questions()

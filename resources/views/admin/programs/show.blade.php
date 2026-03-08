@@ -14,14 +14,8 @@
                 <h2 class="card-title">Program Details</h2>
             </div>
             <div class="top-actions">
-                <a href="{{ route('admin.programs.edit', Crypt::encrypt($program->id)) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <button type="button" class="top-action-btn delete-btn" id="deleteButton">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
-                <a href="{{ route('admin.colleges.show', ['encryptedId' => Crypt::encrypt($program->college->id)]) }}" style="color:#4f46e5;text-decoration:none;">
-                    {{ $program->college->college_name }}
+                <a href="{{ route('admin.programs.index') }}" class="top-action-btn">
+                    <i class="fas fa-arrow-left"></i> Back
                 </a>
             </div>
         </div>

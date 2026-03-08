@@ -121,9 +121,7 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-                </div>
+                @include('partials.user_avatar')
                 <div class="greeting-text">
                     <h1 class="welcome-title">Topic Management</h1>
                     <p class="welcome-subtitle">
@@ -134,14 +132,6 @@
                         </span>
                     </p>
                 </div>
-            </div>
-            <div class="header-actions">
-                <a href="{{ route('admin.topics.create') }}" class="top-action-btn">
-                    <i class="fas fa-plus-circle"></i> Add Topic
-                </a>
-                <a href="{{ route('admin.courses.index') }}" class="top-action-btn">
-                    <i class="fas fa-book"></i> Courses
-                </a>
             </div>
         </div>
     </div>
@@ -221,9 +211,9 @@
                 <button id="export-csv" class="btn btn-secondary">
                     <i class="fas fa-file-csv"></i> Export
                 </button>
-                <a href="{{ route('admin.topics.create') }}" class="btn btn-primary">
+                <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'Add Topic')" class="btn btn-primary">
                     <i class="fas fa-plus-circle"></i> Add Topic
-                </a>
+                </button>
             </div>
         </div>
 
@@ -244,9 +234,9 @@
                     <div class="empty-icon"><i class="fas fa-chalkboard"></i></div>
                     <h3 class="empty-title">No topics yet</h3>
                     <p class="empty-text">Start by adding the first learning topic.</p>
-                    <a href="{{ route('admin.topics.create') }}" class="btn btn-primary">
+                    <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'Add Topic')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Create Your First Topic
-                    </a>
+                    </button>
                     <div class="empty-hint">
                         <i class="fas fa-lightbulb"></i> Topics are learning units under each course
                     </div>
@@ -267,10 +257,12 @@
                         $creatorRole = 'Auto-generated';
                         $creatorAvatar = 'S';
                         $creatorColor = '#6b7280';
+                        $creatorPhotoUrl = null;
 
                         if($topic->creator) {
                             $creatorName = $topic->creator->f_name . ' ' . $topic->creator->l_name;
                             $creatorAvatar = strtoupper(substr($topic->creator->f_name, 0, 1)) . strtoupper(substr($topic->creator->l_name, 0, 1));
+                            $creatorPhotoUrl = $topic->creator->profile_photo_url;
 
                             if($topic->creator->role == 1) {
                                 $creatorRole = 'Admin';
@@ -326,7 +318,7 @@
                         data-encrypted="{{ $encryptedId }}">
 
                         {{-- Thumbnail --}}
-                        <a href="{{ $encryptedId ? route('admin.topics.show', ['encryptedId' => $encryptedId]) : '#' }}" class="topic-card-thumb" style="display:block;">
+                        <div onclick="{{ $encryptedId ? "openCrudModal('".route('admin.topics.show', ['encryptedId' => $encryptedId])."', '{$topic->title}', '940px')" : '' }}" class="topic-card-thumb" style="display:block;cursor:pointer;">
                             @if($youtubeThumbnail)
                                 <img src="{{ $youtubeThumbnail }}" alt="{{ $topic->title }}" loading="lazy">
                                 <div class="topic-card-play"><i class="fab fa-youtube"></i></div>
@@ -342,7 +334,7 @@
                                 <i class="fas fa-{{ $topic->is_published ? 'check-circle' : 'clock' }}"></i>
                                 {{ $topic->is_published ? 'Published' : 'Draft' }}
                             </span>
-                        </a>
+                        </div>
 
                         {{-- Card body --}}
                         <div class="topic-card-body">
@@ -376,17 +368,44 @@
                         {{-- Card footer --}}
                         <div class="topic-card-footer">
                             <div class="topic-card-creator">
-                                <div class="creator-avatar mini" style="background:{{ $creatorColor }};width:22px;height:22px;font-size:.6rem;flex-shrink:0;">{{ $creatorAvatar }}</div>
+                                @if($creatorPhotoUrl)
+                                    <img src="{{ $creatorPhotoUrl }}" alt="{{ $creatorName }}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                                @else
+                                    <div class="creator-avatar mini" style="background:{{ $creatorColor }};width:22px;height:22px;font-size:.6rem;flex-shrink:0;">{{ $creatorAvatar }}</div>
+                                @endif
                                 <span>{{ $creatorName }}</span>
                             </div>
                             <span class="topic-card-date item-date">{{ $topic->created_at->format('M d, Y') }}</span>
-                            <div class="topic-card-actions">
-                                @if($encryptedId)
-                                    <a href="{{ route('admin.topics.edit', ['encryptedId' => $encryptedId]) }}" class="btn-card-action btn-card-edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
-                                    <a href="{{ route('admin.topics.show', ['encryptedId' => $encryptedId]) }}" class="btn-card-action btn-card-view" title="View"><i class="fas fa-eye"></i></a>
-                                @endif
+                        </div>
+                        {{-- Actions footer --}}
+                        @if($encryptedId)
+                        <div class="card-footer-actions">
+                            <form method="POST" action="{{ route('admin.topics.publish', $encryptedId) }}" style="margin:0;">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn-toggle-status {{ $topic->is_published ? 'published' : 'draft' }}">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                    <span class="toggle-label">{{ $topic->is_published ? 'Published' : 'Draft' }}</span>
+                                </button>
+                            </form>
+                            <div class="action-dropdown-wrapper">
+                                <button class="btn-action-dots" onclick="toggleActionDropdown(this)">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="action-dropdown-menu">
+                                    <a href="{{ route('admin.topics.show', ['encryptedId' => $encryptedId]) }}" class="dropdown-item">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <button onclick="openCrudModal('{{ route('admin.topics.edit', ['encryptedId' => $encryptedId]) }}', 'Edit Topic')" class="dropdown-item">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <div class="dropdown-divider"></div>
+                                    <button onclick="confirmDeleteItem('{{ $encryptedId }}', '{{ addslashes($topic->title) }}')" class="dropdown-item text-danger">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                        @endif
                     </div>
                     @endforeach
                 </div>
@@ -518,11 +537,63 @@
         </div>
     </div>
 
+    {{-- Shared delete form --}}
+    <form id="itemDeleteForm" method="POST" style="display:none;">
+        @csrf @method('DELETE')
+    </form>
 </div>
 @endsection
 
 @push('scripts')
 <script>
+// Action dropdown toggle
+function toggleActionDropdown(btn) {
+    if (!btn._menu) btn._menu = btn.nextElementSibling;
+    var menu = btn._menu;
+    var isOpen = menu.classList.contains('open');
+    document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!isOpen) {
+        if (menu.parentNode !== document.body) document.body.appendChild(menu);
+        var rect = btn.getBoundingClientRect();
+        menu.style.left = 'auto';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        if (rect.top > 130) {
+            menu.style.top = 'auto';
+            menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+        } else {
+            menu.style.top = (rect.bottom + 4) + 'px';
+            menu.style.bottom = 'auto';
+        }
+        menu.classList.add('open');
+    }
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.action-dropdown-wrapper'))
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+});
+window.addEventListener('scroll', function() {
+    document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+}, true);
+
+// Delete confirmation
+function confirmDeleteItem(encId, title) {
+    Swal.fire({
+        title: 'Delete Topic?',
+        html: `<strong>"${title}"</strong> will be permanently deleted.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete',
+    }).then(r => {
+        if (r.isConfirmed) {
+            const f = document.getElementById('itemDeleteForm');
+            f.action = '{{ url("admin/topics") }}/' + encId;
+            f.submit();
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // Search + course filter

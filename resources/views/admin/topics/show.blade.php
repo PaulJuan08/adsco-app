@@ -23,21 +23,6 @@
                 <h1 class="card-title">{{ $topic->title }}</h1>
             </div>
             <div class="top-actions">
-                @if($topic->is_published)
-                    <button type="button" class="top-action-btn unpublish-btn" onclick="confirmUnpublish()">
-                        <i class="fas fa-eye-slash"></i> Unpublish
-                    </button>
-                @else
-                    <button type="button" class="top-action-btn publish-btn" onclick="confirmPublish()">
-                        <i class="fas fa-eye"></i> Publish
-                    </button>
-                @endif
-                <a href="{{ route('admin.topics.edit', $encryptedId) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <button type="button" class="top-action-btn delete-btn" onclick="confirmDelete()">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
                 <a href="{{ route('admin.topics.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
@@ -721,28 +706,22 @@ function togglePdfFullscreen() {
 // ════════════════════════════════════════════════════════════════
 // VIDEO MODAL FUNCTIONS
 // ════════════════════════════════════════════════════════════════
-function openModal(id) { 
+function openModal(id) {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.style.display = 'flex';
-    }
+    if (modal) modal.classList.add('active');
 }
 
-function closeModal(id) { 
+function closeModal(id) {
     const modal = document.getElementById(id);
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.classList.remove('active');
 }
 
 function closeAllModals() {
     const modalIds = ['pdfModal', 'videoModal', 'driveModal'];
-    
+
     modalIds.forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            el.style.display = 'none';
-        }
+        if (el) el.classList.remove('active');
     });
 
     resetPdfElements();

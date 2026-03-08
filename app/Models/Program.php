@@ -21,8 +21,6 @@ class Program extends Model
 
     protected $casts = [
         'status' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
     ];
 
     /**

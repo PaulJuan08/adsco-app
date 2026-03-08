@@ -13,9 +13,7 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}{{ strtoupper(substr(Auth::user()->l_name, 0, 1)) }}
-                </div>
+                @include('partials.user_avatar')
                 <div class="greeting-text">
                     <h1 class="welcome-title">My Courses</h1>
                     <p class="welcome-subtitle">
@@ -26,14 +24,6 @@
                         </span>
                     </p>
                 </div>
-            </div>
-            <div class="header-actions">
-                <a href="{{ route('teacher.courses.create') }}" class="top-action-btn">
-                    <i class="fas fa-plus-circle"></i> Add Course
-                </a>
-                <a href="{{ route('teacher.topics.index') }}" class="top-action-btn">
-                    <i class="fas fa-chalkboard"></i> Topics
-                </a>
             </div>
         </div>
     </div>
@@ -111,9 +101,9 @@
                 <button id="export-csv" class="btn btn-secondary">
                     <i class="fas fa-file-csv"></i> Export
                 </button>
-                <a href="{{ route('teacher.courses.create') }}" class="btn btn-primary">
+                <button onclick="openCrudModal('{{ route('teacher.courses.create') }}', 'Add Course')" class="btn btn-primary">
                     <i class="fas fa-plus-circle"></i> Add Course
-                </a>
+                </button>
             </div>
         </div>
 
@@ -134,9 +124,9 @@
                     <div class="empty-icon"><i class="fas fa-book-open"></i></div>
                     <h3 class="empty-title">No courses yet</h3>
                     <p class="empty-text">Start by adding your first course.</p>
-                    <a href="{{ route('teacher.courses.create') }}" class="btn btn-primary">
+                    <button onclick="openCrudModal('{{ route('teacher.courses.create') }}', 'Add Course')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Create Your First Course
-                    </a>
+                    </button>
                     <div class="empty-hint">
                         <i class="fas fa-lightbulb"></i> Courses are learning units that can contain multiple topics
                     </div>
@@ -153,6 +143,7 @@
                                 <th class="hide-on-tablet">Topics</th>
                                 <th class="hide-on-tablet">Status</th>
                                 <th class="hide-on-tablet">Created</th>
+                                <th class="action-col">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -263,6 +254,34 @@
                                     <div class="credits-badge">{{ $course->credits }} Credits</div>
                                     @endif
                                 </td>
+                                <td class="action-col" onclick="event.stopPropagation()">
+                                    @if($encryptedId)
+                                    <div class="action-dropdown-wrapper">
+                                        <button class="btn-action-dots" onclick="toggleActionDropdown(this)">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="action-dropdown-menu">
+                                            <a href="{{ route('teacher.courses.show', ['encryptedId' => $encryptedId]) }}" class="dropdown-item">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <button onclick="openCrudModal('{{ route('teacher.courses.edit', $encryptedId) }}', 'Edit Course')" class="dropdown-item">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <form method="POST" action="{{ route('teacher.courses.publish', $encryptedId) }}" style="margin:0;">
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="fas fa-{{ $course->is_published ? 'eye-slash' : 'eye' }}"></i>
+                                                    {{ $course->is_published ? 'Unpublish' : 'Publish' }}
+                                                </button>
+                                            </form>
+                                            <div class="dropdown-divider"></div>
+                                            <button onclick="confirmDeleteItem('{{ $encryptedId }}', '{{ addslashes($course->title) }}')" class="dropdown-item text-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @endif
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -300,6 +319,12 @@
         </div>
         @endif
     </div>
+
+    <!-- Hidden delete form -->
+    <form id="itemDeleteForm" method="POST" style="display:none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
     <!-- Hidden Print Content -->
     <div id="print-content" style="display: none;">
@@ -380,6 +405,53 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // Action dropdown
+    window.toggleActionDropdown = function(btn) {
+        if (!btn._menu) btn._menu = btn.nextElementSibling;
+        var menu = btn._menu;
+        var isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+            if (menu.parentNode !== document.body) document.body.appendChild(menu);
+            var rect = btn.getBoundingClientRect();
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+            if (rect.top > 130) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.bottom = 'auto';
+            }
+            menu.classList.add('open');
+        }
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-wrapper'))
+            document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    });
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    }, true);
+
+    window.confirmDeleteItem = function(encId, name) {
+        Swal.fire({
+            title: 'Delete Course?',
+            text: `"${name}" will be permanently deleted.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete',
+        }).then(result => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('itemDeleteForm');
+                form.action = `{{ url('teacher/courses') }}/${encId}`;
+                form.submit();
+            }
+        });
+    };
 
     // Clickable rows
     document.querySelectorAll('.clickable-row').forEach(row => {

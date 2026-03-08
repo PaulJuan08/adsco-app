@@ -26,9 +26,14 @@
         <!-- User Card Top: Avatar + Name + Actions -->
         <div class="user-card-top">
             <div class="user-card-identity">
-                <div class="user-avatar-circle">
-                    {{ strtoupper(substr($user->f_name, 0, 1)) }}{{ strtoupper(substr($user->l_name, 0, 1)) }}
-                </div>
+                @if($user->profile_photo_url)
+                    <img src="{{ $user->profile_photo_url }}" alt="{{ $user->full_name }}"
+                         class="user-avatar-circle" style="object-fit:cover;padding:0;">
+                @else
+                    <div class="user-avatar-circle">
+                        {{ strtoupper(substr($user->f_name, 0, 1)) }}{{ strtoupper(substr($user->l_name, 0, 1)) }}
+                    </div>
+                @endif
                 <div class="user-card-info">
                     <h2 class="user-card-name">{{ $user->f_name }} {{ $user->l_name }}</h2>
                     <div class="user-card-meta">
@@ -54,22 +59,9 @@
                 </div>
             </div>
             <div class="user-card-actions">
-                @if(auth()->user()->isAdmin())
-                <button class="btn-reset-password" onclick="document.getElementById('resetPasswordModal').style.display='flex'">
-                    <i class="fas fa-key"></i> Reset Password
-                </button>
-                @endif
-                <a href="{{ route('admin.users.edit', Crypt::encrypt($user->id)) }}" class="btn-edit-user">
-                    <i class="fas fa-edit"></i> Edit
+                <a href="{{ route('admin.users.index') }}" class="btn-back" style="font-size:0.85rem;">
+                    <i class="fas fa-arrow-left"></i> Back to Users
                 </a>
-                @if(auth()->user()->isAdmin() && $user->id !== auth()->id())
-                <form action="{{ route('admin.users.destroy', Crypt::encrypt($user->id)) }}" method="POST" id="deleteForm" style="display:inline;">
-                    @csrf @method('DELETE')
-                    <button type="button" class="btn-delete-user" id="deleteButton">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </form>
-                @endif
             </div>
         </div>
 
@@ -537,7 +529,7 @@
 
 
 <!-- Reset Password Modal -->
-<div id="resetPasswordModal" class="modal-overlay" style="display:none;">
+<div id="resetPasswordModal" class="modal-overlay">
     <div class="modal-box">
         <h3 class="modal-title"><i class="fas fa-key"></i> Reset Password</h3>
         <p class="modal-desc">Enter a new password for <strong>{{ $user->f_name }} {{ $user->l_name }}</strong>.</p>
@@ -558,7 +550,7 @@
                 <input type="password" name="password_confirmation" class="modal-input" placeholder="Repeat password" required minlength="8">
             </div>
             <div class="modal-actions">
-                <button type="button" class="modal-cancel" onclick="document.getElementById('resetPasswordModal').style.display='none'">Cancel</button>
+                <button type="button" class="modal-cancel" onclick="document.getElementById('resetPasswordModal').classList.remove('active')">Cancel</button>
                 <button type="submit" class="modal-submit">Reset Password</button>
             </div>
         </form>
@@ -631,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Close modal on overlay click ────────────────────────────
     document.getElementById('resetPasswordModal').addEventListener('click', function (e) {
-        if (e.target === this) this.style.display = 'none';
+        if (e.target === this) this.classList.remove('active');
     });
 });
 </script>

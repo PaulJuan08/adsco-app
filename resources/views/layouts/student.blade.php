@@ -5,195 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Student Dashboard')</title>
-    
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/adsco-logo.png') }}">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
-    <link rel="stylesheet" 
+    <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous"
         referrerpolicy="no-referrer">
-    
+
     <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
-    
+
     <!-- Layout CSS -->
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
-    
+
     @stack('styles')
-    
-    <style>
-        /* Smooth animations for sidebar */
-        .sidebar-nav-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            transform: translateZ(0);
-        }
-        
-        .sidebar-nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(4px);
-            color: white;
-        }
-        
-        .sidebar-nav-item.active {
-            background: rgba(102, 126, 234, 0.15);
-            color: white;
-            border-left: 3px solid #667eea;
-        }
-        
-        .sidebar-nav-item i {
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 20px;
-            font-size: 1rem;
-        }
-        
-        .sidebar-nav-item:hover i {
-            transform: scale(1.1);
-        }
-        
-        /* Badge animation */
-        .badge-count {
-            background: #ef4444;
-            color: white;
-            border-radius: 999px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.1rem 0.4rem;
-            margin-left: auto;
-            min-width: 18px;
-            text-align: center;
-            animation: pulse 2s infinite;
-            display: inline-block;
-            transition: transform 0.2s ease;
-        }
-        
-        .sidebar-nav-item:hover .badge-count {
-            transform: scale(1.1);
-        }
-        
-        @@keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-            }
-        }
-        
-        /* Profile link hover animation */
-        .sidebar-user-profile-link {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: block;
-            border-radius: 0.5rem;
-        }
-        
-        .sidebar-user-profile-link:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateX(4px);
-        }
-        
-        .sidebar-user-avatar {
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .sidebar-user-profile-link:hover .sidebar-user-avatar {
-            transform: scale(1.05);
-        }
-        
-        /* Logout button animation */
-        .sidebar-logout-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            border-radius: 0.375rem !important;
-        }
-        
-        .sidebar-logout-btn:hover {
-            background: rgba(239, 68, 68, 0.15) !important;
-            color: #ef4444 !important;
-            transform: translateX(4px);
-        }
-        
-        .sidebar-logout-btn:hover i {
-            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-        }
-        
-        @@keyframes shake {
-            10%, 90% {
-                transform: translateX(-1px);
-            }
-            20%, 80% {
-                transform: translateX(2px);
-            }
-            30%, 50%, 70% {
-                transform: translateX(-2px);
-            }
-            40%, 60% {
-                transform: translateX(2px);
-            }
-        }
-        
-        /* Smooth transitions for all interactive elements */
-        .sidebar-nav-item,
-        .sidebar-user-profile-link,
-        .sidebar-user-avatar,
-        .badge-count,
-        .sidebar-logout-btn i {
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            transform: translateZ(0);
-        }
-        
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .sidebar-nav-item:hover {
-                transform: translateX(2px);
-            }
-            
-            .sidebar-user-profile-link:hover {
-                transform: translateX(2px);
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="layout-with-sidebar">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo">
-                </div>
-                <div class="sidebar-title">STUDENT</div>
+                <a href="{{ route('dashboard') }}" class="sidebar-header-link">
+                    <div class="sidebar-logo">
+                        <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo">
+                    </div>
+                    <div class="sidebar-brand">
+                        <div class="sidebar-brand-name">ADSCO</div>
+                        <div class="sidebar-brand-sub">Student Portal</div>
+                    </div>
+                </a>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <a href="{{ route('dashboard') }}" class="sidebar-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                
+
                 <a href="{{ route('student.courses.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.courses.*') ? 'active' : '' }}">
                     <i class="fas fa-book"></i>
                     <span>My Courses</span>
                 </a>
-                
+
                 <a href="{{ route('student.todo.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.todo.*') ? 'active' : '' }}">
                     <i class="fas fa-clipboard-check"></i>
                     <span>To-Do</span>
                     @php
                         $studentId = Auth::id();
-                        
-                        // Get active quizzes (not passed)
+
                         $activeQuizzesCount = \App\Models\QuizStudentAccess::where('student_id', $studentId)
                             ->where('status', 'allowed')
                             ->whereHas('quiz', function($q) {
@@ -201,12 +69,11 @@
                             })
                             ->whereDoesntHave('quiz.attempts', function($q) use ($studentId) {
                                 $q->where('user_id', $studentId)
-                                ->where('passed', 1)
-                                ->whereNotNull('completed_at');
+                                  ->where('passed', 1)
+                                  ->whereNotNull('completed_at');
                             })
                             ->count();
-                        
-                        // Get active assignments (not graded)
+
                         $activeAssignmentsCount = \App\Models\AssignmentStudentAccess::where('student_id', $studentId)
                             ->where('status', 'allowed')
                             ->whereHas('assignment', function($q) {
@@ -214,25 +81,25 @@
                             })
                             ->whereDoesntHave('assignment.submissions', function($q) use ($studentId) {
                                 $q->where('student_id', $studentId)
-                                ->where('status', 'graded');
+                                  ->where('status', 'graded');
                             })
                             ->count();
-                        
+
                         $studentTodoPending = $activeQuizzesCount + $activeAssignmentsCount;
                     @endphp
                     @if($studentTodoPending > 0)
                         <span class="badge-count">{{ $studentTodoPending }}</span>
                     @endif
                 </a>
-            </nav>  
-            
+            </nav>
+
             <div class="sidebar-footer">
                 <!-- Profile link -->
                 <a href="{{ route('student.profile.show') }}" class="sidebar-user-profile-link">
                     <div class="sidebar-user-profile">
                         <div class="sidebar-user-avatar">
-                            @if(Auth::user()->avatar)
-                                <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                            @if(Auth::user()->profile_photo_url)
+                                <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
                             @elseif(Auth::user()->sex === 'female')
                                 <i class="fas fa-person-dress" style="font-size:1.25rem;"></i>
                             @else
@@ -245,17 +112,18 @@
                         </div>
                     </div>
                 </a>
-                
-                <form method="POST" action="{{ route('logout') }}" style="display:inline;">
-                    @csrf
-                    <button type="submit" class="sidebar-nav-item sidebar-logout-btn" style="width:100%; text-align:left; background:none; border:none; color:rgba(255,255,255,0.7);">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
+
+                <button class="sidebar-logout-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
             </div>
+
+            <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                @csrf
+            </form>
         </aside>
-        
+
         <!-- Mobile sidebar toggle -->
         <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" aria-label="Toggle menu">
             <i class="fas fa-bars"></i>
@@ -276,11 +144,74 @@
 
     @include('components.legal-modal')
 
+    {{-- ─── CRUD Modal (shared infrastructure) ─── --}}
+    <style>
+        #crudModalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(3px);z-index:9000;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;}
+        #crudModalOverlay.open{visibility:visible;opacity:1;pointer-events:all;}
+        #crudModalBox{position:fixed;top:50%;left:50%;z-index:9001;width:calc(100% - 2rem);max-width:680px;max-height:90vh;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(85,43,32,.28);overflow:hidden;display:flex;flex-direction:column;visibility:hidden;opacity:0;pointer-events:none;transform:translate(-50%,calc(-50% - 20px)) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,visibility .25s ease;}
+        #crudModalBox.open{visibility:visible;opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1);}
+    </style>
+    <div id="crudModalOverlay" onclick="closeCrudModal()"></div>
+    <div id="crudModalBox">
+        <div style="background:linear-gradient(135deg,#552b20 0%,#3d1f17 100%);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <h3 id="crudModalTitle" style="margin:0;font-size:1rem;font-weight:700;color:#fff;"></h3>
+            <button onclick="closeCrudModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="crudModalBody" style="padding:1.5rem 1.5rem 1rem;overflow-y:auto;flex:1;"></div>
+    </div>
+    <script>
+        var _crudLoadedCss = {};
+        function openCrudModal(url, title, maxWidth) {
+            document.getElementById('crudModalBox').style.maxWidth = maxWidth || '680px';
+            document.getElementById('crudModalTitle').textContent = title;
+            document.getElementById('crudModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#552b20;font-size:2rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            document.getElementById('crudModalOverlay').classList.add('open');
+            document.getElementById('crudModalBox').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}})
+                .then(function(r){return r.json();})
+                .then(function(data){
+                    if (data.css && !_crudLoadedCss[data.css]) {
+                        var lnk = document.createElement('link'); lnk.rel='stylesheet'; lnk.href=data.css;
+                        document.head.appendChild(lnk); _crudLoadedCss[data.css]=true;
+                    }
+                    document.getElementById('crudModalBody').innerHTML = data.html;
+                    document.querySelectorAll('#crudModalBody script').forEach(function(s){var n=document.createElement('script');n.textContent=s.textContent;document.head.appendChild(n);s.remove();});
+                    _initCrudForm();
+                })
+                .catch(function(){document.getElementById('crudModalBody').innerHTML='<p style="color:#dc2626;text-align:center;padding:1rem;">Failed to load form.</p>';});
+        }
+        function closeCrudModal(){document.getElementById('crudModalOverlay').classList.remove('open');document.getElementById('crudModalBox').classList.remove('open');document.body.style.overflow='';}
+        function _initCrudForm(){
+            var form=document.querySelector('#crudModalBody form');if(!form)return;
+            form.addEventListener('submit',function(e){
+                e.preventDefault();
+                var btn=form.querySelector('[type=submit]'),orig=btn?btn.innerHTML:'';
+                if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Saving...';}
+                form.querySelectorAll('.crud-field-error').forEach(function(el){el.remove();});
+                form.querySelectorAll('.is-invalid,.error').forEach(function(el){el.classList.remove('is-invalid','error');});
+                fetch(form.action,{method:'POST',body:new FormData(form),headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}})
+                .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,data:d};});})
+                .then(function(res){
+                    if(res.ok){closeCrudModal();_crudToast('success',res.data.message||'Saved!');setTimeout(function(){if(res.data.redirect)window.location.href=res.data.redirect;else window.location.reload();},1800);}
+                    else if(res.status===422){Object.entries(res.data.errors).forEach(function([f,m]){var inp=form.querySelector('[name="'+f+'"]')||form.querySelector('[name="'+f+'[]"]');if(inp){inp.classList.add('error');var err=document.createElement('div');err.className='form-error crud-field-error';err.textContent=m[0];inp.parentNode.insertBefore(err,inp.nextSibling);}});_crudToast('error','Please fix the form errors.');}
+                    else{_crudToast('error',(res.data&&res.data.message)||'Something went wrong.');}
+                })
+                .catch(function(){_crudToast('error','Network error.');})
+                .finally(function(){if(btn){btn.disabled=false;btn.innerHTML=orig;}});
+            });
+        }
+        function _crudToast(type,msg){if(typeof Swal!=='undefined'){Swal.fire({icon:type,title:type==='success'?'Saved!':'Error',text:msg,timer:2500,showConfirmButton:false});}else if(typeof showToast!=='undefined'){showToast(msg,type);}else{alert(msg);}}
+        document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCrudModal();});
+    </script>
+
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('mobile-open');
             document.getElementById('sidebarOverlay').classList.toggle('active');
         }
     </script>
+
+    @include('partials.toast')
 </body>
 </html>

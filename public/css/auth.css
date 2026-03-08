@@ -110,105 +110,32 @@ body::before {
     }
 }
 
-/* ===== Navigation Bar ===== */
+/* ===== Navigation Bar — matches welcome page style ===== */
 .auth-navbar {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-md);
-    padding: 1rem 0;
-    position: sticky;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    position: fixed;
     top: 0;
-    z-index: 100;
-    border-bottom: 3px solid var(--color-adsco-accent);
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transition: box-shadow 0.3s ease;
 }
 
-.auth-navbar .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-}
-
-.auth-navbar .brand {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    transition: transform var(--transition-speed) var(--transition-smooth);
-}
-
-.auth-navbar .brand:hover {
-    transform: scale(1.05);
-}
-
-.auth-navbar .brand-logo {
-    height: 50px;
-    width: auto;
-    margin-right: 12px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.auth-navbar .brand-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-adsco-primary);
-    letter-spacing: -0.5px;
-}
-
-.auth-navbar .brand-text .accent {
-    color: var(--color-adsco-accent);
-}
-
-.auth-navbar .nav-links {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.auth-navbar .nav-link {
-    color: var(--color-adsco-primary);
-    text-decoration: none;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    transition: all var(--transition-speed) var(--transition-smooth);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.auth-navbar .nav-link:hover {
-    background: var(--color-adsco-primary);
-    color: white;
-    transform: translateY(-2px);
-}
-
-.auth-navbar .nav-link.active {
-    background: linear-gradient(135deg, var(--color-adsco-primary), #3d1f17);
-    color: white;
-    box-shadow: var(--shadow-sm);
-}
-
-/* Mobile menu button */
-.mobile-menu-btn {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--color-adsco-primary);
-    font-size: 1.5rem;
-    cursor: pointer;
+.auth-navbar.scrolled {
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
 
 /* ===== Main Container ===== */
 .auth-container {
     position: relative;
     z-index: 10;
-    min-height: calc(100vh - 200px);
+    min-height: calc(100vh - 80px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
+    margin-top: 80px;
 }
 
 /* ===== Card Styles ===== */
@@ -550,7 +477,9 @@ body::before {
 
 /* ===== Modal Styles ===== */
 .modal {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -559,19 +488,17 @@ body::before {
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
     z-index: 1000;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .modal.show {
-    display: flex;
-    animation: fadeIn 0.3s var(--transition-smooth);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
 }
 
 .modal-dialog {
@@ -582,18 +509,14 @@ body::before {
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
-    animation: modalSlideUp 0.4s var(--transition-bounce);
+    transform: translateY(-20px) scale(0.97);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 
-@keyframes modalSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.modal.show .modal-dialog {
+    transform: translateY(0) scale(1);
+    opacity: 1;
 }
 
 .modal-header {
@@ -791,26 +714,6 @@ body::before {
 }
 
 @media (max-width: 768px) {
-    .auth-navbar .nav-links {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        flex-direction: column;
-        padding: 1rem;
-        box-shadow: var(--shadow-md);
-    }
-    
-    .auth-navbar .nav-links.show {
-        display: flex;
-    }
-    
-    .mobile-menu-btn {
-        display: block;
-    }
-    
     .auth-card-body {
         padding: 1.5rem;
     }

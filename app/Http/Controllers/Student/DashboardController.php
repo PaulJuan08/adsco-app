@@ -10,7 +10,10 @@ use App\Models\Enrollment;
 use App\Models\Quiz;
 use App\Models\Assignment;
 use App\Models\Topic;
+use App\Models\QuizAttempt;
+use App\Models\AssignmentSubmission;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -171,7 +174,44 @@ class DashboardController extends Controller
             ];
         });
         
-        return view('student.dashboard', $data);
+        // Chart data — not cached so scores are always fresh
+        $quizChartData = QuizAttempt::where('user_id', $studentId)
+            ->with('quiz:id,title')
+            ->whereNotNull('completed_at')
+            ->latest('completed_at')
+            ->take(7)
+            ->get()
+            ->reverse()
+            ->map(fn($a) => [
+                'label'      => Str::limit($a->quiz->title ?? 'Quiz', 20),
+                'percentage' => round($a->percentage ?? 0, 1),
+                'passed'     => (bool) $a->passed,
+            ])
+            ->values();
+
+        $assignmentChartData = AssignmentSubmission::where('student_id', $studentId)
+            ->where('status', 'graded')
+            ->with('assignment:id,title,points')
+            ->latest('graded_at')
+            ->take(7)
+            ->get()
+            ->reverse()
+            ->map(function ($s) {
+                $pts = $s->assignment->points ?? 1;
+                $pct = $pts > 0 ? round(($s->score / $pts) * 100, 1) : 0;
+                return [
+                    'label'      => Str::limit($s->assignment->title ?? 'Assignment', 20),
+                    'percentage' => $pct,
+                    'score'      => (int) ($s->score ?? 0),
+                    'total'      => (int) $pts,
+                ];
+            })
+            ->values();
+
+        return view('student.dashboard', array_merge($data, [
+            'quizChartData'       => $quizChartData,
+            'assignmentChartData' => $assignmentChartData,
+        ]));
     }
     
     public function clearCache()

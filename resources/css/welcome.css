@@ -15,17 +15,111 @@
     --color-golden: #ddb238;
     --color-offwhite: #fefdfb;
     --color-brown: #552b20;
-    
+
     --color-adsco-primary: var(--color-brown);
     --color-adsco-accent: var(--color-golden);
     --color-adsco-secondary: var(--color-orange);
     --color-adsco-neutral: var(--color-taupe);
     --color-adsco-light: var(--color-offwhite);
-    
+
     /* Animation variables */
     --transition-speed: 0.3s;
     --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Shared Navbar (consistent with auth pages) ===== */
+.auth-navbar {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.15);
+    padding: 0.85rem 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    border-bottom: 3px solid var(--color-adsco-accent);
+    transition: box-shadow 0.3s ease;
+}
+.auth-navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+.auth-navbar .brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+}
+.auth-navbar .brand:hover { transform: scale(1.05); }
+.auth-navbar .brand-logo {
+    height: 48px;
+    width: auto;
+    margin-right: 12px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+.auth-navbar .brand-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-adsco-primary);
+    letter-spacing: -0.5px;
+}
+.auth-navbar .brand-text .accent { color: var(--color-adsco-accent); }
+.auth-navbar .nav-links {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.auth-navbar .nav-link {
+    color: var(--color-adsco-primary);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+.auth-navbar .nav-link:hover {
+    background: var(--color-adsco-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+.auth-navbar .nav-link.active {
+    background: linear-gradient(135deg, var(--color-adsco-primary), #3d1f17);
+    color: white;
+}
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-adsco-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+@media (max-width: 768px) {
+    .auth-navbar .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        flex-direction: column;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(85, 43, 32, 0.15);
+        z-index: 999;
+    }
+    .auth-navbar .nav-links.show { display: flex; }
+    .mobile-menu-btn { display: block; }
 }
 
 /* ===== Global Styles ===== */

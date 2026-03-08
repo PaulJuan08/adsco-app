@@ -7,25 +7,15 @@
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}" type="image/png">
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div class="auth-particle auth-particle-1"></div>
     <div class="auth-particle auth-particle-2"></div>
     <div class="auth-particle auth-particle-3"></div>
 
-    <nav class="auth-navbar">
-        <div class="container">
-            <a href="/" class="brand">
-                <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo" class="brand-logo">
-                <span class="brand-text">ADS<span class="accent">CO</span></span>
-            </a>
-            <div class="nav-links">
-                <a href="/" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="{{ route('login') }}" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
-                <a href="{{ route('register') }}" class="nav-link"><i class="fas fa-user-plus"></i><span>Register</span></a>
-            </div>
-        </div>
-    </nav>
+    @include('partials.navbar', ['activePage' => 'login'])
 
     <div class="auth-container">
         <div class="auth-card">
@@ -85,6 +75,9 @@
                             <span class="form-text text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    <!-- Cloudflare Turnstile Widget -->
+                    <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" style="margin-bottom: 1rem;"></div>
 
                     <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
                         <i class="fas fa-paper-plane"></i>

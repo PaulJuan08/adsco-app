@@ -29,19 +29,42 @@ class AssignmentController extends Controller
         });
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $teacherId = Auth::id();
-        $assignments = $this->teacherAssignmentQuery($teacherId)
-                           ->with('creator')
-                           ->latest()
-                           ->paginate(10);
+        $search    = $request->get('search', '');
 
-        return view('teacher.assignments.index', compact('assignments'));
+        $assignments = $this->teacherAssignmentQuery($teacherId)
+            ->with(['course', 'creator'])
+            ->withCount(['allowedStudents as allowed_students_count'])
+            ->withCount('submissions')
+            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            }))
+            ->latest()
+            ->paginate(15);
+
+        $totalAssignments = $this->teacherAssignmentQuery($teacherId)->count();
+        $publishedCount   = $this->teacherAssignmentQuery($teacherId)->where('is_published', 1)->count();
+        $pendingReviews   = \App\Models\AssignmentSubmission::whereHas('assignment', function ($q) use ($teacherId) {
+            $q->where('created_by', $teacherId);
+        })->whereIn('status', ['submitted', 'late'])->count();
+
+        return view('teacher.assignments.index', compact('assignments', 'search', 'totalAssignments', 'publishedCount', 'pendingReviews'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->ajax()) {
+            $html = view('teacher.assignments._form', [
+                'editing' => false,
+                'formAction' => route('teacher.assignments.store'),
+                'assignment' => null,
+            ])->render();
+            return response()->json(['html' => $html]);
+        }
+
         return view('teacher.assignments.create');
     }
 
@@ -68,6 +91,10 @@ class AssignmentController extends Controller
 
         Assignment::create($validated);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Assignment created successfully.', 'redirect' => route('teacher.todo.index', ['type' => 'assignment'])]);
+        }
+
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment created successfully.');
     }
@@ -84,13 +111,22 @@ class AssignmentController extends Controller
         return view('teacher.assignments.show', compact('assignment'));
     }
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         $id = Crypt::decrypt($encryptedId);
         $teacherId = Auth::id();
 
         $assignment = $this->teacherAssignmentQuery($teacherId)
                           ->findOrFail($id);
+
+        if ($request->ajax()) {
+            $html = view('teacher.assignments._form', [
+                'editing' => true,
+                'formAction' => route('teacher.assignments.update', $encryptedId),
+                'assignment' => $assignment,
+            ])->render();
+            return response()->json(['html' => $html]);
+        }
 
         return view('teacher.assignments.edit', compact('assignment', 'encryptedId'));
     }
@@ -121,6 +157,10 @@ class AssignmentController extends Controller
 
         $assignment->update($validated);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Assignment updated successfully.', 'redirect' => route('teacher.assignments.index')]);
+        }
+
         return redirect()->route('teacher.assignments.index')
             ->with('success', 'Assignment updated successfully.');
     }
@@ -135,8 +175,10 @@ class AssignmentController extends Controller
 
         $assignment->delete();
 
-        return redirect()->route('teacher.assignments.index')
-            ->with('success', 'Assignment deleted successfully.');
+        if (request()->ajax()) {
+            return response()->json(['message' => 'Assignment deleted successfully.']);
+        }
+        return redirect()->route('teacher.assignments.index')->with('success', 'Assignment deleted successfully.');
     }
 
     /**
@@ -156,7 +198,11 @@ class AssignmentController extends Controller
         ]);
 
         $status = $assignment->is_published ? 'published' : 'unpublished';
+        $msg = "Assignment {$status} successfully.";
 
-        return redirect()->back()->with('success', "Assignment {$status} successfully.");
+        if (request()->ajax()) {
+            return response()->json(['message' => $msg]);
+        }
+        return redirect()->route('teacher.assignments.index')->with('success', $msg);
     }
 }

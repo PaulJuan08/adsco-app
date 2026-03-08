@@ -14,9 +14,7 @@
     <div class="dashboard-header">
         <div class="header-content">
             <div class="user-greeting">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(Auth::user()->f_name, 0, 1)) }}
-                </div>
+                @include('partials.user_avatar')
                 <div class="greeting-text">
                     <h1 class="welcome-title">My Courses</h1>
                     <p class="welcome-subtitle">
@@ -110,6 +108,7 @@
                                     <th class="hide-on-tablet">Teacher</th>
                                     <th>Progress</th>
                                     <th class="hide-on-tablet">Status</th>
+                                    <th class="action-col"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -147,13 +146,35 @@
                                         <span class="course-code">{{ $course->course_code }}</span>
                                     </td>
                                     <td class="hide-on-tablet">
-                                        @if($course->teacher)
+                                        @php
+                                            $courseTeachers = collect();
+                                            if($course->teacher) $courseTeachers->push($course->teacher);
+                                            foreach(($course->teachers ?? collect()) as $ct) {
+                                                if(!$courseTeachers->contains('id', $ct->id)) $courseTeachers->push($ct);
+                                            }
+                                        @endphp
+                                        @if($courseTeachers->isNotEmpty())
                                         <div class="teacher-info">
-                                            <div class="teacher-avatar">{{ strtoupper(substr($course->teacher->f_name, 0, 1)) }}</div>
+                                            <div class="avatar-stack">
+                                                @foreach($courseTeachers->take(3) as $t)
+                                                    @if($t->profile_photo_url)
+                                                        <img src="{{ $t->profile_photo_url }}" alt="{{ $t->f_name }}" class="avatar-stack-item" title="{{ $t->f_name }} {{ $t->l_name }}">
+                                                    @else
+                                                        <div class="avatar-stack-item avatar-stack-initials" title="{{ $t->f_name }} {{ $t->l_name }}">{{ strtoupper(substr($t->f_name,0,1)) }}</div>
+                                                    @endif
+                                                @endforeach
+                                                @if($courseTeachers->count() > 3)
+                                                    <div class="avatar-stack-item avatar-stack-more">+{{ $courseTeachers->count() - 3 }}</div>
+                                                @endif
+                                            </div>
                                             <div class="teacher-details">
-                                                <div class="teacher-name">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
-                                                @if($course->teacher->employee_id)
-                                                <div class="teacher-id">{{ $course->teacher->employee_id }}</div>
+                                                @if($courseTeachers->count() > 1)
+                                                    <div class="teacher-name">{{ $courseTeachers->count() }} Teachers</div>
+                                                @else
+                                                    <div class="teacher-name">{{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</div>
+                                                    @if($course->teacher->employee_id)
+                                                    <div class="teacher-id">{{ $course->teacher->employee_id }}</div>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </div>
@@ -184,6 +205,20 @@
                                         @else
                                             <span class="item-badge badge-primary"><i class="fas fa-clock"></i> In Progress</span>
                                         @endif
+                                    </td>
+                                    <td class="action-col" onclick="event.stopPropagation()">
+                                        <div class="action-dropdown-wrapper">
+                                            <button class="btn-action-dots" onclick="toggleActionDropdown(this)"><i class="fas fa-ellipsis-v"></i></button>
+                                            <div class="action-dropdown-menu">
+                                                <a href="{{ route('student.courses.show', $encryptedId) }}" class="dropdown-item">
+                                                    <i class="fas fa-eye"></i> View Course
+                                                </a>
+                                                <button class="dropdown-item text-danger"
+                                                    onclick="confirmUnenroll('{{ $encryptedId }}', '{{ addslashes($course->title) }}')">
+                                                    <i class="fas fa-sign-out-alt"></i> Unenroll
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -297,6 +332,47 @@
 </div>
 @endsection
 
+<style>
+#unenrollModal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+    z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+#unenrollModal.open { visibility: visible; opacity: 1; pointer-events: all; }
+#unenrollModal > div {
+    transform: translateY(-16px) scale(0.97); opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+}
+#unenrollModal.open > div { transform: translateY(0) scale(1); opacity: 1; }
+</style>
+
+{{-- Unenroll confirmation modal --}}
+<div id="unenrollModal">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:.75rem;">
+            <i class="fas fa-sign-out-alt" style="color:#fff;font-size:1.2rem;"></i>
+            <h3 style="margin:0;color:#fff;font-size:1rem;font-weight:700;">Unenroll from Course</h3>
+        </div>
+        <div style="padding:1.5rem;">
+            <p style="margin:0 0 .5rem;color:#374151;">Are you sure you want to unenroll from:</p>
+            <p id="unenrollCourseName" style="margin:0 0 1rem;font-weight:700;color:#111;font-size:1rem;"></p>
+            <p style="margin:0;font-size:.85rem;color:#6b7280;"><i class="fas fa-info-circle"></i> Your progress will be lost. You will need to be re-enrolled by an administrator.</p>
+        </div>
+        <div style="padding:.75rem 1.5rem 1.25rem;display:flex;justify-content:flex-end;gap:.6rem;">
+            <button onclick="closeUnenrollModal()" style="padding:.55rem 1.25rem;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#4a5568;font-size:.875rem;font-weight:600;cursor:pointer;">Cancel</button>
+            <form id="unenrollForm" method="POST" style="margin:0;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" style="padding:.55rem 1.5rem;border-radius:8px;border:none;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-sign-out-alt"></i> Unenroll
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -317,6 +393,49 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    window.toggleActionDropdown = function(btn) {
+        if (!btn._menu) btn._menu = btn.nextElementSibling;
+        var menu = btn._menu;
+        var isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+            if (menu.parentNode !== document.body) document.body.appendChild(menu);
+            var rect = btn.getBoundingClientRect();
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+            if (rect.top > 130) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.bottom = 'auto';
+            }
+            menu.classList.add('open');
+        }
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-wrapper'))
+            document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    });
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    }, true);
 });
+
+function confirmUnenroll(encryptedId, courseTitle) {
+    document.getElementById('unenrollCourseName').textContent = courseTitle;
+    document.getElementById('unenrollForm').action = '{{ url("student/courses") }}/' + encryptedId + '/unenroll';
+    document.getElementById('unenrollModal').classList.add('open');
+}
+
+function closeUnenrollModal() {
+    document.getElementById('unenrollModal').classList.remove('open');
+}
+
+document.getElementById('unenrollModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUnenrollModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeUnenrollModal(); });
 </script>
 @endpush

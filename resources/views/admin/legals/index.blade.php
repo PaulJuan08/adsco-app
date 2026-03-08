@@ -67,10 +67,6 @@
         justify-content: space-between;
         gap: .5rem;
     }
-    .badge-status { font-size: .68rem; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
-    .badge-published   { background: #d1fae5; color: #065f46; }
-    .badge-unpublished { background: #f3f4f6; color: #6b7280; }
-
     .btn-edit-legal {
         display: inline-flex;
         align-items: center;
@@ -89,16 +85,24 @@
 
     /* ─── Modal ─── */
     .modal-overlay {
-        display: none;
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
         position: fixed; inset: 0;
         background: rgba(0,0,0,.45);
         backdrop-filter: blur(4px);
         z-index: 1000;
+        display: flex;
         align-items: center;
         justify-content: center;
         padding: 1rem;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
     }
-    .modal-overlay.open { display: flex; }
+    .modal-overlay.open {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: all;
+    }
     .modal-box {
         background: #fff;
         border-radius: 18px;
@@ -107,11 +111,13 @@
         max-height: 92vh;
         overflow-y: auto;
         box-shadow: 0 20px 60px rgba(85,43,32,.25);
-        animation: modalIn .25s ease;
+        transform: translateY(20px) scale(0.97);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
     }
-    @@keyframes modalIn {
-        from { opacity:0; transform:translateY(20px) scale(.97); }
-        to   { opacity:1; transform:translateY(0) scale(1); }
+    .modal-overlay.open .modal-box {
+        transform: translateY(0) scale(1);
+        opacity: 1;
     }
     .modal-header {
         background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
@@ -287,15 +293,23 @@
                         @endif
                     </div>
                 </div>
-                <div class="legal-card-footer">
-                    <span class="badge-status {{ $page->is_published ? 'badge-published' : 'badge-unpublished' }}">
-                        <i class="fas {{ $page->is_published ? 'fa-eye' : 'fa-eye-slash' }}"></i>
-                        {{ $page->is_published ? 'Published' : 'Draft' }}
-                    </span>
-                    <button class="btn-edit-legal"
-                        onclick="openEditModal({{ $page->id }}, {{ json_encode($page->title) }}, {{ json_encode($page->content) }}, {{ $page->is_published ? 'true' : 'false' }}, {{ json_encode($icons[$type][0]) }})">
-                        <i class="fas fa-pen"></i> Edit
-                    </button>
+                <div class="card-footer-actions">
+                    <form method="POST" action="{{ route('admin.legals.toggle-publish', $page) }}" style="margin:0;">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="btn-toggle-status {{ $page->is_published ? 'published' : 'draft' }}">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            <span class="toggle-label">{{ $page->is_published ? 'Published' : 'Draft' }}</span>
+                        </button>
+                    </form>
+                    <div class="action-dropdown-wrapper">
+                        <button class="btn-action-dots" onclick="toggleActionDropdown(this)"><i class="fas fa-ellipsis-v"></i></button>
+                        <div class="action-dropdown-menu">
+                            <button class="dropdown-item"
+                                onclick="openEditModal({{ $page->id }}, {{ json_encode($page->title) }}, {{ json_encode($page->content) }}, {{ $page->is_published ? 'true' : 'false' }}, {{ json_encode($icons[$type][0]) }})">
+                                <i class="fas fa-pen"></i> Edit
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             @endif
@@ -337,6 +351,35 @@
 
 @push('scripts')
 <script>
+    // Action dropdown
+    window.toggleActionDropdown = function(btn) {
+        if (!btn._menu) btn._menu = btn.nextElementSibling;
+        var menu = btn._menu;
+        var isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+            if (menu.parentNode !== document.body) document.body.appendChild(menu);
+            var rect = btn.getBoundingClientRect();
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+            if (rect.top > 130) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.bottom = 'auto';
+            }
+            menu.classList.add('open');
+        }
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-wrapper'))
+            document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    });
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    }, true);
+
     function openEditModal(id, title, content, isPublished, icon) {
         const base = "{{ url('admin/legals') }}";
         document.getElementById('editForm').action = base + '/' + id;

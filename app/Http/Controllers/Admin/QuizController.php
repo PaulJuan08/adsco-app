@@ -15,9 +15,27 @@ use App\Traits\CacheManager;
 class QuizController extends Controller
 {
     use CacheManager;
-    
-    // REMOVED index() method - redirects to todo
-    
+
+    public function index(Request $request)
+    {
+        $search = $request->get('search', '');
+
+        $quizzes = Quiz::with(['creator'])
+            ->withCount(['studentAccess as allowed_students_count' => fn($q) => $q->where('status', 'allowed')])
+            ->withCount('attempts')
+            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            }))
+            ->latest()
+            ->paginate(15);
+
+        $totalQuizzes    = Quiz::count();
+        $publishedCount  = Quiz::where('is_published', 1)->count();
+
+        return view('admin.quizzes.index', compact('quizzes', 'search', 'totalQuizzes', 'publishedCount'));
+    }
+
     public function create()
     {
         return view('admin.quizzes.create');
@@ -46,6 +64,7 @@ class QuizController extends Controller
             // Use the checkbox value - if not present, default to 0 (draft)
             'is_published' => $request->has('is_published') ? 1 : 0,
             'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
             'duration' => $request->duration ?? 60,
             'total_questions' => 0,
             'passing_score' => $request->passing_score ?? 70,
@@ -411,17 +430,17 @@ class QuizController extends Controller
             Cache::forget('admin_quiz_edit_' . $id);
             Cache::forget('admin_quiz_take_' . $id);
 
-            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
-                ->with('success', 'Quiz deleted successfully.');
-                
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Quiz deleted successfully.']);
+            }
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])->with('success', 'Quiz deleted successfully.');
+
         } catch (\Exception $e) {
-            \Log::error('Error deleting quiz', [
-                'encryptedId' => $encryptedId,
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->route('admin.todo.index', ['type' => 'quiz'])
-                ->with('error', 'Quiz not found or invalid link.');
+            \Log::error('Error deleting quiz', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Quiz not found or invalid link.', 'type' => 'error'], 404);
+            }
+            return redirect()->route('admin.todo.index', ['type' => 'quiz'])->with('error', 'Quiz not found or invalid link.');
         }
     }
 
@@ -563,7 +582,7 @@ class QuizController extends Controller
             Cache::forget('admin_quiz_show_' . $id);
             Cache::forget('admin_quiz_edit_' . $id);
             
-            return redirect()->route('admin.quizzes.show', $encryptedId)
+            return redirect()->route('admin.quizzes.index')
                 ->with('success', 'Quiz published successfully.');
                 
         } catch (\Exception $e) {
@@ -585,18 +604,24 @@ class QuizController extends Controller
             
             // Toggle the publish status
             $quiz->update([
-                'is_published' => !$quiz->is_published
+                'is_published' => !$quiz->is_published,
+                'updated_by'   => auth()->id(),
             ]);
             
             $status = $quiz->is_published ? 'published' : 'unpublished';
             
-            return redirect()->back()->with('success', "Quiz {$status} successfully.");
-            
+            $msg = "Quiz {$status} successfully.";
+            if (request()->ajax()) {
+                return response()->json(['message' => $msg]);
+            }
+            return redirect()->route('admin.quizzes.index')->with('success', $msg);
+
         } catch (\Exception $e) {
             \Log::error('Error toggling quiz publish status: ' . $e->getMessage());
-            
-            return redirect()->back()
-                ->with('error', 'Failed to update quiz status.');
+            if (request()->ajax()) {
+                return response()->json(['message' => 'Failed to update quiz status.', 'type' => 'error'], 500);
+            }
+            return redirect()->route('admin.quizzes.index')->with('error', 'Failed to update quiz status.');
         }
     }
 }

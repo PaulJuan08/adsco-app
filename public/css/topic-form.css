@@ -30,7 +30,7 @@
 .card-header {
     padding: 1.25rem 1.75rem;
     border-bottom: 1px solid #e2e8f0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     position: relative;
     overflow: hidden;
@@ -165,7 +165,7 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -174,7 +174,7 @@
     font-weight: 700;
     margin: 0 auto 0.75rem;
     border: 4px solid white;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 25px rgba(85, 43, 32, 0.4);
 }
 
 .topic-preview-title {
@@ -243,7 +243,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #552b20 0%, #ddb238 100%);
 }
 
 .form-section-title {
@@ -259,7 +259,7 @@
 }
 
 .form-section-title i {
-    color: #667eea;
+    color: #552b20;
     font-size: 1.125rem;
     width: 20px;
     text-align: center;
@@ -314,9 +314,9 @@ textarea {
 .form-select:focus,
 .form-control:focus,
 textarea:focus {
-    border-color: #667eea;
+    border-color: #552b20;
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(85, 43, 32, 0.10);
     transform: translateY(-1px);
 }
 
@@ -392,15 +392,15 @@ textarea.is-invalid {
 }
 
 .form-file:hover {
-    border-color: #667eea;
-    background-color: rgba(102, 126, 234, 0.05);
+    border-color: #552b20;
+    background-color: rgba(85, 43, 32, 0.05);
 }
 
 .form-file:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #552b20;
     border-style: solid;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(85, 43, 32, 0.10);
 }
 
 /* Current File Display */
@@ -491,7 +491,7 @@ textarea.is-invalid {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #552b20 0%, #ddb238 100%);
     border-radius: 3px 3px 0 0;
 }
 
@@ -508,7 +508,7 @@ textarea.is-invalid {
 }
 
 .sidebar-card-title i {
-    color: #667eea;
+    color: #552b20;
     font-size: 1rem;
     width: 20px;
     text-align: center;
@@ -545,8 +545,8 @@ textarea.is-invalid {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    background: rgba(85, 43, 32, 0.10);
+    color: #552b20;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -608,7 +608,7 @@ textarea.is-invalid {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #552b20 0%, #ddb238 100%);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.3s ease;
@@ -629,7 +629,7 @@ textarea.is-invalid {
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -668,7 +668,7 @@ textarea.is-invalid {
 }
 
 .action-card:hover .action-arrow {
-    color: #667eea;
+    color: #552b20;
     transform: translateX(4px);
 }
 
@@ -772,14 +772,14 @@ textarea.is-invalid {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-size: 1.25rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 10px rgba(85, 43, 32, 0.3);
 }
 
 .publish-text h4 {
@@ -1035,15 +1035,15 @@ input:focus + .toggle-slider {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     border-color: transparent;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 18px rgba(85, 43, 32, 0.4);
 }
 
 .btn-danger {

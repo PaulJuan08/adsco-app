@@ -9,7 +9,9 @@
         <div class="header-content">
             <div class="user-greeting">
                 <div class="user-avatar">
-                    @if(auth()->user()->sex === 'female')
+                    @if(auth()->user()->profile_photo_url)
+                        <img src="{{ auth()->user()->profile_photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
+                    @elseif(auth()->user()->sex === 'female')
                         <i class="fas fa-person-dress"></i>
                     @else
                         <i class="fas fa-person"></i>
@@ -411,7 +413,7 @@
                     @else
                         <div class="items-list">
                             @foreach($recentTopics as $topic)
-                            <div class="list-item">
+                            <div class="list-item clickable-row" onclick="window.location='{{ route('admin.topics.show', Crypt::encrypt($topic->id)) }}'">
                                 <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--primary-light), var(--primary));">
                                     <i class="fas fa-book"></i>
                                 </div>
@@ -427,17 +429,11 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div>
-                                    <a href="{{ route('admin.topics.show', Crypt::encrypt($topic->id)) }}" 
-                                       class="btn btn-primary btn-sm">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
-                                </div>
                             </div>
                             @endforeach
-                            
+
                             @foreach($recentAssignments as $assignment)
-                            <div class="list-item">
+                            <div class="list-item clickable-row" onclick="window.location='{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}'">
                                 <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--success-light), var(--success));">
                                     <i class="fas fa-tasks"></i>
                                 </div>
@@ -459,17 +455,11 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div>
-                                    <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}" 
-                                    class="btn btn-success btn-sm">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
-                                </div>
                             </div>
                             @endforeach
-                            
+
                             @foreach($recentQuizzes as $quiz)
-                            <div class="list-item">
+                            <div class="list-item clickable-row" onclick="window.location='{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}'">
                                 <div class="item-avatar" style="border-radius: var(--radius); background: linear-gradient(135deg, var(--warning-light), var(--warning));">
                                     <i class="fas fa-question-circle"></i>
                                 </div>
@@ -490,12 +480,6 @@
                                             <i class="fas fa-clock"></i> {{ $quiz->created_at->diffForHumans() }}
                                         </span>
                                     </div>
-                                </div>
-                                <div>
-                                    <a href="{{ route('admin.quizzes.show', Crypt::encrypt($quiz->id)) }}" 
-                                       class="btn btn-warning btn-sm">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
                                 </div>
                             </div>
                             @endforeach
@@ -646,9 +630,21 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Shared palette
+    const P = { brown: '#552b20', gold: '#c49a24', orange: '#d3541b', teal: '#2a8a72', blue: '#2d7fa8', neutral: '#e8ddd9' };
+    const tooltipDefaults = {
+        backgroundColor: '#fff',
+        titleColor: '#1e293b',
+        bodyColor: '#475569',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 6
+    };
+
     // ============================================
     // 1. USER DISTRIBUTION DONUT CHART
     // ============================================
@@ -664,32 +660,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     {{ $userStats['registrars'] }},
                     {{ $userStats['admins'] }}
                 ],
-                backgroundColor: [
-                    'var(--chart-blue)',
-                    'var(--chart-green)',
-                    'var(--chart-yellow)',
-                    'var(--chart-red)'
-                ],
-                borderWidth: 0,
-                hoverOffset: 4
+                backgroundColor: [P.brown, P.gold, P.orange, P.blue],
+                borderWidth: 3,
+                borderColor: '#fff',
+                hoverOffset: 6
             }]
         },
         options: {
-            cutout: '70%',
+            cutout: '72%',
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
+                    ...tooltipDefaults,
                     callbacks: {
                         label: function(context) {
-                            const label = context.label || '';
                             const value = context.raw || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+                            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `  ${context.label}: ${value} (${pct}%)`;
                         }
                     }
                 }
@@ -709,32 +699,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Users',
                     data: {{ json_encode($monthlyUsers) }},
-                    backgroundColor: 'rgba(99, 102, 241, 0.7)',
-                    borderColor: 'var(--chart-blue)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8
+                    backgroundColor: P.brown,
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.75
                 },
                 {
                     label: 'Colleges',
                     data: {{ json_encode($monthlyColleges) }},
-                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                    borderColor: 'var(--chart-green)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8
+                    backgroundColor: P.gold,
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.75
                 },
                 {
                     label: 'Courses',
                     data: {{ json_encode($monthlyCourses) }},
-                    backgroundColor: 'rgba(249, 115, 22, 0.7)',
-                    borderColor: 'var(--chart-orange)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8
+                    backgroundColor: P.orange,
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.75
                 }
             ]
         },
@@ -742,22 +729,14 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
+                    ...tooltipDefaults,
                     mode: 'index',
                     intersect: false,
-                    backgroundColor: 'var(--gray-900)',
-                    titleColor: '#fff',
-                    bodyColor: 'rgba(255, 255, 255, 0.8)',
-                    borderColor: 'var(--gray-800)',
-                    borderWidth: 1,
                     callbacks: {
                         label: function(context) {
-                            let label = context.dataset.label || '';
-                            let value = context.raw || 0;
-                            return `${label}: ${value}`;
+                            return `  ${context.dataset.label}: ${context.raw}`;
                         }
                     }
                 }
@@ -765,37 +744,17 @@ document.addEventListener('DOMContentLoaded', function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'var(--gray-200)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        stepSize: 1,
-                        precision: 0,
-                        color: 'var(--gray-500)'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Number Created',
-                        color: 'var(--gray-500)',
-                        font: {
-                            size: 11
-                        }
-                    }
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                    border: { display: false },
+                    ticks: { stepSize: 1, precision: 0, color: '#94a3b8', font: { size: 11 } }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: 'var(--gray-600)'
-                    }
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: '#64748b', font: { size: 11 } }
                 }
             },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
+            interaction: { intersect: false, mode: 'index' }
         }
     });
 
@@ -862,6 +821,16 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Clickable list rows */
+.clickable-row {
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.clickable-row:hover {
+    background: var(--gray-50, #f9fafb);
+    transform: translateX(2px);
+}
+
 /* Additional styles for tooltips and chart enhancements */
 .bar-fill {
     position: relative;

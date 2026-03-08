@@ -16,27 +16,7 @@
                 <h1 class="card-title">{{ $quiz->title }}</h1>
             </div>
             <div class="top-actions">
-                <button type="button" class="top-action-btn" onclick="openAccessModal()">
-                    <i class="fas fa-user-plus"></i> Grant Access
-                </button>
-                
-                @if($quiz->is_published)
-                    <button type="button" class="top-action-btn" onclick="confirmUnpublish('{{ $encryptedId }}')">
-                        <i class="fas fa-eye-slash"></i> Unpublish
-                    </button>
-                @else
-                    <button type="button" class="top-action-btn" onclick="confirmPublish('{{ $encryptedId }}')">
-                        <i class="fas fa-eye"></i> Publish
-                    </button>
-                @endif
-                
-                <a href="{{ route('admin.quizzes.edit', $encryptedId) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <a href="{{ route('admin.todo.progress', ['type' => 'quiz', 'item_id' => $quiz->id]) }}" class="top-action-btn">
-                    <i class="fas fa-chart-bar"></i> Progress
-                </a>
-                <a href="{{ route('admin.todo.index', ['type' => 'quiz']) }}" class="top-action-btn">
+                <a href="{{ route('admin.quizzes.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
             </div>
@@ -307,6 +287,19 @@
                             <span class="lbl"><i class="fas fa-calendar-alt"></i> Created</span>
                             <span class="val">{{ $quiz->created_at->format('M d, Y') }}</span>
                         </div>
+                        @if($quiz->updater)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-user-edit"></i> Last Updated By</span>
+                            <span class="val">{{ $quiz->updater->f_name }} {{ $quiz->updater->l_name }}
+                                <span style="display:block; font-size:0.7rem; color:var(--gray-500);">{{ $quiz->updated_at->format('M d, Y') }}</span>
+                            </span>
+                        </div>
+                        @elseif($quiz->updated_at != $quiz->created_at)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-clock"></i> Last Updated</span>
+                            <span class="val">{{ $quiz->updated_at->format('M d, Y') }}</span>
+                        </div>
+                        @endif
                     </div>
 
                     <!-- Quick Actions Card -->

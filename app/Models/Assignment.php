@@ -31,8 +31,6 @@ class Assignment extends Model
         'duration' => 'integer',
         'passing_score' => 'integer',
         'is_published' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     public function topic()

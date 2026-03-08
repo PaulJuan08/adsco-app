@@ -5,10 +5,10 @@
 
 /* CSS Variables - Matching dashboard.css */
 :root {
-    --primary: #4f46e5;
-    --primary-light: #818cf8;
-    --primary-lighter: #e0e7ff;
-    --primary-dark: #4338ca;
+    --primary: #552b20;
+    --primary-light: #c49a80;
+    --primary-lighter: #fdf9f7;
+    --primary-dark: #3d1f17;
     --primary-darker: #3730a3;
     
     --success: #10b981;
@@ -67,6 +67,165 @@
     
     --transition-base: 0.2s ease-in-out;
     --transition-fast: 0.1s ease-in-out;
+}
+
+/* ========================================
+   COMPACT STATS BAR
+   ======================================== */
+.stats-compact-bar {
+    display: flex;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 0.55rem 0.875rem;
+    box-shadow: var(--shadow-sm);
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-chip-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    background: var(--primary-lighter);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.stat-chip-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.stat-chip-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.2;
+}
+
+.stat-chip-label {
+    font-size: 0.68rem;
+    color: var(--gray-500);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.stat-chip-success .stat-chip-icon { background: var(--success-lighter); color: var(--success-dark); }
+.stat-chip-success .stat-chip-value { color: var(--success-dark); }
+.stat-chip-warning .stat-chip-icon { background: var(--warning-lighter); color: var(--warning-dark); }
+.stat-chip-warning .stat-chip-value { color: var(--warning-dark); }
+.stat-chip-danger .stat-chip-icon  { background: var(--danger-lighter);  color: var(--danger-dark);  }
+.stat-chip-danger .stat-chip-value  { color: var(--danger-dark); }
+.stat-chip-info .stat-chip-icon    { background: var(--info-lighter);    color: var(--info-dark);    }
+.stat-chip-info .stat-chip-value    { color: var(--info-dark); }
+
+/* ========================================
+   COMPACT FILTER BAR
+   ======================================== */
+.filter-bar {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-row .filter-select {
+    padding: 0.42rem 0.75rem;
+    flex: 1;
+    min-width: 120px;
+    max-width: 190px;
+    border-radius: var(--radius);
+}
+
+.filter-search-wrap {
+    position: relative;
+    flex: 1.5;
+    min-width: 140px;
+}
+
+.filter-search-wrap > i {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    font-size: 0.7rem;
+    pointer-events: none;
+}
+
+.filter-search-wrap .filter-input {
+    padding: 0.42rem 0.75rem 0.42rem 1.9rem;
+    border-radius: var(--radius);
+    width: 100%;
+}
+
+.filter-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.42rem 0.875rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+}
+
+.filter-clear-btn:hover {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+    border-color: var(--danger);
+}
+
+/* Performance cell (merged score+result) */
+.perf-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.perf-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.perf-sub {
+    font-size: 0.7rem;
+    color: var(--gray-500);
 }
 
 /* ========================================
@@ -231,7 +390,8 @@
 .student-avatar-sm {
     width: 44px;
     height: 44px;
-    border-radius: var(--radius);
+    border-radius: 50%;
+    overflow: hidden;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     display: flex;
     align-items: center;
@@ -586,7 +746,9 @@
    MODAL STYLES
    ======================================== */
 .modal {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -595,12 +757,16 @@
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
     z-index: 9999;
+    display: flex;
     align-items: center;
     justify-content: center;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .modal.show {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
 }
 
 .modal-content {
@@ -611,18 +777,14 @@
     max-height: 80vh;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
-    animation: modalSlideIn 0.3s ease;
+    transform: translateY(-20px) scale(0.97);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+.modal.show .modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
 }
 
 .modal-header {

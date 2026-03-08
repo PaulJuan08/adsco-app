@@ -51,4 +51,15 @@ class LegalPageController extends Controller
 
         return back()->with('success', $legalPage->getTypeLabel() . ' updated successfully.');
     }
+
+    public function togglePublish(LegalPage $legalPage)
+    {
+        $legalPage->update([
+            'is_published' => !$legalPage->is_published,
+            'updated_by'   => auth()->id(),
+        ]);
+
+        $status = $legalPage->is_published ? 'published' : 'unpublished';
+        return back()->with('success', $legalPage->getTypeLabel() . " {$status} successfully.");
+    }
 }

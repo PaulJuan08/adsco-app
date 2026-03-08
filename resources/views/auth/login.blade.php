@@ -15,7 +15,8 @@
     <!-- Logo -->
     <link rel="icon" href="{{ asset('assets/img/adsco-logo.png') }}" type="image/png">
 
-    <!-- <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lf-InMsAAAAALLl-UT7ohlaUuRFIMQLqxhD15I8"></script> -->
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     
     <style>
         /* Registration Success Message Styling */
@@ -69,34 +70,7 @@
     <div class="auth-particle auth-particle-2"></div>
     <div class="auth-particle auth-particle-3"></div>
 
-    <!-- Navigation -->
-    <nav class="auth-navbar">
-        <div class="container">
-            <a href="/" class="brand">
-                <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo" class="brand-logo">
-                <span class="brand-text">ADS<span class="accent">CO</span></span>
-            </a>
-            
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
-            
-            <div class="nav-links" id="navLinks">
-                <a href="/" class="nav-link">
-                    <i class="fas fa-home"></i>
-                    <span>Home</span>
-                </a>
-                <a href="{{ route('login') }}" class="nav-link active">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Login</span>
-                </a>
-                <a href="{{ route('register') }}" class="nav-link">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Register</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    @include('partials.navbar', ['activePage' => 'login'])
 
     <!-- Main Content -->
     <div class="auth-container">
@@ -275,6 +249,11 @@
                         </a>
                     </div>
 
+                    <!-- Cloudflare Turnstile Widget -->
+                    @if(config('services.turnstile.enabled'))
+                    <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" style="margin-bottom: 1rem;"></div>
+                    @endif
+
                     <!-- Submit Button -->
                     <button type="submit" class="btn btn-primary btn-block btn-lg">
                         <i class="fas fa-sign-in-alt"></i>
@@ -305,19 +284,6 @@
 
     <!-- JavaScript -->
     <script>
-        // Mobile menu toggle
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const navLinks = document.getElementById('navLinks');
-
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                navLinks.classList.toggle('show');
-                const icon = mobileMenuBtn.querySelector('i');
-                icon.classList.toggle('fa-bars');
-                icon.classList.toggle('fa-times');
-            });
-        }
-
         // Password toggle
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -344,14 +310,15 @@
             });
         }
 
-        // Auto-dismiss alerts after 5 seconds
+        // Auto-dismiss alerts after 3.5 seconds
         setTimeout(() => {
-            const alerts = document.querySelectorAll('.alert-dismissible');
-            alerts.forEach(alert => {
-                alert.style.animation = 'slideUp 0.3s ease-out';
-                setTimeout(() => alert.remove(), 300);
+            document.querySelectorAll('.alert-dismissible').forEach(el => {
+                el.style.transition = 'opacity .4s ease, transform .4s ease, max-height .4s ease, padding .4s ease, margin .4s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-8px)';
+                setTimeout(() => el.remove(), 420);
             });
-        }, 5000);
+        }, 3500);
 
         // function onClick(e) {
         //     e.preventDefault();

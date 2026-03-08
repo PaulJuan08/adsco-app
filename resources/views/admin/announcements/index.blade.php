@@ -345,33 +345,26 @@
                             @endif
                         </div>
                     </div>
-                    <div class="ann-card-footer">
-                        <div class="ann-badges">
-                            <span class="badge-type badge-{{ $ann->type }}">{{ ucfirst($ann->type) }}</span>
-                            <span class="badge-status {{ $statusClass }}">{{ $statusLabel }}</span>
-                        </div>
-                        <div class="ann-actions">
-                            {{-- Toggle publish --}}
-                            <form method="POST" action="{{ route('admin.announcements.toggle-publish', $ann) }}">
-                                @csrf @method('PATCH')
-                                <button type="submit" class="btn-icon {{ $ann->is_published ? 'btn-icon-toggle-on' : 'btn-icon-toggle-off' }}"
-                                    title="{{ $ann->is_published ? 'Unpublish' : 'Publish' }}">
-                                    <i class="fas {{ $ann->is_published ? 'fa-eye' : 'fa-eye-slash' }}"></i>
-                                </button>
-                            </form>
-                            {{-- Edit --}}
-                            <button class="btn-icon btn-icon-edit" title="Edit"
-                                onclick="openEditModal({{ $ann->id }}, {{ json_encode($ann->title) }}, {{ json_encode($ann->content) }}, '{{ $ann->type }}', '{{ $ann->end_date?->format('Y-m-d') ?? '' }}', {{ $ann->is_published ? 'true' : 'false' }})">
-                                <i class="fas fa-pen"></i>
+                    <div class="card-footer-actions">
+                        <form method="POST" action="{{ route('admin.announcements.toggle-publish', $ann) }}" style="margin:0;">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="btn-toggle-status {{ $ann->is_published ? 'published' : 'draft' }}">
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                <span class="toggle-label">{{ $ann->is_published ? 'Published' : 'Draft' }}</span>
                             </button>
-                            {{-- Delete --}}
-                            <form method="POST" action="{{ route('admin.announcements.destroy', $ann) }}"
-                                onsubmit="return confirm('Delete this announcement?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn-icon btn-icon-delete" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                        </form>
+                        <div class="action-dropdown-wrapper">
+                            <button class="btn-action-dots" onclick="toggleActionDropdown(this)"><i class="fas fa-ellipsis-v"></i></button>
+                            <div class="action-dropdown-menu">
+                                <button class="dropdown-item"
+                                    onclick="openEditModal({{ $ann->id }}, {{ json_encode($ann->title) }}, {{ json_encode($ann->content) }}, '{{ $ann->type }}', '{{ $ann->end_date?->format('Y-m-d') ?? '' }}', {{ $ann->is_published ? 'true' : 'false' }})">
+                                    <i class="fas fa-pen"></i> Edit
                                 </button>
-                            </form>
+                                <div class="dropdown-divider"></div>
+                                <button onclick="confirmDeleteAnn({{ $ann->id }}, '{{ addslashes($ann->title) }}')" class="dropdown-item text-danger">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -379,6 +372,11 @@
         </div>
     @endif
 </div>
+
+{{-- Hidden delete form --}}
+<form id="annDeleteForm" method="POST" style="display:none;">
+    @csrf @method('DELETE')
+</form>
 
 {{-- ─── Create Modal ─── --}}
 <div class="modal-overlay" id="createModal" onclick="closeModalOnBg(event,'createModal')">
@@ -475,6 +473,53 @@
 
 @push('scripts')
 <script>
+    // Action dropdown
+    window.toggleActionDropdown = function(btn) {
+        if (!btn._menu) btn._menu = btn.nextElementSibling;
+        var menu = btn._menu;
+        var isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+        if (!isOpen) {
+            if (menu.parentNode !== document.body) document.body.appendChild(menu);
+            var rect = btn.getBoundingClientRect();
+            menu.style.left = 'auto';
+            menu.style.right = (window.innerWidth - rect.right) + 'px';
+            if (rect.top > 130) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.bottom = 'auto';
+            }
+            menu.classList.add('open');
+        }
+    };
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-dropdown-wrapper'))
+            document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    });
+    window.addEventListener('scroll', function() {
+        document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
+    }, true);
+
+    window.confirmDeleteAnn = function(id, name) {
+        Swal.fire({
+            title: 'Delete Announcement?',
+            text: `"${name}" will be permanently deleted.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete',
+        }).then(result => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('annDeleteForm');
+                form.action = `{{ url('admin/announcements') }}/${id}`;
+                form.submit();
+            }
+        });
+    };
+
     function openCreateModal() {
         document.getElementById('createModal').classList.add('open');
     }

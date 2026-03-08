@@ -269,8 +269,8 @@
                     @csrf
                     <div class="disc-new-inner">
                         <div class="disc-avatar">
-                            @if(auth()->user()->avatar)
-                                <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="">
+                            @if(auth()->user()->profile_photo_url)
+                                <img src="{{ auth()->user()->profile_photo_url }}" alt="">
                             @elseif(auth()->user()->sex === 'female')
                                 <i class="fas fa-person-dress"></i>
                             @else
@@ -303,8 +303,8 @@
 
                         {{-- Author avatar --}}
                         <div class="disc-avatar">
-                            @if($post->author?->avatar)
-                                <img src="{{ Storage::url($post->author->avatar) }}" alt="">
+                            @if($post->author?->profile_photo_url)
+                                <img src="{{ $post->author->profile_photo_url }}" alt="">
                             @elseif($post->author?->sex === 'female')
                                 <i class="fas fa-person-dress"></i>
                             @else
@@ -354,8 +354,8 @@
                                 @foreach($post->replies as $reply)
                                 <div class="disc-reply-row">
                                     <div class="disc-avatar disc-avatar-sm">
-                                        @if($reply->author?->avatar)
-                                            <img src="{{ Storage::url($reply->author->avatar) }}" alt="">
+                                        @if($reply->author?->profile_photo_url)
+                                            <img src="{{ $reply->author->profile_photo_url }}" alt="">
                                         @elseif($reply->author?->sex === 'female')
                                             <i class="fas fa-person-dress"></i>
                                         @else
@@ -397,8 +397,8 @@
                                     <input type="hidden" name="parent_id" value="{{ $post->id }}">
                                     <div class="disc-new-inner">
                                         <div class="disc-avatar disc-avatar-sm">
-                                            @if(auth()->user()->avatar)
-                                                <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="">
+                                            @if(auth()->user()->profile_photo_url)
+                                                <img src="{{ auth()->user()->profile_photo_url }}" alt="">
                                             @elseif(auth()->user()->sex === 'female')
                                                 <i class="fas fa-person-dress"></i>
                                             @else

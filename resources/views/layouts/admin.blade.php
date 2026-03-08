@@ -34,10 +34,15 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo">
-                </div>
-                <div class="sidebar-title">ADMIN</div>
+                <a href="{{ route('dashboard') }}" class="sidebar-header-link">
+                    <div class="sidebar-logo">
+                        <img src="{{ asset('assets/img/adsco-logo.png') }}" alt="ADSCO Logo">
+                    </div>
+                    <div class="sidebar-brand">
+                        <div class="sidebar-brand-name">ADSCO</div>
+                        <div class="sidebar-brand-sub">Admin Panel</div>
+                    </div>
+                </a>
             </div>
             
             <nav class="sidebar-nav">
@@ -99,11 +104,11 @@
                         <i class="fas fa-chevron-right dropdown-arrow"></i>
                     </div>
                     <div class="sidebar-dropdown-menu">
-                        <a href="{{ route('admin.todo.index', ['type' => 'quiz']) }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.todo.quiz*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.quizzes.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.quizzes.*') ? 'active' : '' }}">
                             <i class="fas fa-brain"></i>
                             <span>Quizzes</span>
                         </a>
-                        <a href="{{ route('admin.todo.index', ['type' => 'assignment']) }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.todo.assignment*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.assignments.index') }}" class="sidebar-dropdown-item {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}">
                             <i class="fas fa-file-alt"></i>
                             <span>Assignments</span>
                         </a>
@@ -138,8 +143,8 @@
                 <a href="{{ route('admin.profile.show') }}" class="sidebar-user-profile-link">
                     <div class="sidebar-user-profile">
                         <div class="sidebar-user-avatar">
-                            @if(Auth::user()->avatar)
-                                <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
+                            @if(Auth::user()->profile_photo_url)
+                                <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->f_name }}" class="avatar-image">
                             @elseif(Auth::user()->sex === 'female')
                                 <i class="fas fa-person-dress" style="font-size:1.25rem;"></i>
                             @else
@@ -193,6 +198,100 @@
     @stack('scripts')
 
     @include('components.legal-modal')
+
+    {{-- ─── CRUD Modal ─── --}}
+    <style>
+        #crudModalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(3px);z-index:9000;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;}
+        #crudModalOverlay.open{visibility:visible;opacity:1;pointer-events:all;}
+        #crudModalBox{position:fixed;top:50%;left:50%;z-index:9001;width:calc(100% - 2rem);max-width:680px;max-height:90vh;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(85,43,32,.28);overflow:hidden;display:flex;flex-direction:column;visibility:hidden;opacity:0;pointer-events:none;transform:translate(-50%,calc(-50% - 20px)) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,visibility .25s ease;}
+        #crudModalBox.open{visibility:visible;opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1);}
+    </style>
+    <div id="crudModalOverlay" onclick="closeCrudModal()"></div>
+    <div id="crudModalBox">
+        <div style="background:linear-gradient(135deg,#552b20 0%,#3d1f17 100%);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <h3 id="crudModalTitle" style="margin:0;font-size:1rem;font-weight:700;color:#fff;"></h3>
+            <button onclick="closeCrudModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="crudModalBody" style="padding:1.5rem 1.5rem 1rem;overflow-y:auto;flex:1;"></div>
+    </div>
+
+    <script>
+        var _crudLoadedCss = {};
+        function openCrudModal(url, title, maxWidth) {
+            document.getElementById('crudModalBox').style.maxWidth = maxWidth || '680px';
+            document.getElementById('crudModalTitle').textContent = title;
+            document.getElementById('crudModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#552b20;font-size:2rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            document.getElementById('crudModalOverlay').classList.add('open');
+            document.getElementById('crudModalBox').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}})
+                .then(function(r){return r.json();})
+                .then(function(data){
+                    if (data.css && !_crudLoadedCss[data.css]) {
+                        var lnk = document.createElement('link');
+                        lnk.rel = 'stylesheet'; lnk.href = data.css;
+                        document.head.appendChild(lnk);
+                        _crudLoadedCss[data.css] = true;
+                    }
+                    document.getElementById('crudModalBody').innerHTML = data.html;
+                    document.querySelectorAll('#crudModalBody script').forEach(function(s){var n=document.createElement('script');n.textContent=s.textContent;document.head.appendChild(n);s.remove();});
+                    _initCrudForm();
+                })
+                .catch(function(){document.getElementById('crudModalBody').innerHTML='<p style="color:#dc2626;text-align:center;padding:1rem;">Failed to load form. Please try again.</p>';});
+        }
+        function closeCrudModal() {
+            document.getElementById('crudModalOverlay').classList.remove('open');
+            document.getElementById('crudModalBox').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function _initCrudForm() {
+            var form = document.querySelector('#crudModalBody form[method="POST"], #crudModalBody form[method="post"]');
+            if (!form || form.dataset.noCrud) return;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var btn = form.querySelector('[type=submit]');
+                var orig = btn ? btn.innerHTML : '';
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+                form.querySelectorAll('.crud-field-error').forEach(function(el){el.remove();});
+                form.querySelectorAll('.is-invalid,.error').forEach(function(el){el.classList.remove('is-invalid','error');});
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}
+                })
+                .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,data:d};});})
+                .then(function(res){
+                    if (res.ok) {
+                        closeCrudModal();
+                        _crudToast('success', res.data.message || 'Saved successfully!');
+                        setTimeout(function(){ if(res.data.redirect) window.location.href=res.data.redirect; else window.location.reload(); }, 1800);
+                    } else if (res.status === 422) {
+                        Object.entries(res.data.errors).forEach(function([field, msgs]){
+                            var inp = form.querySelector('[name="'+field+'"]') || form.querySelector('[name="'+field+'[]"]');
+                            if (inp) {
+                                inp.classList.add('error');
+                                var err = document.createElement('div');
+                                err.className = 'form-error crud-field-error';
+                                err.textContent = msgs[0];
+                                inp.parentNode.insertBefore(err, inp.nextSibling);
+                            }
+                        });
+                        _crudToast('error', 'Please fix the form errors.');
+                    } else {
+                        _crudToast('error', (res.data&&res.data.message)||'Something went wrong.');
+                    }
+                })
+                .catch(function(){_crudToast('error','Network error. Please try again.');})
+                .finally(function(){if(btn){btn.disabled=false;btn.innerHTML=orig;}});
+            });
+        }
+        function _crudToast(type, msg) {
+            if (typeof showToast !== 'undefined') {
+                showToast(msg, type);
+            } else { alert(msg); }
+        }
+        document.addEventListener('keydown', function(e){if(e.key==='Escape')closeCrudModal();});
+    </script>
 
     <script>
         function toggleSidebar() {
@@ -262,6 +361,111 @@
                 if (arrow) arrow.style.transform = 'rotate(90deg)';
             });
         });
+    </script>
+
+    @include('partials.toast')
+
+    {{-- Global auto-filter: client-side card filter or debounced server submit --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[method="GET"]').forEach(function (form) {
+            form.querySelectorAll('input[type="text"], input[type="search"]').forEach(function (inp) {
+                var selector = inp.dataset.clientFilter;
+                if (selector) {
+                    // Pure client-side: show/hide cards instantly, no page reload
+                    inp.addEventListener('input', function () {
+                        var q = inp.value.trim().toLowerCase();
+                        var cards = document.querySelectorAll(selector);
+                        var visible = 0;
+                        cards.forEach(function (card) {
+                            var title = (card.querySelector('.todo-card-title') || card).textContent.toLowerCase();
+                            var match = !q || title.includes(q);
+                            card.style.display = match ? '' : 'none';
+                            if (match) visible++;
+                        });
+                        var empty = document.querySelector('.empty-todo');
+                        if (empty) empty.style.display = visible === 0 && q ? '' : 'none';
+                    });
+                    return;
+                }
+                if (inp.id === 'search-users' || inp.id === 'search-courses' || inp.id === 'search-topics' || inp.id === 'search-colleges' || inp.id === 'search-programs') return;
+                var t;
+                inp.addEventListener('input', function () {
+                    clearTimeout(t);
+                    t = setTimeout(function () { form.submit(); }, 500);
+                });
+            });
+            form.querySelectorAll('select').forEach(function (sel) {
+                if (sel.classList.contains('auto-filter')) return;
+                sel.addEventListener('change', function () { form.submit(); });
+            });
+        });
+    });
+    </script>
+
+    {{-- Global AJAX form interceptor + ajaxDelete helper --}}
+    <script>
+    (function () {
+        var _csrf = function () { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; };
+
+        // Universal AJAX delete helper (used by confirmDeleteItem)
+        window.ajaxDelete = function (url, onSuccess) {
+            var fd = new FormData();
+            fd.append('_method', 'DELETE');
+            fd.append('_token', _csrf());
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-CSRF-TOKEN': _csrf() },
+                body: fd
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.message) showToast(d.message, d.type || 'success');
+                if (typeof onSuccess === 'function') { onSuccess(d); return; }
+                if (d.redirect) { setTimeout(function () { window.location.href = d.redirect; }, 1200); }
+                else { setTimeout(function () { window.location.reload(); }, 1200); }
+            })
+            .catch(function () { showToast('Delete failed. Please try again.', 'error'); });
+        };
+
+        // Intercept all non-GET, non-modal, non-excluded forms
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (form.closest('#crudModalBody')) return;
+            if ((form.getAttribute('method') || '').toLowerCase() === 'get') return;
+            if (form.dataset.noAjax || form.dataset.noCrud) return;
+            if (form.id === 'itemDeleteForm') return; // handled by ajaxDelete
+            if (form.querySelector('input[type="file"]')) return;
+
+            e.preventDefault();
+            var formData = new FormData(form);
+            var action = form.getAttribute('action') || window.location.href;
+
+            fetch(action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json, */*', 'X-CSRF-TOKEN': _csrf() },
+                body: formData,
+                redirect: 'follow'
+            })
+            .then(function (r) {
+                var ct = r.headers.get('content-type') || '';
+                if (ct.indexOf('application/json') !== -1) {
+                    return r.json().then(function (d) {
+                        if (r.ok) {
+                            if (d.message) showToast(d.message, d.type || 'success');
+                            if (d.redirect) { setTimeout(function () { window.location.href = d.redirect; }, 1200); }
+                            else if (d.reload !== false) { setTimeout(function () { window.location.reload(); }, 1200); }
+                        } else {
+                            showToast(d.message || 'An error occurred.', 'error');
+                        }
+                    });
+                } else {
+                    window.location.href = r.url;
+                }
+            })
+            .catch(function () { showToast('Network error. Please try again.', 'error'); });
+        });
+    })();
     </script>
 </body>
 </html>

@@ -11,7 +11,9 @@
         <div class="header-content">
             <div class="user-greeting">
                 <div class="user-avatar">
-                    @if(auth()->user()->sex === 'female')
+                    @if(auth()->user()->profile_photo_url)
+                        <img src="{{ auth()->user()->profile_photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
+                    @elseif(auth()->user()->sex === 'female')
                         <i class="fas fa-person-dress"></i>
                     @else
                         <i class="fas fa-person"></i>
@@ -82,6 +84,93 @@
         </div>
     </div>
 
+    {{-- ── PERFORMANCE CHARTS ─────────────────────────────────── --}}
+    <div class="student-charts-grid">
+
+        {{-- Quiz Performance --}}
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-bar" style="color:var(--primary); margin-right:0.5rem;"></i>
+                    Quiz Performance
+                </h2>
+                @if($quizChartData->count() > 0)
+                <span style="font-size:0.7rem; color:var(--gray-400);">Last {{ $quizChartData->count() }} attempt(s)</span>
+                @endif
+            </div>
+            <div class="card-body">
+                @if($quizChartData->count() > 0)
+                    <canvas id="quizChart"></canvas>
+                @else
+                    <div class="chart-empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No quiz attempts yet</p>
+                        <small>Take a quiz to see your performance here</small>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Assignment Scores --}}
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-tasks" style="color:#10b981; margin-right:0.5rem;"></i>
+                    Assignment Scores
+                </h2>
+                @if($assignmentChartData->count() > 0)
+                <span style="font-size:0.7rem; color:var(--gray-400);">Last {{ $assignmentChartData->count() }} graded</span>
+                @endif
+            </div>
+            <div class="card-body">
+                @if($assignmentChartData->count() > 0)
+                    <canvas id="assignmentChart"></canvas>
+                @else
+                    <div class="chart-empty-state">
+                        <i class="fas fa-file-alt"></i>
+                        <p>No graded assignments yet</p>
+                        <small>Submit assignments to see your scores here</small>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Topic Progress Doughnut --}}
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-pie" style="color:#f59e0b; margin-right:0.5rem;"></i>
+                    Topic Progress
+                </h2>
+            </div>
+            <div class="card-body chart-donut-body">
+                @php $chartTotalTopics = $stats['total_topics'] ?? 0; @endphp
+                @if($chartTotalTopics > 0)
+                    <canvas id="progressDonut" style="max-width:160px; max-height:160px;"></canvas>
+                    <div class="donut-legend">
+                        <div>
+                            <span class="legend-dot" style="background:#10b981;"></span>
+                            Completed: {{ $stats['completed_topics'] ?? 0 }}
+                        </div>
+                        <div>
+                            <span class="legend-dot" style="background:#e2e8f0;"></span>
+                            Remaining: {{ $chartTotalTopics - ($stats['completed_topics'] ?? 0) }}
+                        </div>
+                        <div style="margin-top:0.5rem; font-weight:700; color:var(--primary); font-size:0.9rem;">
+                            {{ $completionRate }}% Complete
+                        </div>
+                    </div>
+                @else
+                    <div class="chart-empty-state">
+                        <i class="fas fa-list-check"></i>
+                        <p>No topics enrolled yet</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+    </div>
+
     <!-- Main Content Grid -->
     <div class="content-grid">
         <!-- Left Column -->
@@ -122,7 +211,7 @@
                                 $totalTopics = $course->total_topics ?? $course->topics_count ?? 0;
                             @endphp
                             
-                            <div class="list-item">
+                            <div class="list-item clickable-row" onclick="window.location='{{ route('student.courses.show', Crypt::encrypt($course->id)) }}'">
                                 <div class="item-avatar" style="border-radius: var(--radius);">
                                     <i class="fas fa-book-open"></i>
                                 </div>
@@ -143,11 +232,6 @@
                                             <div style="height: 100%; background: var(--primary); width: {{ $progressPercentage }}%; transition: width 0.3s;"></div>
                                         </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <a href="{{ route('student.courses.show', Crypt::encrypt($course->id)) }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
                                 </div>
                             </div>
                         @endforeach
@@ -275,9 +359,106 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 <style>
-.separator {
-    opacity: 0.5;
-    margin: 0 0.5rem;
+.separator { opacity: 0.5; margin: 0 0.5rem; }
+.clickable-row { cursor: pointer; transition: background 0.15s, transform 0.1s; }
+.clickable-row:hover { background: var(--gray-50, #f9fafb); transform: translateX(2px); }
+.student-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
+.chart-card { margin-bottom: 0 !important; }
+.chart-empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 160px; gap: 0.4rem;
+}
+.chart-empty-state i { font-size: 2.5rem; color: var(--gray-300); }
+.chart-empty-state p { font-size: 0.875rem; color: var(--gray-500); margin: 0; }
+.chart-empty-state small { font-size: 0.75rem; color: var(--gray-400); }
+.chart-donut-body { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.donut-legend { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; color: var(--gray-600); }
+.donut-legend div { display: flex; align-items: center; gap: 0.4rem; }
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+@media (max-width: 1024px) { .student-charts-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px)  { .student-charts-grid { grid-template-columns: 1fr; } }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const P = { brown: '#552b20', gold: '#c49a24', orange: '#d3541b', teal: '#2a8a72', blue: '#2d7fa8', neutral: '#e8ddd9' };
+    const tipOpts = { backgroundColor: '#fff', titleColor: '#1e293b', bodyColor: '#475569', borderColor: '#e2e8f0', borderWidth: 1, padding: 10, cornerRadius: 6 };
+    const scaleOpts = {
+        y: { min: 0, max: 100, grid: { color: 'rgba(0,0,0,0.05)' }, border: { display: false }, ticks: { callback: v => v + '%', color: '#94a3b8', font: { size: 11 } } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
+    };
+
+    @if($quizChartData->count() > 0)
+    (function () {
+        const data = @json($quizChartData);
+        new Chart(document.getElementById('quizChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.label),
+                datasets: [{ label: 'Score', data: data.map(d => d.percentage), backgroundColor: data.map(d => d.passed ? P.teal : P.orange), borderWidth: 0, borderRadius: 5 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tipOpts, callbacks: { label: c => [`  ${c.parsed.y}%`, data[c.dataIndex].passed ? '  ✓ Passed' : '  ✗ Failed'] } }
+                },
+                scales: scaleOpts
+            }
+        });
+    })();
+    @endif
+
+    @if($assignmentChartData->count() > 0)
+    (function () {
+        const data = @json($assignmentChartData);
+        new Chart(document.getElementById('assignmentChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.label),
+                datasets: [{ label: 'Score', data: data.map(d => d.percentage), backgroundColor: data.map(d => d.percentage >= 70 ? P.teal : d.percentage >= 50 ? P.gold : P.orange), borderWidth: 0, borderRadius: 5 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tipOpts, callbacks: { label: c => [`  ${data[c.dataIndex].score}/${data[c.dataIndex].total} pts (${c.parsed.y}%)`] } }
+                },
+                scales: scaleOpts
+            }
+        });
+    })();
+    @endif
+
+    @php $chartTotalTopics = $stats['total_topics'] ?? 0; @endphp
+    @if($chartTotalTopics > 0)
+    (function () {
+        const done = {{ $stats['completed_topics'] ?? 0 }};
+        const left = {{ $chartTotalTopics - ($stats['completed_topics'] ?? 0) }};
+        new Chart(document.getElementById('progressDonut'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Remaining'],
+                datasets: [{ data: [done, left], backgroundColor: [P.brown, P.neutral], borderWidth: 3, borderColor: '#fff', hoverOffset: 5 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true, cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tipOpts, callbacks: { label: c => `  ${c.label}: ${c.parsed} topic(s)` } }
+                }
+            }
+        });
+    })();
+    @endif
+});
+</script>
 @endpush

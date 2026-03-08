@@ -98,17 +98,25 @@
 
 /* PDF Modal — matches topic-show.css modal-overlay pattern */
 .modal-overlay {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.95);
     z-index: 99999;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
     backdrop-filter: blur(5px);
+    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
-.modal-overlay.active { display: flex; }
+.modal-overlay.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+}
 
 /* Progress card accent */
 .progress-card-complete {

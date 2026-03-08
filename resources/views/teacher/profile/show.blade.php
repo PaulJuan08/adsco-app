@@ -41,24 +41,20 @@
                 <div class="profile-card">
                     <div class="profile-header text-center">
                         <div class="profile-avatar-wrapper">
-                            @php
-                                $avatarClass = 'default';
-                                $avatarIcon = 'fa-user-circle';
-                                
-                                if(isset($user->sex)) {
-                                    if($user->sex == 'male') {
-                                        $avatarClass = 'male';
-                                        $avatarIcon = 'fa-mars';
-                                    } elseif($user->sex == 'female') {
-                                        $avatarClass = 'female';
-                                        $avatarIcon = 'fa-venus';
-                                    }
-                                }
-                            @endphp
-                            
-                            <div class="profile-avatar-icon {{ $avatarClass }}">
-                                <i class="fas {{ $avatarIcon }}"></i>
-                            </div>
+                            @if($user->profile_photo_url)
+                                <img src="{{ $user->profile_photo_url }}" alt="Profile Photo"
+                                     class="profile-avatar-photo">
+                            @else
+                                @php
+                                    $avatarClass = 'default';
+                                    $avatarIcon  = 'fa-user-circle';
+                                    if ($user->sex == 'male')        { $avatarClass = 'male';   $avatarIcon = 'fa-mars'; }
+                                    elseif ($user->sex == 'female')  { $avatarClass = 'female'; $avatarIcon = 'fa-venus'; }
+                                @endphp
+                                <div class="profile-avatar-icon {{ $avatarClass }}">
+                                    <i class="fas {{ $avatarIcon }}"></i>
+                                </div>
+                            @endif
                         </div>
                         <h2 class="profile-name">{{ $user->f_name }} {{ $user->l_name }}</h2>
                         <p class="profile-role">
@@ -116,10 +112,10 @@
                     </div>
                     
                     <div class="profile-footer">
-                        <a href="{{ route('teacher.profile.edit') }}" class="btn btn-primary w-100">
+                        <button onclick="openCrudModal('{{ route('teacher.profile.edit') }}', 'Edit Profile', 'modal-md')" class="btn btn-primary w-100">
                             <i class="fas fa-edit me-2"></i>
                             Edit Profile
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>

@@ -3,10 +3,36 @@
     $publishedLegals = LegalPage::where('is_published', true)->get()->keyBy('type');
 @endphp
 
-{{-- Modal markup — always rendered so the JS functions are always available --}}
-<div id="legalModalOverlay" onclick="closeLegalModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:99998;"></div>
+<style>
+#legalModalOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(5px);
+    z-index: 99998;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+#legalModalOverlay.open { visibility: visible; opacity: 1; pointer-events: all; }
+#legalModalBox {
+    position: fixed; top: 50%; left: 50%;
+    z-index: 99999;
+    width: calc(100% - 2rem); max-width: 740px; max-height: 88vh;
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 24px 70px rgba(85,43,32,.28);
+    overflow: hidden; display: flex; flex-direction: column;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    transform: translate(-50%, calc(-50% - 20px)) scale(0.97);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, visibility 0.25s ease;
+}
+#legalModalBox.open {
+    visibility: visible; opacity: 1; pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+}
+</style>
 
-<div id="legalModalBox" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;width:calc(100% - 2rem);max-width:740px;max-height:88vh;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(85,43,32,.28);overflow:hidden;flex-direction:column;">
+{{-- Modal markup — always rendered so the JS functions are always available --}}
+<div id="legalModalOverlay" onclick="closeLegalModal()"></div>
+
+<div id="legalModalBox">
     <div style="background:linear-gradient(135deg,#552b20 0%,#3d1f17 100%);color:#fff;padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:.65rem;">
             <div id="legalModalIcon" style="width:36px;height:36px;border-radius:9px;background:rgba(221,178,56,.25);display:flex;align-items:center;justify-content:center;color:#ddb238;font-size:.95rem;flex-shrink:0;"></div>
@@ -60,18 +86,16 @@
             ? '<span><i class="fas fa-clock" style="margin-right:.3rem;"></i>Last updated: ' + page.updatedAt + '</span>'
             : '';
 
-        document.getElementById('legalModalOverlay').style.display = 'block';
-
-        var box = document.getElementById('legalModalBox');
-        box.style.display = 'flex';
+        document.getElementById('legalModalOverlay').classList.add('open');
+        document.getElementById('legalModalBox').classList.add('open');
         document.body.style.overflow = 'hidden';
     };
 
     window.closeLegalModal = function() {
         var overlay = document.getElementById('legalModalOverlay');
         var box     = document.getElementById('legalModalBox');
-        if (overlay) overlay.style.display = 'none';
-        if (box)     box.style.display     = 'none';
+        if (overlay) overlay.classList.remove('open');
+        if (box)     box.classList.remove('open');
         document.body.style.overflow = '';
     };
 

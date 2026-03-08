@@ -8,11 +8,11 @@
    ======================================== */
 :root {
     /* Primary Brand Colors */
-    --primary: #6366f1;
-    --primary-light: #eef2ff;
-    --primary-lighter: #f5f7ff;
-    --primary-dark: #4f46e5;
-    --primary-darker: #4338ca;
+    --primary: #552b20;
+    --primary-light: #f5ede8;
+    --primary-lighter: #fdf9f7;
+    --primary-dark: #3d1f17;
+    --primary-darker: #2d1208;
     
     /* Secondary Colors */
     --secondary: #64748b;
@@ -89,7 +89,7 @@
     --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
     
     /* Colored Shadows */
-    --shadow-primary: 0 10px 15px -3px rgba(99, 102, 241, 0.2), 0 4px 6px -4px rgba(99, 102, 241, 0.2);
+    --shadow-primary: 0 10px 15px -3px rgba(85, 43, 32, 0.2), 0 4px 6px -4px rgba(85, 43, 32, 0.2);
     --shadow-success: 0 10px 15px -3px rgba(16, 185, 129, 0.2), 0 4px 6px -4px rgba(16, 185, 129, 0.2);
     --shadow-warning: 0 10px 15px -3px rgba(245, 158, 11, 0.2), 0 4px 6px -4px rgba(245, 158, 11, 0.2);
     --shadow-danger: 0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -4px rgba(239, 68, 68, 0.2);
@@ -115,18 +115,33 @@
     --font-bold: 700;
     --font-extrabold: 800;
     
-    /* Chart Colors */
-    --chart-blue: #6366f1;
-    --chart-green: #10b981;
-    --chart-yellow: #f59e0b;
-    --chart-red: #ef4444;
-    --chart-purple: #8b5cf6;
-    --chart-pink: #ec4899;
-    --chart-orange: #f97316;
-    --chart-teal: #14b8a6;
-    --chart-gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
-    --chart-gradient-2: linear-gradient(135deg, #10b981, #14b8a6);
-    --chart-gradient-3: linear-gradient(135deg, #f59e0b, #f97316);
+    /* Brand Gold */
+    --gold:        #ddb238;
+    --gold-dark:   #b89430;
+    --gold-light:  #f9f0d4;
+    --gold-lighter:#fdf8ee;
+
+    /* Brand Orange */
+    --orange:      #d3541b;
+    --orange-dark: #a8411b;
+    --orange-light:#fbe8db;
+
+    /* Chart Colors — brand-aligned palette */
+    --chart-brown:  #552b20;
+    --chart-gold:   #c49a24;
+    --chart-orange: #d3541b;
+    --chart-teal:   #2a8a72;
+    --chart-blue:   #2d7fa8;
+    --chart-warm-neutral: #e8ddd9;
+    /* legacy aliases kept for any other references */
+    --chart-green:  #2a8a72;
+    --chart-yellow: #c49a24;
+    --chart-red:    #d3541b;
+    --chart-purple: #2d7fa8;
+    --chart-pink:   #d3541b;
+    --chart-gradient-1: linear-gradient(135deg, #552b20, #c49a24);
+    --chart-gradient-2: linear-gradient(135deg, #2a8a72, #2d7fa8);
+    --chart-gradient-3: linear-gradient(135deg, #c49a24, #d3541b);
 }
 
 /* ========================================
@@ -140,10 +155,9 @@
 
 body {
     font-family: var(--font-sans);
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    background-attachment: fixed;
+    background: #f5f4f2;
     color: var(--gray-800);
-    line-height: var(--leading-normal);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -162,7 +176,7 @@ body {
    DASHBOARD HEADER
    ======================================== */
 .dashboard-header {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    background: linear-gradient(135deg, #2d1208 0%, #552b20 60%, #6d3624 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     margin-bottom: var(--space-8);
@@ -330,9 +344,9 @@ body {
 }
 
 .stat-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-xl);
-    border-color: transparent;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--gray-200);
 }
 
 .stat-card:hover::before {

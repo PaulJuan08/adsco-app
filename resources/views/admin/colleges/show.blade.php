@@ -15,12 +15,6 @@
                 <h2 class="card-title">College Details</h2>
             </div>
             <div class="top-actions">
-                <a href="{{ route('admin.colleges.edit', Crypt::encrypt($college->id)) }}" class="top-action-btn">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <button type="button" class="top-action-btn delete-btn" id="deleteButton">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
                 <a href="{{ route('admin.colleges.index') }}" class="top-action-btn">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>

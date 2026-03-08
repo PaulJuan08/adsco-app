@@ -44,33 +44,28 @@
                    value="{{ $searchName }}">
         </div>
         
-        <button type="submit" class="btn-sm btn-sm-primary" style="align-self: flex-end;">
-            <i class="fas fa-filter"></i> Apply Filters
-        </button>
-        
-        <a href="{{ route('admin.todo.assignment.access.modal', $encryptedId) }}" 
-           class="btn-sm btn-sm-outline" style="align-self: flex-end;">
+        <button type="button" id="modal-clear-btn" class="btn-sm btn-sm-outline" style="align-self: flex-end;">
             <i class="fas fa-times"></i> Clear
-        </a>
+        </button>
     </div>
 </form>
 
 {{-- Bulk Actions Form --}}
-<form method="POST" id="modal-bulk-form">
+<form method="POST" id="modal-bulk-form" data-no-crud="1">
     @csrf
     <div class="student-table-wrap">
         <div class="bulk-bar">
             <input type="checkbox" id="modal-select-all">
             <label for="modal-select-all">Select All</label>
-            
-            <button type="submit" 
-                    formaction="{{ route('admin.todo.assignment.grant', $encryptedId) }}" 
+
+            <button type="submit"
+                    formaction="{{ route('teacher.todo.assignment.grant', $encryptedId) }}"
                     class="btn-sm btn-sm-success">
                 <i class="fas fa-check-circle"></i> Grant Selected
             </button>
-            
-            <button type="submit" 
-                    formaction="{{ route('admin.todo.assignment.revoke', $encryptedId) }}" 
+
+            <button type="submit"
+                    formaction="{{ route('teacher.todo.assignment.revoke', $encryptedId) }}"
                     class="btn-sm btn-sm-danger">
                 <i class="fas fa-ban"></i> Revoke Selected
             </button>
@@ -126,7 +121,7 @@
                         <label class="access-toggle">
                             <input type="checkbox"
                                    class="toggle-access"
-                                   data-url="{{ route('admin.todo.assignment.toggle', [$encryptedId, $student->id]) }}"
+                                   data-url="{{ route('teacher.todo.assignment.toggle', [$encryptedId, $student->id]) }}"
                                    {{ $status === 'allowed' ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
@@ -172,68 +167,39 @@
 </form>
 
 <script>
-    // Initialize modal-specific scripts
-    (function() {
-        // Select All Checkbox for modal
-        const modalSelectAll = document.getElementById('modal-select-all');
-        const modalCheckboxes = document.querySelectorAll('.student-checkbox');
-        
-        if (modalSelectAll) {
-            modalSelectAll.addEventListener('change', function() {
-                modalCheckboxes.forEach(cb => cb.checked = this.checked);
-            });
+(function(){
+    document.querySelectorAll('#crudModalBody .toggle-access').forEach(function(toggle){
+        toggle.addEventListener('change', function(){
+            var url = this.dataset.url;
+            var checked = this.checked;
+            var el = this;
+            fetch(url, {
+                method: 'POST',
+                headers: {'X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'Accept':'application/json'}
+            }).then(function(r){ return r.json(); }).catch(function(){ el.checked = !checked; });
+        });
+    });
+    var selectAll = document.getElementById('modal-select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function(){
+            document.querySelectorAll('#crudModalBody .student-checkbox').forEach(function(cb){ cb.checked = selectAll.checked; });
+        });
+    }
+    var filterForm = document.getElementById('modal-filter-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e){ e.preventDefault(); });
+        function _submitModalFilter() {
+            var url = filterForm.action + '?' + new URLSearchParams(new FormData(filterForm)).toString();
+            document.getElementById('crudModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#552b20;font-size:2rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}})
+                .then(function(r){ return r.json(); })
+                .then(function(data){ document.getElementById('crudModalBody').innerHTML = data.html; document.querySelectorAll('#crudModalBody script').forEach(function(s){var n=document.createElement('script');n.textContent=s.textContent;document.head.appendChild(n);s.remove();}); })
+                .catch(function(){ document.getElementById('crudModalBody').innerHTML='<p style="color:#dc2626;text-align:center;padding:1rem;">Failed to load. Please try again.</p>'; });
         }
-
-        // Dynamic Program Loading for modal
-        const modalCollegeFilter = document.getElementById('modal-college-filter');
-        const modalProgramFilter = document.getElementById('modal-program-filter');
-        
-        if (modalCollegeFilter) {
-            modalCollegeFilter.addEventListener('change', function() {
-                const collegeId = this.value;
-                
-                modalProgramFilter.innerHTML = '<option value="">All Programs</option>';
-                modalProgramFilter.disabled = !collegeId;
-                
-                if (!collegeId) return;
-                
-                fetch(`{{ url('admin/todo/colleges') }}/${collegeId}/programs`)
-                    .then(response => response.json())
-                    .then(programs => {
-                        programs.forEach(program => {
-                            const option = document.createElement('option');
-                            option.value = program.id;
-                            option.textContent = program.program_name;
-                            modalProgramFilter.appendChild(option);
-                        });
-                    })
-                    .catch(error => console.error('Error loading programs:', error));
-            });
-        }
-
-        // Handle filter form submission via AJAX
-        const filterForm = document.getElementById('modal-filter-form');
-        if (filterForm) {
-            filterForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                const url = this.action + '?' + new URLSearchParams(formData).toString();
-                
-                fetch(url, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.text())
-                .then(html => {
-                    const modalBody = document.querySelector('#accessModal .modal-body');
-                    if (modalBody) {
-                        modalBody.innerHTML = html;
-                    }
-                })
-                .catch(error => console.error('Error applying filters:', error));
-            });
-        }
-    })();
+        filterForm.querySelectorAll('select').forEach(function(sel){ sel.addEventListener('change', _submitModalFilter); });
+        var _ft; filterForm.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.addEventListener('input', function(){ clearTimeout(_ft); _ft = setTimeout(_submitModalFilter, 500); }); });
+        var clearBtn = document.getElementById('modal-clear-btn');
+        if (clearBtn) { clearBtn.addEventListener('click', function(){ filterForm.querySelectorAll('select').forEach(function(s){ s.value=''; }); filterForm.querySelectorAll('input[type="text"]').forEach(function(i){ i.value=''; }); _submitModalFilter(); }); }
+    }
+})();
 </script>

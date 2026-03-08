@@ -66,6 +66,11 @@ class TodoController extends Controller
      */
     public function index(Request $request)
     {
+        return redirect()->route('teacher.quizzes.index');
+    }
+
+    public function indexOld(Request $request)
+    {
         $teacherId = auth()->id();
         $type = $request->get('type', 'all');
         $search = $request->get('search', '');
@@ -246,7 +251,7 @@ class TodoController extends Controller
             $id = Crypt::decrypt($encryptedId);
             
             // Verify teacher created this quiz
-            $quiz = Quiz::where('created_by', auth()->id())
+            $quiz = $this->teacherQuizQuery(auth()->id())
                 ->with(['creator'])
                 ->withCount(['studentAccess as allowed_count' => fn($q) => $q->where('status', 'allowed')])
                 ->with('attempts')
@@ -312,7 +317,7 @@ class TodoController extends Controller
             $id = Crypt::decrypt($encryptedId);
             
             // Verify teacher created this assignment
-            $assignment = Assignment::where('created_by', auth()->id())
+            $assignment = $this->teacherAssignmentQuery(auth()->id())
                 ->with(['creator'])
                 ->withCount(['allowedStudents as allowed_count'])
                 ->withCount('submissions')
@@ -381,7 +386,7 @@ class TodoController extends Controller
             $id = Crypt::decrypt($encryptedId);
             
             // Verify teacher created this quiz
-            $quiz = Quiz::where('created_by', auth()->id())->with('creator')->findOrFail($id);
+            $quiz = $this->teacherQuizQuery(auth()->id())->with('creator')->findOrFail($id);
 
             $collegeId = $request->get('college_id');
             $programId = $request->get('program_id');
@@ -440,11 +445,13 @@ class TodoController extends Controller
             $years = User::where('role', 4)->whereNotNull('college_year')
                             ->distinct()->pluck('college_year')->sort()->values();
 
+            $html = view('teacher.todo.partials.quiz-access-modal', compact(
+                'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+                'collegeId', 'programId', 'year', 'searchName'
+            ))->render();
+
             if ($request->ajax()) {
-                return view('teacher.todo.partials.quiz-access-modal', compact(
-                    'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
-                    'collegeId', 'programId', 'year', 'searchName'
-                ))->render();
+                return response()->json(['html' => $html, 'css' => asset('css/quiz-show.css')]);
             }
 
             return view('teacher.todo.partials.quiz-access-modal', compact(
@@ -472,7 +479,7 @@ class TodoController extends Controller
             $id = Crypt::decrypt($encryptedId);
             
             // Verify teacher created this assignment
-            $assignment = Assignment::where('created_by', auth()->id())->with('creator')->findOrFail($id);
+            $assignment = $this->teacherAssignmentQuery(auth()->id())->with('creator')->findOrFail($id);
 
             $collegeId = $request->get('college_id');
             $programId = $request->get('program_id');
@@ -526,11 +533,13 @@ class TodoController extends Controller
             $years = User::where('role', 4)->whereNotNull('college_year')
                             ->distinct()->pluck('college_year')->sort()->values();
 
+            $html = view('teacher.todo.partials.assignment-access-modal', compact(
+                'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+                'collegeId', 'programId', 'year', 'searchName'
+            ))->render();
+
             if ($request->ajax()) {
-                return view('teacher.todo.partials.assignment-access-modal', compact(
-                    'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
-                    'collegeId', 'programId', 'year', 'searchName'
-                ))->render();
+                return response()->json(['html' => $html, 'css' => asset('css/assignment-show.css')]);
             }
 
             return view('teacher.todo.partials.assignment-access-modal', compact(
@@ -557,7 +566,7 @@ class TodoController extends Controller
         $quizId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this quiz
-        $quiz = Quiz::where('created_by', auth()->id())->findOrFail($quizId);
+        $quiz = $this->teacherQuizQuery(auth()->id())->findOrFail($quizId);
 
         $request->validate([
             'student_ids' => 'required|array',
@@ -588,7 +597,7 @@ class TodoController extends Controller
         $assignmentId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this assignment
-        $assignment = Assignment::where('created_by', auth()->id())->findOrFail($assignmentId);
+        $assignment = $this->teacherAssignmentQuery(auth()->id())->findOrFail($assignmentId);
 
         $request->validate([
             'student_ids' => 'required|array',
@@ -617,7 +626,7 @@ class TodoController extends Controller
         $quizId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this quiz
-        $quiz = Quiz::where('created_by', auth()->id())->findOrFail($quizId);
+        $quiz = $this->teacherQuizQuery(auth()->id())->findOrFail($quizId);
 
         $request->validate([
             'student_ids' => 'required|array',
@@ -639,7 +648,7 @@ class TodoController extends Controller
         $assignmentId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this assignment
-        $assignment = Assignment::where('created_by', auth()->id())->findOrFail($assignmentId);
+        $assignment = $this->teacherAssignmentQuery(auth()->id())->findOrFail($assignmentId);
 
         $request->validate([
             'student_ids' => 'required|array',
@@ -661,7 +670,7 @@ class TodoController extends Controller
         $quizId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this quiz
-        $quiz = Quiz::where('created_by', auth()->id())->findOrFail($quizId);
+        $quiz = $this->teacherQuizQuery(auth()->id())->findOrFail($quizId);
 
         $access = QuizStudentAccess::where('quiz_id', $quizId)
             ->where('student_id', $studentId)
@@ -696,7 +705,7 @@ class TodoController extends Controller
         $assignmentId = Crypt::decrypt($encryptedId);
         
         // Verify teacher created this assignment
-        $assignment = Assignment::where('created_by', auth()->id())->findOrFail($assignmentId);
+        $assignment = $this->teacherAssignmentQuery(auth()->id())->findOrFail($assignmentId);
 
         $access = AssignmentStudentAccess::where('assignment_id', $assignmentId)
             ->where('student_id', $studentId)

@@ -697,8 +697,9 @@
 .student-avatar-small {
     width: 40px;
     height: 40px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -849,7 +850,9 @@
    MODAL STYLES
    ============================================ */
 .modal {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -858,15 +861,16 @@
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
     z-index: 9999;
+    display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .modal.show {
-    display: flex;
+    visibility: visible;
     opacity: 1;
+    pointer-events: all;
 }
 
 .modal-content {
@@ -877,19 +881,15 @@
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    animation: modalSlideIn 0.3s ease;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: translateY(-20px) scale(0.97);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+.modal.show .modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
 }
 
 .modal-header {

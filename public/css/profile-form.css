@@ -44,8 +44,8 @@
 }
 
 .page-title i {
-    color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+    color: #552b20;
+    background: rgba(85, 43, 32, 0.10);
     padding: 0.75rem;
     border-radius: 12px;
 }
@@ -64,18 +64,18 @@
     font-weight: 600;
     font-size: 0.875rem;
     border-radius: 8px;
-    border: 1.5px solid #667eea;
-    color: #667eea;
+    border: 1.5px solid #552b20;
+    color: #552b20;
     background: transparent;
     text-decoration: none;
     transition: all 0.3s ease;
 }
 
 .btn-outline-primary:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.3);
 }
 
 /* Card Styles - Consistent with user-form.css */
@@ -91,7 +91,7 @@
 .card-header {
     padding: 1.25rem 1.75rem;
     border-bottom: 1px solid #e2e8f0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     position: relative;
     overflow: hidden;
@@ -157,7 +157,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #552b20 0%, #ddb238 100%);
 }
 
 .form-section-title {
@@ -173,7 +173,7 @@
 }
 
 .form-section-title i {
-    color: #667eea;
+    color: #552b20;
     font-size: 1.125rem;
     width: 20px;
     text-align: center;
@@ -225,9 +225,9 @@
 }
 
 .form-control:focus {
-    border-color: #667eea;
+    border-color: #552b20;
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(85, 43, 32, 0.10);
     transform: translateY(-1px);
 }
 
@@ -354,7 +354,7 @@
     border-radius: 50%;
     overflow: hidden;
     border: 4px solid white;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(85, 43, 32, 0.3);
     position: relative;
 }
 
@@ -372,7 +372,7 @@
 .avatar-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -523,15 +523,15 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #552b20 0%, #3d1f17 100%);
     color: white;
     border-color: transparent;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 18px rgba(85, 43, 32, 0.4);
 }
 
 .btn-warning {

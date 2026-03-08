@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan view:clear)"
+      "Bash(php artisan view:clear)",
+      "Bash(sqlite3 c:/xampp/htdocs/adsco-app/database/database.sqlite \".schema quiz_attempts\")",
+      "Bash(php artisan config:clear)",
+      "Bash(php artisan cache:clear)",
+      "Bash(grep -l \"Schema::table.*users\" c:/xampp/htdocs/adsco-app/database/migrations/*.php)",
+      "Bash(php artisan make:migration add_profile_photo_to_users_table --table=users)"
     ]
   }
 }

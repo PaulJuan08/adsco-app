@@ -18,6 +18,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        $hotFile = public_path('hot');
+        if (file_exists($hotFile)) {
+            @unlink($hotFile);
+        }
+
         User::observe(UserObserver::class);
         Quiz::observe(QuizObserver::class);
         Assignment::observe(AssignmentObserver::class);

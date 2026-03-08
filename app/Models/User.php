@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'program_id',
         'college_year',
         'email_verified_at',
+        'profile_photo',
     ];
 
     protected $hidden = [
@@ -153,11 +154,16 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function booted()
     {
         static::deleting(function ($user) {
+            // Delete profile photo
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
+            }
+
             // Only handle file cleanup for assignment submissions
             // Database will handle record deletions via foreign keys if set
             if ($user->role == 4) { // Student
                 foreach ($user->assignmentSubmissions as $submission) {
-                    if ($submission->attachment_path && 
+                    if ($submission->attachment_path &&
                         Storage::disk('public')->exists($submission->attachment_path)) {
                         Storage::disk('public')->delete($submission->attachment_path);
                     }
@@ -214,6 +220,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getActiveCoursesCountAttribute(): int
     {
         return $this->isStudent() ? $this->enrollments()->whereNull('grade')->count() : 0;
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if ($this->profile_photo && Storage::disk('public')->exists($this->profile_photo)) {
+            return asset('storage/' . $this->profile_photo);
+        }
+        return null;
     }
 
     public function getFormattedContactAttribute(): ?string

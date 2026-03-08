@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use App\Models\Program;
 use App\Mail\UserApprovedMail;
@@ -22,6 +23,11 @@ class AuthController extends Controller
     
     public function register(Request $request)
     {
+        // Verify Turnstile
+        if (!$this->verifyTurnstile($request)) {
+            return back()->withErrors(['turnstile' => 'Security verification failed. Please try again.'])->withInput();
+        }
+
         // Fix the validation rules
         $request->validate([
             'f_name' => 'required|string|max:50',
@@ -243,6 +249,11 @@ class AuthController extends Controller
     
     public function login(Request $request)
     {
+        // Verify Turnstile
+        if (!$this->verifyTurnstile($request)) {
+            return back()->withErrors(['login' => 'Security verification failed. Please try again.'])->withInput();
+        }
+
         // Determine which field is being used
         if ($request->has('login')) {
             $loginField = 'login';
@@ -338,6 +349,29 @@ class AuthController extends Controller
         ])->withInput();
     }
     
+    /**
+     * Verify Cloudflare Turnstile token.
+     */
+    private function verifyTurnstile(Request $request): bool
+    {
+        if (!config('services.turnstile.enabled', true)) {
+            return true;
+        }
+
+        $token = $request->input('cf-turnstile-response');
+        if (empty($token)) {
+            return false;
+        }
+
+        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+            'secret'   => config('services.turnstile.secret_key'),
+            'response' => $token,
+            'remoteip' => $request->ip(),
+        ]);
+
+        return $response->json('success', false);
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();

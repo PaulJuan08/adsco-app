@@ -25,6 +25,11 @@ class TodoController extends Controller
 
     public function index(Request $request)
     {
+        return redirect()->route('admin.quizzes.index');
+    }
+
+    public function indexOld(Request $request)
+    {
         $type   = $request->get('type', 'all');   // all | quiz | assignment
         $search = $request->get('search', '');
 
@@ -517,11 +522,13 @@ class TodoController extends Controller
         $years    = User::where('role', 4)->whereNotNull('college_year')
                         ->distinct()->pluck('college_year')->sort()->values();
 
+        $html = view('admin.todo.partials.assignment-access-modal', compact(
+            'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+            'collegeId', 'programId', 'year', 'searchName'
+        ))->render();
+
         if ($request->ajax()) {
-            return view('admin.todo.partials.assignment-access-modal', compact(
-                'assignment', 'encryptedId', 'students', 'colleges', 'programs', 'years',
-                'collegeId', 'programId', 'year', 'searchName'
-            ))->render();
+            return response()->json(['html' => $html, 'css' => asset('css/assignment-show.css')]);
         }
 
         return view('admin.todo.partials.assignment-access-modal', compact(
@@ -706,11 +713,13 @@ class TodoController extends Controller
         $years    = User::where('role', 4)->whereNotNull('college_year')
                         ->distinct()->pluck('college_year')->sort()->values();
 
+        $html = view('admin.todo.partials.quiz-access-modal', compact(
+            'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
+            'collegeId', 'programId', 'year', 'searchName'
+        ))->render();
+
         if ($request->ajax()) {
-            return view('admin.todo.partials.quiz-access-modal', compact(
-                'quiz', 'encryptedId', 'students', 'colleges', 'programs', 'years',
-                'collegeId', 'programId', 'year', 'searchName'
-            ))->render();
+            return response()->json(['html' => $html, 'css' => asset('css/quiz-show.css')]);
         }
 
         return view('admin.todo.partials.quiz-access-modal', compact(

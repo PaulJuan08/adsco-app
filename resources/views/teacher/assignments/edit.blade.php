@@ -336,7 +336,7 @@
                                     <i class="fas fa-users"></i>
                                 </div>
                                 <div class="action-content">
-                                    <div class="action-title">Manage Access</div>
+                                    <div class="action-title">Grant Access</div>
                                     <div class="action-subtitle">Grant or revoke student access</div>
                                 </div>
                                 <i class="fas fa-chevron-right action-arrow"></i>

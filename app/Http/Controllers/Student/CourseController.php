@@ -31,7 +31,8 @@ class CourseController extends Controller
             $enrolledCourses = Enrollment::where('student_id', $studentId)
                 ->whereHas('course', fn ($q) => $q->where('is_published', true))
                 ->with([
-                    'course.teacher' => fn ($q) => $q->select(['id', 'f_name', 'l_name', 'employee_id']),
+                    'course.teacher'  => fn ($q) => $q->select(['id', 'f_name', 'l_name', 'employee_id', 'profile_photo']),
+                    'course.teachers' => fn ($q) => $q->select(['users.id', 'f_name', 'l_name', 'profile_photo']),
                     // Only load published topics for count purposes
                     'course.topics'  => fn ($q) => $q->where('is_published', true)
                                                       ->select(['topics.id'])
@@ -344,6 +345,37 @@ class CourseController extends Controller
             Cache::forget('student_course_show_' . $courseId);
             Cache::forget('student_course_progress_' . $studentId . '_' . $courseId);
         }
+    }
+
+    public function unenroll($encryptedId)
+    {
+        try {
+            $courseId  = Crypt::decrypt($encryptedId);
+            $studentId = Auth::id();
+
+            $enrollment = Enrollment::where('student_id', $studentId)
+                ->where('course_id', $courseId)
+                ->first();
+
+            if (!$enrollment) {
+                return redirect()->route('student.courses.index')
+                    ->with('error', 'You are not enrolled in this course.');
+            }
+
+            $courseTitle = $enrollment->course->title ?? 'the course';
+
+            $enrollment->delete();
+
+            $this->clearStudentCaches($studentId);
+            Cache::forget('admin_dashboard_' . $studentId);
+
+        } catch (\Exception $e) {
+            return redirect()->route('student.courses.index')
+                ->with('error', 'Could not unenroll. Please try again.');
+        }
+
+        return redirect()->route('student.courses.index')
+            ->with('success', "You have been unenrolled from \"{$courseTitle}\".");
     }
 
     public function clearCache()

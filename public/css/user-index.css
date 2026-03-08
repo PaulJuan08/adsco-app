@@ -6,9 +6,9 @@
 
 /* CSS Variables */
 :root {
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
-    --primary-light: #818cf8;
+    --primary: #552b20;
+    --primary-dark: #3d1f17;
+    --primary-light: #c49a80;
     --success: #10b981;
     --success-dark: #059669;
     --success-light: #d1fae5;
@@ -272,7 +272,7 @@
 .user-icon {
     width: 48px;
     height: 48px;
-    border-radius: var(--radius);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -280,6 +280,7 @@
     color: var(--white);
     flex-shrink: 0;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .user-1 {
@@ -291,7 +292,7 @@
 }
 
 .user-3 {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #ddb238 0%, #ddb238 100%);
 }
 
 .user-details {
@@ -373,7 +374,7 @@
 }
 
 .badge-student {
-    background: linear-gradient(135deg, var(--primary-light), #e0e7ff);
+    background: linear-gradient(135deg, var(--primary-light), #f5ede8);
     color: var(--primary-dark);
 }
 
@@ -551,7 +552,7 @@
 
 /* Dashboard Header - Override */
 .dashboard-header {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+    background: linear-gradient(135deg, #2d1208 0%, #552b20 60%, #6d3624 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     margin-bottom: var(--space-8);

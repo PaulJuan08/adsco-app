@@ -113,8 +113,15 @@ class CourseController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->ajax()) {
+            $html = view('teacher.courses._form', [
+                'editing'    => false,
+                'formAction' => route('teacher.courses.store'),
+            ])->render();
+            return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+        }
         return view('teacher.courses.create');
     }
 
@@ -132,12 +139,16 @@ class CourseController extends Controller
         $validated['is_published'] = $request->has('is_published') ? 1 : 0;
         $validated['status'] = 'active';
         $validated['created_by'] = Auth::id();
-        
+
         $course = Course::create($validated);
-        
+
         $this->clearTeacherCourseCaches(Auth::id());
         $this->clearAdminCourseCaches();
-        
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Course created successfully!', 'redirect' => route('teacher.courses.index')]);
+        }
+
         return redirect()->route('teacher.courses.show', Crypt::encrypt($course->id))
             ->with('success', 'Course "' . $course->title . '" created successfully!');
     }
@@ -159,8 +170,8 @@ class CourseController extends Controller
                               });
                     })
                     ->with([
-                        'teacher:id,f_name,l_name',
-                        'teachers:id,f_name,l_name,employee_id',
+                        'teacher:id,f_name,l_name,profile_photo',
+                        'teachers:id,f_name,l_name,employee_id,profile_photo',
                         'students:id,f_name,l_name,email',
                         'topics:id,title,content,description,is_published,created_at',
                         'creator:id,f_name,l_name,role',
@@ -184,14 +195,14 @@ class CourseController extends Controller
         }
     }
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
-            
+
             $cacheKey = 'teacher_course_edit_' . $id . '_teacher_' . $teacherId;
-            
+
             $course = Cache::remember($cacheKey, 300, function() use ($id, $teacherId) {
                 return Course::where('id', $id)
                     ->where(function($q) use ($teacherId) {
@@ -203,15 +214,26 @@ class CourseController extends Controller
                     ->firstOrFail();
             });
 
+            if ($request->ajax()) {
+                $html = view('teacher.courses._form', [
+                    'editing'    => true,
+                    'course'     => $course,
+                    'formAction' => route('teacher.courses.update', Crypt::encrypt($course->id)),
+                ])->render();
+                return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+            }
+
             return view('teacher.courses.edit', compact('course', 'encryptedId'));
-            
+
         } catch (\Exception $e) {
             Log::error('Error accessing course for edit', [
                 'encryptedId' => $encryptedId,
                 'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
-            
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Course not found.'], 404);
+            }
             return redirect()->route('teacher.courses.index')
                 ->with('error', 'Course not found or you do not have permission to edit it.');
         }
@@ -249,19 +271,27 @@ class CourseController extends Controller
             Cache::forget('teacher_course_show_' . $id . '_teacher_' . $teacherId);
             Cache::forget('teacher_course_edit_' . $id . '_teacher_' . $teacherId);
             Cache::forget('available_topics_' . $id);
-            
+            Cache::forget('course_show_' . $id);
+            Cache::forget('course_edit_' . $id);
+
             $this->clearStudentCachesForCourse($id);
             
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Course updated successfully!', 'redirect' => route('teacher.courses.index')]);
+            }
+
             return redirect()->route('teacher.courses.show', Crypt::encrypt($course->id))
                 ->with('success', 'Course updated successfully!');
-                
+
         } catch (\Exception $e) {
             Log::error('Error updating course', [
                 'encryptedId' => $encryptedId,
                 'teacher_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
-            
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Failed to update course.'], 500);
+            }
             return redirect()->route('teacher.courses.index')
                 ->with('error', 'Failed to update course.');
         }
@@ -597,15 +627,19 @@ class CourseController extends Controller
                 })
                 ->firstOrFail();
 
-            $course->update(['is_published' => !$course->is_published]);
+            $course->update([
+                'is_published' => !$course->is_published,
+                'updated_by'   => Auth::id(),
+            ]);
             $status = $course->is_published ? 'published' : 'unpublished';
 
             // Clear caches
             Cache::forget('teacher_course_show_' . $id . '_teacher_' . $teacherId);
             Cache::forget('teacher_course_edit_' . $id . '_teacher_' . $teacherId);
+            Cache::forget('course_show_' . $id);
             $this->clearTeacherCourseCaches($teacherId);
 
-            return redirect()->route('teacher.courses.show', $encryptedId)
+            return redirect()->route('teacher.courses.index')
                 ->with('success', "Course {$status} successfully!");
 
         } catch (\Exception $e) {

@@ -24,7 +24,7 @@
 .card-header {
     padding: 1.25rem 1.75rem;
     border-bottom: 1px solid #e2e8f0;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #552b20 0%, #ddb238 100%);
     color: white;
     position: relative;
     overflow: hidden;
@@ -135,7 +135,7 @@
 .program-details-avatar {
     width: 100px;
     height: 100px;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #552b20 0%, #ddb238 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -145,13 +145,13 @@
     font-weight: 700;
     margin: 0 auto 1rem;
     border: 4px solid white;
-    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 8px 25px rgba(85, 43, 32, 0.4);
     transition: all 0.3s ease;
 }
 
 .program-details-avatar:hover {
     transform: scale(1.05);
-    box-shadow: 0 12px 35px rgba(79, 70, 229, 0.6);
+    box-shadow: 0 12px 35px rgba(85, 43, 32, 0.6);
 }
 
 .program-title {
@@ -227,13 +227,13 @@
 .stat-box:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border-color: #4f46e5;
+    border-color: #552b20;
 }
 
 .stat-box-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #4f46e5;
+    color: #552b20;
     line-height: 1.2;
 }
 
@@ -270,7 +270,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(90deg, #552b20 0%, #ddb238 100%);
     border-radius: 3px 3px 0 0;
 }
 
@@ -292,7 +292,7 @@
 }
 
 .detail-section-title i {
-    color: #4f46e5;
+    color: #552b20;
     font-size: 1.125rem;
     width: 20px;
     text-align: center;
@@ -367,9 +367,9 @@
 
 .student-item:hover {
     background: #f3f4f6;
-    border-color: #4f46e5;
+    border-color: #552b20;
     transform: translateX(4px);
-    box-shadow: -4px 0 0 #4f46e5;
+    box-shadow: -4px 0 0 #552b20;
 }
 
 .student-info {
@@ -382,7 +382,7 @@
 .student-avatar {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: linear-gradient(135deg, #552b20, #ddb238);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -441,14 +441,14 @@
 }
 
 .student-action-btn.view {
-    background: #4f46e5;
+    background: #552b20;
     color: white;
 }
 
 .student-action-btn.view:hover {
-    background: #4338ca;
+    background: #552b20;
     transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 8px rgba(85, 43, 32, 0.3);
 }
 
 .student-action-btn.edit {
@@ -531,24 +531,24 @@
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #552b20 0%, #ddb238 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 4px 12px rgba(85, 43, 32, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 6px 18px rgba(85, 43, 32, 0.4);
 }
 
 .btn-outline {
     background: white;
-    border: 2px solid #4f46e5;
-    color: #4f46e5;
+    border: 2px solid #552b20;
+    color: #552b20;
 }
 
 .btn-outline:hover {
-    background: #4f46e5;
+    background: #552b20;
     color: white;
 }
 
@@ -570,8 +570,8 @@
 
 .search-input:focus {
     outline: none;
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    border-color: #552b20;
+    box-shadow: 0 0 0 3px rgba(85, 43, 32, 0.1);
 }
 
 .filter-select {

@@ -29,10 +29,10 @@ class CourseController extends Controller
             ->withCount('students')
             ->with([
                 'teacher' => function ($query) {
-                    $query->select(['id', 'f_name', 'l_name', 'employee_id']);
+                    $query->select(['id', 'f_name', 'l_name', 'employee_id', 'profile_photo']);
                 },
                 'teachers' => function ($query) {
-                    $query->select(['users.id', 'f_name', 'l_name']);
+                    $query->select(['users.id', 'f_name', 'l_name', 'profile_photo']);
                 },
                 'creator' => function ($query) {
                     $query->select(['id', 'f_name', 'l_name', 'role']);
@@ -69,14 +69,23 @@ class CourseController extends Controller
     // CREATE / STORE
     // ============================================================
 
-    public function create()
+    public function create(Request $request)
     {
-        $teachers = Cache::remember('all_teachers', 600, function () {
+        $teachers = Cache::remember('all_teachers_with_photo', 600, function () {
             return User::where('role', 3)
-                ->select(['id', 'f_name', 'l_name', 'employee_id'])
+                ->select(['id', 'f_name', 'l_name', 'employee_id', 'profile_photo'])
                 ->orderBy('f_name')
                 ->get();
         });
+
+        if ($request->ajax()) {
+            $html = view('admin.courses._form', [
+                'editing'    => false,
+                'teachers'   => $teachers,
+                'formAction' => route('admin.courses.store'),
+            ])->render();
+            return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+        }
 
         return view('admin.courses.create', compact('teachers'));
     }
@@ -84,25 +93,32 @@ class CourseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'        => 'required|string|max:255',
-            'course_code'  => 'required|string|max:50|unique:courses',
-            'description'  => 'nullable|string',
-            'teacher_id'   => 'nullable|exists:users,id',
-            'is_published' => 'nullable|boolean',
-            'credits'      => 'nullable|integer|min:1|max:10',
-            'status'       => 'nullable|string|in:active,inactive',
+            'title'         => 'required|string|max:255',
+            'course_code'   => 'required|string|max:50|unique:courses',
+            'description'   => 'nullable|string',
+            'is_published'  => 'nullable|boolean',
+            'credits'       => 'nullable|integer|min:1|max:10',
+            'status'        => 'nullable|string|in:active,inactive',
+            'teacher_ids'   => 'nullable|array',
+            'teacher_ids.*' => 'exists:users,id',
         ]);
+
+        $teacherIds = $validated['teacher_ids'] ?? [];
+        $primaryTeacherId = $teacherIds[0] ?? null;
 
         $course = Course::create([
             'title'        => $validated['title'],
             'course_code'  => $validated['course_code'],
             'description'  => $validated['description'] ?? null,
-            'teacher_id'   => $validated['teacher_id']  ?? null,
+            'teacher_id'   => $primaryTeacherId,
             'is_published' => $request->has('is_published') ? true : false,
             'credits'      => $validated['credits']      ?? 3,
             'status'       => $validated['status']       ?? 'active',
             'created_by'   => auth()->id(),
         ]);
+
+        // Sync all selected teachers to pivot
+        $course->teachers()->sync($teacherIds);
 
         $this->clearAdminCourseCaches();
 
@@ -111,6 +127,10 @@ class CourseController extends Controller
         }
 
         Log::info('New course created — ID: ' . $course->id . ', Title: ' . $course->title);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Course created successfully!', 'redirect' => route('admin.courses.index')]);
+        }
 
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course created successfully!');
@@ -128,11 +148,12 @@ class CourseController extends Controller
 
             $course = Cache::remember('course_show_' . $id, 600, function () use ($id) {
                 return Course::with([
-                    'teacher:id,f_name,l_name,employee_id,email',
-                    'teachers:id,f_name,l_name,employee_id,email',
+                    'teacher:id,f_name,l_name,employee_id,email,profile_photo',
+                    'teachers:id,f_name,l_name,employee_id,email,profile_photo',
                     'students:id,f_name,l_name,email,student_id',
                     'topics:id,title,content,is_published,order,created_at,description',
                     'creator:id,f_name,l_name',
+                    'updater:id,f_name,l_name',
                 ])
                 ->withCount('students')
                 ->withCount('topics')
@@ -153,28 +174,43 @@ class CourseController extends Controller
     // EDIT / UPDATE
     // ============================================================
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $encryptedId = urldecode($encryptedId);
             $id          = Crypt::decrypt($encryptedId);
 
-            $course = Course::with('teachers')->findOrFail($id);
+            Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
+            $course = Course::with(['teacher', 'teachers'])->findOrFail($id);
 
-            $teachers = Cache::remember('all_teachers', 600, function () {
+            $teachers = Cache::remember('all_teachers_with_photo', 600, function () {
                 return User::where('role', 3)
-                    ->select(['id', 'f_name', 'l_name', 'employee_id'])
+                    ->select(['id', 'f_name', 'l_name', 'employee_id', 'profile_photo'])
                     ->orderBy('f_name')
                     ->get();
             });
 
             $assignedTeacherIds = $course->teachers->pluck('id')->toArray();
 
+            if ($request->ajax()) {
+                $html = view('admin.courses._form', [
+                    'editing'            => true,
+                    'course'             => $course,
+                    'teachers'           => $teachers,
+                    'assignedTeacherIds' => $assignedTeacherIds,
+                    'formAction'         => route('admin.courses.update', urlencode(Crypt::encrypt($course->id))),
+                ])->render();
+                return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+            }
+
             return view('admin.courses.edit', compact('course', 'teachers', 'encryptedId', 'assignedTeacherIds'));
 
         } catch (\Exception $e) {
             Log::error('Error editing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Course not found.'], 404);
+            }
             return redirect()->route('admin.courses.index')->with('error', 'Course not found or invalid link.');
         }
     }
@@ -187,41 +223,60 @@ class CourseController extends Controller
             $course      = Course::findOrFail($id);
 
             $validated = $request->validate([
-                'title'        => 'required|string|max:255',
-                'course_code'  => 'required|string|max:50|unique:courses,course_code,' . $course->id,
-                'description'  => 'nullable|string',
-                'teacher_id'   => 'nullable|exists:users,id',
-                'is_published' => 'nullable|boolean',
-                'credits'      => 'nullable|integer|min:1|max:10',
-                'status'       => 'nullable|string|in:active,inactive',
-                'teacher_ids'  => 'nullable|array',
+                'title'         => 'required|string|max:255',
+                'course_code'   => 'required|string|max:50|unique:courses,course_code,' . $course->id,
+                'description'   => 'nullable|string',
+                'is_published'  => 'nullable|boolean',
+                'credits'       => 'nullable|integer|min:1|max:10',
+                'status'        => 'nullable|string|in:active,inactive',
+                'teacher_ids'   => 'nullable|array',
                 'teacher_ids.*' => 'exists:users,id',
             ]);
+
+            $teacherIds = $validated['teacher_ids'] ?? [];
+            $primaryTeacherId = $teacherIds[0] ?? null;
 
             $course->update([
                 'title'        => $validated['title'],
                 'course_code'  => $validated['course_code'],
                 'description'  => $validated['description'] ?? null,
-                'teacher_id'   => $validated['teacher_id']  ?? null,
+                'teacher_id'   => $primaryTeacherId,
                 'is_published' => $request->has('is_published') ? true : false,
                 'credits'      => $validated['credits']      ?? $course->credits,
                 'status'       => $validated['status']       ?? $course->status,
                 'updated_by'   => auth()->id(),
             ]);
 
-            // Sync additional teachers (pivot table)
-            $course->teachers()->sync($validated['teacher_ids'] ?? []);
+            // Sync all selected teachers to pivot
+            $course->teachers()->sync($teacherIds);
 
             $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
             Cache::forget('course_edit_' . $id);
             $this->clearStudentCachesForCourse($id);
 
+            // Clear teacher-specific show/edit caches for all teachers assigned to this course
+            $allTeacherIds = $course->teachers->pluck('id')->toArray();
+            if ($course->teacher_id) {
+                $allTeacherIds[] = $course->teacher_id;
+            }
+            foreach (array_unique($allTeacherIds) as $tid) {
+                Cache::forget('teacher_course_show_' . $id . '_teacher_' . $tid);
+                Cache::forget('teacher_course_edit_' . $id . '_teacher_' . $tid);
+            }
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Course updated successfully!', 'redirect' => route('admin.courses.index')]);
+            }
+
             return redirect()->route('admin.courses.show', urlencode(Crypt::encrypt($course->id)))
                 ->with('success', 'Course updated successfully!');
 
         } catch (\Exception $e) {
             Log::error('Error updating course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Failed to update course.'], 500);
+            }
             return redirect()->route('admin.courses.index')->with('error', 'Failed to update course.');
         }
     }
@@ -267,13 +322,25 @@ class CourseController extends Controller
             $id          = Crypt::decrypt($encryptedId);
             $course      = Course::findOrFail($id);
 
-            $course->update(['is_published' => !$course->is_published]);
+            $course->load('teachers');
+            $course->update([
+                'is_published' => !$course->is_published,
+                'updated_by'   => auth()->id(),
+            ]);
             $status = $course->is_published ? 'published' : 'unpublished';
 
             $this->clearAdminCourseCaches();
             Cache::forget('course_show_' . $id);
 
-            return redirect()->route('admin.courses.show', $encryptedId)
+            // Clear teacher-specific caches
+            $allTeacherIds = $course->teachers->pluck('id')->toArray();
+            if ($course->teacher_id) { $allTeacherIds[] = $course->teacher_id; }
+            foreach (array_unique($allTeacherIds) as $tid) {
+                Cache::forget('teacher_course_show_' . $id . '_teacher_' . $tid);
+                Cache::forget('teacher_course_edit_' . $id . '_teacher_' . $tid);
+            }
+
+            return redirect()->route('admin.courses.index')
                 ->with('success', "Course {$status} successfully!");
 
         } catch (\Exception $e) {

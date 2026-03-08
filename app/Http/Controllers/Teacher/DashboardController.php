@@ -9,6 +9,9 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Assignment;
 use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\AssignmentSubmission;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -63,12 +66,33 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
         
+        // Chart: Average quiz score per course
+        $courseChartData = $myCourses->map(function ($course) {
+            $avg = QuizAttempt::whereHas('quiz', fn($q) => $q->where('course_id', $course->id))
+                ->avg('percentage') ?? 0;
+            return [
+                'title'     => Str::limit($course->title, 20),
+                'avg_score' => round($avg, 1),
+                'students'  => $course->enrollments_count ?? 0,
+            ];
+        })->values();
+
+        // Chart: Assignment submission status across all teacher courses
+        $myCourseAssignmentIds = Assignment::whereIn('course_id', $myCourseIds)->pluck('id');
+        $submissionStats = [
+            'pending'   => AssignmentSubmission::whereIn('assignment_id', $myCourseAssignmentIds)->where('status', 'pending')->count(),
+            'submitted' => AssignmentSubmission::whereIn('assignment_id', $myCourseAssignmentIds)->where('status', 'submitted')->count(),
+            'graded'    => AssignmentSubmission::whereIn('assignment_id', $myCourseAssignmentIds)->where('status', 'graded')->count(),
+        ];
+
         return view('teacher.dashboard', [
-            'myCourses' => $myCourses,
-            'totalStudents' => $totalStudents,
-            'recentEnrollments' => $recentEnrollments,
+            'myCourses'           => $myCourses,
+            'totalStudents'       => $totalStudents,
+            'recentEnrollments'   => $recentEnrollments,
             'upcomingAssignments' => $upcomingAssignments,
-            'upcomingQuizzes' => $upcomingQuizzes,
+            'upcomingQuizzes'     => $upcomingQuizzes,
+            'courseChartData'     => $courseChartData,
+            'submissionStats'     => $submissionStats,
         ]);
     }
 }

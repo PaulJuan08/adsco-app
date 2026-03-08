@@ -30,8 +30,15 @@ class CollegeController extends Controller
         ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        if ($request->ajax()) {
+            $html = view('admin.colleges._form', [
+                'editing'    => false,
+                'formAction' => route('admin.colleges.store'),
+            ])->render();
+            return response()->json(['html' => $html, 'css' => asset('css/colleges-form.css')]);
+        }
         return view('admin.colleges.create');
     }
 
@@ -67,6 +74,10 @@ class CollegeController extends Controller
         }
 
         Log::info('New college created', ['id' => $college->id, 'name' => $college->college_name]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'College created successfully!', 'redirect' => route('admin.colleges.index')]);
+        }
 
         return redirect()->route('admin.colleges.index')
             ->with('success', 'College created successfully!');
@@ -111,15 +122,27 @@ class CollegeController extends Controller
         }
     }
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
             $college = College::with('programs')->findOrFail($id);
 
+            if ($request->ajax()) {
+                $html = view('admin.colleges._form', [
+                    'editing'    => true,
+                    'college'    => $college,
+                    'formAction' => route('admin.colleges.update', urlencode(Crypt::encrypt($college->id))),
+                ])->render();
+                return response()->json(['html' => $html, 'css' => asset('css/colleges-form.css')]);
+            }
+
             return view('admin.colleges.edit', compact('college'));
         } catch (\Exception $e) {
             Log::error('Error editing college', ['error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'College not found.'], 404);
+            }
             return redirect()->route('admin.colleges.index')
                 ->with('error', 'College not found or invalid link.');
         }
@@ -140,11 +163,18 @@ class CollegeController extends Controller
 
             $college->update($validated);
 
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'College updated successfully!', 'redirect' => route('admin.colleges.index')]);
+            }
+
             return redirect()
                 ->route('admin.colleges.show', Crypt::encrypt($college->id))
                 ->with('success', 'College updated successfully!');
         } catch (\Exception $e) {
             Log::error('Error updating college', ['error' => $e->getMessage()]);
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Failed to update college.'], 500);
+            }
             return redirect()->route('admin.colleges.index')
                 ->with('error', 'Failed to update college.');
         }
