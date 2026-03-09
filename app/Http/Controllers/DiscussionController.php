@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class DiscussionController extends Controller
 {
@@ -46,6 +47,64 @@ class DiscussionController extends Controller
             3       => 'teacher',
             default => 'student',
         };
+    }
+
+    // ----------------------------------------------------------------
+    // INDEX — list courses accessible to the current user
+    // ----------------------------------------------------------------
+
+    public function index()
+    {
+        $user   = auth()->user();
+        $layout = $this->layoutFor($user->role);
+
+        try {
+            $query = Course::with(['teacher:id,f_name,l_name'])
+                ->withCount([
+                    'discussions as thread_count' => fn ($q) => $q->whereNull('parent_id'),
+                    'discussions as reply_count'  => fn ($q) => $q->whereNotNull('parent_id'),
+                    'discussions as total_count',
+                ]);
+
+            if ($user->role === 1) {
+                // Admin sees all published courses
+                $query->where('is_published', true);
+            } elseif ($user->role === 3) {
+                // Teacher sees courses they own or are co-assigned to
+                $query->where(function ($q) use ($user) {
+                    $q->where('teacher_id', $user->id)
+                      ->orWhereHas('teachers', fn ($q2) => $q2->where('users.id', $user->id));
+                });
+            } else {
+                // Student sees courses they are actively enrolled in
+                $enrolledIds = Enrollment::where('student_id', $user->id)
+                    ->where('status', 'active')
+                    ->pluck('course_id');
+                $query->whereIn('id', $enrolledIds)->where('is_published', true);
+            }
+
+            $courses = $query->get()->map(function ($course) {
+                // Last activity: most recent message in this course's discussions
+                $last = CourseDiscussion::where('course_id', $course->id)
+                    ->latest()->first();
+                $course->last_activity   = $last?->created_at;
+                $course->last_author     = $last?->author;
+                $course->encrypted_id    = Crypt::encrypt($course->id);
+                return $course;
+            })->sortByDesc('last_activity')->values();
+
+            $totalThreads       = $courses->sum('thread_count');
+            $totalReplies       = $courses->sum('reply_count');
+            $coursesWithActivity = $courses->filter(fn ($c) => $c->total_count > 0)->count();
+
+            return view("{$layout}.discussions.index", compact(
+                'courses', 'layout', 'totalThreads', 'totalReplies', 'coursesWithActivity'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Discussion index error', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('error', 'Failed to load discussions.');
+        }
     }
 
     // ----------------------------------------------------------------

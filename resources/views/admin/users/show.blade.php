@@ -54,7 +54,6 @@
                             };
                         @endphp
                         <span class="role-pill {{ $roleClass }}">{{ $roleDisplay }}</span>
-                        <span class="user-id-label">• ID: {{ $user->id }}</span>
                     </div>
                 </div>
             </div>
@@ -528,34 +527,6 @@
 </div><!-- /.user-show-container -->
 
 
-<!-- Reset Password Modal -->
-<div id="resetPasswordModal" class="modal-overlay">
-    <div class="modal-box">
-        <h3 class="modal-title"><i class="fas fa-key"></i> Reset Password</h3>
-        <p class="modal-desc">Enter a new password for <strong>{{ $user->f_name }} {{ $user->l_name }}</strong>.</p>
-        <form action="{{ route('admin.users.update', Crypt::encrypt($user->id)) }}" method="POST">
-            @csrf @method('PUT')
-            <input type="hidden" name="f_name" value="{{ $user->f_name }}">
-            <input type="hidden" name="l_name" value="{{ $user->l_name }}">
-            <input type="hidden" name="email" value="{{ $user->email }}">
-            <input type="hidden" name="role" value="{{ $user->role }}">
-            @if($user->employee_id) <input type="hidden" name="employee_id" value="{{ $user->employee_id }}"> @endif
-            @if($user->student_id) <input type="hidden" name="student_id" value="{{ $user->student_id }}"> @endif
-            <div class="modal-field">
-                <label class="modal-label">New Password</label>
-                <input type="password" name="password" class="modal-input" placeholder="Min. 8 characters" required minlength="8">
-            </div>
-            <div class="modal-field">
-                <label class="modal-label">Confirm Password</label>
-                <input type="password" name="password_confirmation" class="modal-input" placeholder="Repeat password" required minlength="8">
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="modal-cancel" onclick="document.getElementById('resetPasswordModal').classList.remove('active')">Cancel</button>
-                <button type="submit" class="modal-submit">Reset Password</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 @endsection
 
@@ -621,10 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Close modal on overlay click ────────────────────────────
-    document.getElementById('resetPasswordModal').addEventListener('click', function (e) {
-        if (e.target === this) this.classList.remove('active');
-    });
+
 });
 </script>
 @endpush

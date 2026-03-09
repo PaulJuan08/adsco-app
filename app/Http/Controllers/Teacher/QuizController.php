@@ -57,9 +57,16 @@ class QuizController extends Controller
         return view('teacher.quizzes.index', compact('quizzes', 'search', 'totalQuizzes', 'publishedCount'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('teacher.quizzes.create');
+        if ($request->ajax()) {
+            $html = view('teacher.quizzes._form', [
+                'editing'    => false,
+                'formAction' => route('teacher.quizzes.store'),
+            ])->render();
+            return response()->json(['html' => $html]);
+        }
+        return redirect()->route('teacher.quizzes.index');
     }
 
     public function store(Request $request)
@@ -149,6 +156,13 @@ class QuizController extends Controller
         
         \Log::info('New quiz created by teacher - ID: ' . $quiz->id . ', Title: ' . $quiz->title);
 
+        if (request()->ajax()) {
+            return response()->json([
+                'message'  => 'Quiz created successfully.',
+                'redirect' => route('teacher.quizzes.index'),
+            ]);
+        }
+
         return redirect()->route('teacher.quizzes.index')
             ->with('success', 'Quiz created successfully.');
     }
@@ -197,8 +211,12 @@ class QuizController extends Controller
         }
     }
 
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
+        if (!$request->ajax()) {
+            return redirect()->route('teacher.quizzes.index');
+        }
+
         try {
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
@@ -215,8 +233,13 @@ class QuizController extends Controller
                     ->findOrFail($id);
             });
 
-            return view('teacher.quizzes.edit', compact('quiz'));
-            
+            $html = view('teacher.quizzes._form', [
+                'editing'    => true,
+                'formAction' => route('teacher.quizzes.update', $encryptedId),
+                'quiz'       => $quiz,
+            ])->render();
+            return response()->json(['html' => $html]);
+
         } catch (\Exception $e) {
             \Log::error('Error editing teacher quiz', [
                 'encryptedId' => $encryptedId,
@@ -330,6 +353,13 @@ class QuizController extends Controller
             Cache::forget('teacher_quiz_edit_' . $quiz->id . '_teacher_' . $teacherId);
             Cache::forget('teacher_quiz_take_' . $quiz->id . '_teacher_' . $teacherId);
             
+            if (request()->ajax()) {
+                return response()->json([
+                    'message'  => 'Quiz updated successfully!',
+                    'redirect' => route('teacher.quizzes.index'),
+                ]);
+            }
+
             return redirect()->route('teacher.quizzes.show', Crypt::encrypt($quiz->id))
                 ->with('success', 'Quiz updated successfully!');
                 

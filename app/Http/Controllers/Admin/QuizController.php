@@ -36,9 +36,16 @@ class QuizController extends Controller
         return view('admin.quizzes.index', compact('quizzes', 'search', 'totalQuizzes', 'publishedCount'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.quizzes.create');
+        if ($request->ajax()) {
+            $html = view('admin.quizzes._form', [
+                'editing'    => false,
+                'formAction' => route('admin.quizzes.store'),
+            ])->render();
+            return response()->json(['html' => $html]);
+        }
+        return redirect()->route('admin.quizzes.index');
     }
 
     public function store(Request $request)
@@ -139,7 +146,13 @@ class QuizController extends Controller
         \Log::info('New quiz created - ID: ' . $quiz->id . ', Title: ' . $quiz->title);
         \Log::info('Published status: ' . ($quiz->is_published ? 'Published' : 'Draft'));
 
-        // Redirect to To-Do with quiz filter
+        if (request()->ajax()) {
+            return response()->json([
+                'message'  => 'Quiz created successfully.',
+                'redirect' => route('admin.quizzes.index'),
+            ]);
+        }
+
         return redirect()->route('admin.todo.index', ['type' => 'quiz'])
             ->with('success', 'Quiz created successfully.');
     }
@@ -150,23 +163,32 @@ class QuizController extends Controller
         return redirect()->route('admin.todo.quiz.show', $encryptedId);
     }
     
-    public function edit($encryptedId)
+    public function edit(Request $request, $encryptedId)
     {
+        if (!$request->ajax()) {
+            return redirect()->route('admin.quizzes.index');
+        }
+
         try {
             $id = Crypt::decrypt($encryptedId);
-            
+
             // Keep caching for edit page
             $cacheKey = 'admin_quiz_edit_' . $id;
-            
+
             $quiz = Cache::remember($cacheKey, 300, function() use ($id) {
                 return Quiz::with(['questions.options' => function($query) {
                         $query->orderBy('order');
                     }])
                     ->findOrFail($id);
             });
-            
-            return view('admin.quizzes.edit', compact('quiz'));
-            
+
+            $html = view('admin.quizzes._form', [
+                'editing'    => true,
+                'formAction' => route('admin.quizzes.update', $encryptedId),
+                'quiz'       => $quiz,
+            ])->render();
+            return response()->json(['html' => $html]);
+
         } catch (\Exception $e) {
             \Log::error('Error editing quiz', [
                 'encryptedId' => $encryptedId,
@@ -276,6 +298,13 @@ class QuizController extends Controller
             Cache::forget('admin_quiz_edit_' . $quiz->id);
             Cache::forget('admin_quiz_take_' . $quiz->id);
             
+            if (request()->ajax()) {
+                return response()->json([
+                    'message'  => 'Quiz updated successfully!',
+                    'redirect' => route('admin.quizzes.index'),
+                ]);
+            }
+
             return redirect()->route('admin.quizzes.show', Crypt::encrypt($quiz->id))
                 ->with('success', 'Quiz updated successfully!');
                 

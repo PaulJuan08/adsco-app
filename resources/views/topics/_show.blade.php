@@ -1,13 +1,18 @@
 @php
     $videoLink      = $topic->video_link ?? '';
     $youtubeEmbedId = null;
+    $driveEmbedId   = null;
     if ($videoLink) {
         if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_\-]{11})/', $videoLink, $m)) {
             $youtubeEmbedId = $m[1];
+        } elseif (strpos($videoLink, 'drive.google.com') !== false) {
+            foreach (['/\/file\/d\/([^\/?#&]+)/', '/[?&]id=([^&]+)/', '/\/open\?id=([^&]+)/'] as $p) {
+                if (preg_match($p, $videoLink, $dm)) { $driveEmbedId = $dm[1]; break; }
+            }
         }
     }
     $pdfUrl    = $topic->pdf_file ? asset('pdf/' . $topic->pdf_file) : null;
-    $hasVideo  = $youtubeEmbedId || $videoLink;
+    $hasVideo  = $youtubeEmbedId || $driveEmbedId || $videoLink;
     $hasPdf    = (bool) $pdfUrl;
     $hasBoth   = $hasVideo && $hasPdf;
     $hasMedia  = $hasVideo || $hasPdf;
@@ -42,6 +47,12 @@
                         style="position:absolute;inset:0;width:100%;height:100%;border:none;"
                         allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
                         allowfullscreen></iframe>
+            </div>
+            @elseif($driveEmbedId)
+            <div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000;">
+                <iframe src="https://drive.google.com/file/d/{{ $driveEmbedId }}/preview"
+                        style="position:absolute;inset:0;width:100%;height:100%;border:none;"
+                        allow="autoplay" allowfullscreen></iframe>
             </div>
             @else
             <a href="{{ $videoLink }}" target="_blank" rel="noopener"

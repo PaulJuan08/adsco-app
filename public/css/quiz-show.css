@@ -1679,3 +1679,7 @@ input:checked + .toggle-slider:before {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+/* ===== STATUS BADGE IN CARD HEADER ===== */
+.card-status-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-top: 3px; }
+.card-status-badge.published { background: rgba(72,187,120,0.25); color: #d1fae5; border: 1px solid rgba(72,187,120,0.4); }
+.card-status-badge.draft     { background: rgba(237,137,54,0.25); color: #fed7aa; border: 1px solid rgba(237,137,54,0.4); }

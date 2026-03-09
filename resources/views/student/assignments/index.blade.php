@@ -422,7 +422,7 @@
                                             <td class="hide-on-mobile">
                                                 <span class="item-badge badge-info">
                                                     <i class="fas fa-book"></i> 
-                                                    {{ $assignment->course->course_name ?? 'N/A' }}
+                                                    {{ $assignment->course->title ?? 'N/A' }}
                                                 </span>
                                             </td>
                                             <td class="hide-on-tablet">

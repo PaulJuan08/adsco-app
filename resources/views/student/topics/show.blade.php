@@ -200,7 +200,13 @@
                         <i class="fas fa-chalkboard"></i>
                     @endif
                 </div>
-                <h1 class="card-title">{{ $topic->title }}</h1>
+                <div>
+                    <h1 class="card-title">{{ $topic->title }}</h1>
+                    <span class="card-status-badge {{ $topic->is_published ? 'published' : 'draft' }}">
+                        <i class="fas {{ $topic->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                        {{ $topic->is_published ? 'Published' : 'Draft' }}
+                    </span>
+                </div>
             </div>
             <div class="top-actions">
                 @if(isset($course))
@@ -228,62 +234,15 @@
                 </div>
             @endif
 
-            {{-- Topic Preview Bar --}}
             @php
                 $isCompleted = Auth::user()->completedTopics()
                     ->where('topic_id', $topic->id)
                     ->exists();
             @endphp
 
-            <div class="topic-preview">
-                <div class="topic-preview-avatar">
-                    <i class="fas {{ $topic->video_link ? 'fa-video' : ($topic->pdf_file ? 'fa-file-pdf' : 'fa-book-open') }}"></i>
-                </div>
-                <div class="topic-preview-content">
-                    <h2 class="topic-preview-title">{{ $topic->title }}</h2>
-                    <div class="topic-preview-meta">
-                        @if($isCompleted)
-                            <span class="topic-preview-badge published">
-                                <i class="fas fa-check-circle"></i> Completed
-                                @if(isset($completionDate) && $completionDate)
-                                    · {{ $completionDate->format('M d, Y') }}
-                                @endif
-                            </span>
-                        @else
-                            <span class="topic-preview-badge draft">
-                                <i class="fas fa-clock"></i> In Progress
-                            </span>
-                        @endif
-
-                        @if(isset($course))
-                            <span>
-                                <i class="fas fa-book"></i>
-                                {{ $course->course_code }}
-                            </span>
-                        @endif
-
-                        @if($topic->estimated_time)
-                            <span>
-                                <i class="fas fa-hourglass-half"></i> {{ $topic->estimated_time }}
-                            </span>
-                        @endif
-
-                        @php
-                            $resourceCount = ($topic->pdf_file ? 1 : 0)
-                                           + ($topic->video_link ? 1 : 0)
-                                           + ($topic->attachment ? 1 : 0);
-                        @endphp
-                        @if($resourceCount)
-                            <span>
-                                <i class="fas fa-paperclip"></i> {{ $resourceCount }} resource{{ $resourceCount > 1 ? 's' : '' }}
-                            </span>
-                        @endif
-                    </div>
-                    <div class="topic-preview-id">
-                        <i class="fas fa-hashtag"></i> Topic #{{ $topic->id }}
-                    </div>
-                </div>
-            </div>
+            @php
+                $resourceCount = (($topic->video_link ? 1 : 0) + ($topic->attachment ? 1 : 0) + ($topic->pdf_file ? 1 : 0));
+            @endphp
 
             {{-- ── TWO-COLUMN LAYOUT ── --}}
             <div class="two-column-layout">
@@ -344,7 +303,8 @@
                     @endphp
                     <div class="topic-media-card">
 
-                        {{-- Video area --}}
+                        {{-- Video area (only when video link exists) --}}
+                        @if($vUrl)
                         <div class="topic-video-area">
                             @if($videoType === 'youtube')
                                 <div class="yt-preview"
@@ -385,23 +345,15 @@
                                 </div>
                             @elseif($videoType === 'drive')
                                 @if($videoId)
-                                <div class="yt-preview"
-                                     data-embed="https://drive.google.com/file/d/{{ $videoId }}/preview"
-                                     onclick="openSmartVideoModal('{{ $vUrl }}')">
-                                    <div class="video-brand-placeholder" style="background:#1e293b;">
-                                        <i class="fab fa-google-drive" style="color:#4285f4;"></i>
-                                    </div>
-                                    <div class="yt-play-overlay">
-                                        <div class="generic-play-btn" style="background:rgba(66,133,244,0.9);">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
+                                <div class="topic-video-embed">
+                                    <iframe src="https://drive.google.com/file/d/{{ $videoId }}/preview"
+                                            allow="autoplay" allowfullscreen></iframe>
                                 </div>
                                 @else
-                                <div class="video-generic-preview" onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                <div class="video-generic-preview">
                                     <i class="fab fa-google-drive" style="color:#4285f4;"></i>
                                     <span>Google Drive Video</span>
-                                    <small>Click to open</small>
+                                    <a href="{{ $vUrl }}" target="_blank" rel="noopener" style="font-size:.8rem;color:#4285f4;">Open in Drive</a>
                                 </div>
                                 @endif
                             @elseif($videoType === 'other')
@@ -411,14 +363,28 @@
                                     <span>{{ $host ? str_replace('www.', '', $host) : 'Video' }}</span>
                                     <small>Click to play</small>
                                 </div>
-                            @else
-                                <div class="topic-no-video">
-                                    <i class="fas fa-chalkboard-teacher"></i>
-                                </div>
                             @endif
                         </div>
+                        @endif
 
-                        {{-- Attachment + PDF buttons --}}
+                        {{-- Inline PDF viewer --}}
+                        @if($pdfUrl)
+                        <div class="pdf-inline-wrapper" id="pdfInlineWrapper">
+                            <div class="pdf-inline-toolbar">
+                                <span class="pdf-inline-label">
+                                    <i class="fas fa-file-pdf"></i> PDF Document
+                                </span>
+                                <div class="pdf-inline-btns">
+                                    <button onclick="openPdfModal('{{ $pdfUrl }}')" class="pdf-inline-btn pdf-inline-open-btn" title="Open in viewer">
+                                        <i class="fas fa-expand-arrows-alt"></i><span>Open</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <iframe src="{{ $pdfUrl }}" id="pdfInlineFrame" title="PDF Document"></iframe>
+                        </div>
+                        @endif
+
+                        {{-- Attachment button --}}
                         <div class="topic-media-actions">
                             @if($topic->attachment)
                                 <a href="{{ $topic->attachment }}" target="_blank"
@@ -427,13 +393,6 @@
                                 </a>
                             @else
                                 <span></span>
-                            @endif
-
-                            @if($pdfUrl)
-                                <button onclick="openPdfModal('{{ $pdfUrl }}')"
-                                        class="topic-btn-pdf">
-                                    <i class="fas fa-file-pdf"></i> pdf
-                                </button>
                             @endif
                         </div>
 
@@ -519,11 +478,6 @@
                         <h3 class="sidebar-card-title">
                             <i class="fas fa-info-circle"></i> Topic Info
                         </h3>
-
-                        <div class="info-row-sm">
-                            <span class="lbl"><i class="fas fa-hashtag"></i> ID</span>
-                            <span class="val">#{{ $topic->id }}</span>
-                        </div>
 
                         <div class="info-row-sm">
                             <span class="lbl"><i class="fas fa-paperclip"></i> Resources</span>
@@ -813,6 +767,30 @@ function togglePdfFullscreen() {
     box.classList.toggle('fullscreen');
     ic.className = box.classList.contains('fullscreen') ? 'fas fa-compress' : 'fas fa-expand';
 }
+
+// ════════════════════════════════════════════════════════════════
+// INLINE PDF FULLSCREEN
+// ════════════════════════════════════════════════════════════════
+function togglePdfInlineFullscreen() {
+    var wrapper = document.getElementById('pdfInlineWrapper');
+    var btn     = document.getElementById('pdfFsBtn');
+    if (!wrapper) return;
+    wrapper.classList.toggle('pdf-fullscreen');
+    var isFs = wrapper.classList.contains('pdf-fullscreen');
+    if (btn) btn.innerHTML = '<i class="fas fa-' + (isFs ? 'compress' : 'expand') + '"></i>';
+    document.body.style.overflow = isFs ? 'hidden' : '';
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var w = document.getElementById('pdfInlineWrapper');
+        if (w && w.classList.contains('pdf-fullscreen')) {
+            w.classList.remove('pdf-fullscreen');
+            var btn = document.getElementById('pdfFsBtn');
+            if (btn) btn.innerHTML = '<i class="fas fa-expand"></i>';
+            document.body.style.overflow = '';
+        }
+    }
+});
 
 // ══════════════════════════════════════════════
 // VIDEO MODAL

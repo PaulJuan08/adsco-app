@@ -20,7 +20,13 @@
         <div class="card-header">
             <div class="card-title-group">
                 <div class="card-icon"><i class="fas fa-file-alt"></i></div>
-                <h1 class="card-title">{{ $topic->title }}</h1>
+                <div>
+                    <h1 class="card-title">{{ $topic->title }}</h1>
+                    <span class="card-status-badge {{ $topic->is_published ? 'published' : 'draft' }}">
+                        <i class="fas {{ $topic->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                        {{ $topic->is_published ? 'Published' : 'Draft' }}
+                    </span>
+                </div>
             </div>
             <div class="top-actions">
                 <a href="{{ route('admin.topics.index') }}" class="top-action-btn">
@@ -37,57 +43,17 @@
             <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
             @endif
 
-            <div class="topic-preview">
-                <div class="topic-preview-avatar"><i class="fas fa-file-alt"></i></div>
-                <div class="topic-preview-content">
-                    <h2 class="topic-preview-title">{{ $topic->title }}</h2>
-                    <div class="topic-preview-meta">
-                        <span class="topic-preview-badge {{ $topic->is_published ? 'published' : 'draft' }}">
-                            <i class="fas {{ $topic->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
-                            {{ $topic->is_published ? 'Published' : 'Draft' }}
-                        </span>
-                        <span><i class="fas fa-hashtag"></i> ID: {{ $topic->id }}</span>
-                        @if($topic->estimated_time)
-                            <span><i class="fas fa-clock"></i> {{ $topic->formatted_estimated_time }}</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
             @php
                 $resourceCount = ($topic->pdf_file ? 1 : 0) + ($topic->video_link ? 1 : 0) + ($topic->attachment ? 1 : 0);
                 $courseCount = $topic->courses ? $topic->courses->count() : 0;
             @endphp
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-paperclip"></i></div>
-                    <div class="stat-value">{{ $resourceCount }}</div>
-                    <div class="stat-label">Resources</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-book"></i></div>
-                    <div class="stat-value">{{ $courseCount }}</div>
-                    <div class="stat-label">Courses</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-video"></i></div>
-                    <div class="stat-value">{{ $topic->hasVideo() ? 'Yes' : 'No' }}</div>
-                    <div class="stat-label">Has Video</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
-                    <div class="stat-value">{{ $topic->created_at->format('M d') }}</div>
-                    <div class="stat-label">Created</div>
-                </div>
-            </div>
 
             <div class="two-column-layout">
                 <div class="form-column">
 
                     <div class="detail-section">
                         <h3 class="detail-section-title"><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="description-box">{{ $topic->description ?? 'No description provided for this topic.' }}</div>
+                        <div class="description-box rich-text">{!! $topic->description ?? 'No description provided for this topic.' !!}</div>
                     </div>
 
                     {{-- ── TOPIC MEDIA CARD ── --}}
@@ -121,6 +87,7 @@
                         $pdfExists = $topic->pdf_file ? file_exists(public_path('pdf/' . $topic->pdf_file)) : false;
                     @endphp
                     <div class="topic-media-card">
+                        @if($vUrl)
                         <div class="topic-video-area">
                             @if($videoType === 'youtube')
                                 <div class="yt-preview"
@@ -161,23 +128,15 @@
                                 </div>
                             @elseif($videoType === 'drive')
                                 @if($videoId)
-                                <div class="yt-preview"
-                                     data-embed="https://drive.google.com/file/d/{{ $videoId }}/preview"
-                                     onclick="openSmartVideoModal('{{ $vUrl }}')">
-                                    <div class="video-brand-placeholder" style="background:#1e293b;">
-                                        <i class="fab fa-google-drive" style="color:#4285f4;"></i>
-                                    </div>
-                                    <div class="yt-play-overlay">
-                                        <div class="generic-play-btn" style="background:rgba(66,133,244,0.9);">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                    </div>
+                                <div class="topic-video-embed">
+                                    <iframe src="https://drive.google.com/file/d/{{ $videoId }}/preview"
+                                            allow="autoplay" allowfullscreen></iframe>
                                 </div>
                                 @else
-                                <div class="video-generic-preview" onclick="openSmartVideoModal('{{ $vUrl }}')">
+                                <div class="video-generic-preview">
                                     <i class="fab fa-google-drive" style="color:#4285f4;"></i>
                                     <span>Google Drive Video</span>
-                                    <small>Click to open</small>
+                                    <a href="{{ $vUrl }}" target="_blank" rel="noopener" style="font-size:.8rem;color:#4285f4;">Open in Drive</a>
                                 </div>
                                 @endif
                             @elseif($videoType === 'other')
@@ -187,10 +146,29 @@
                                     <span>{{ $host ? str_replace('www.', '', $host) : 'Video' }}</span>
                                     <small>Click to play</small>
                                 </div>
-                            @else
-                                <div class="topic-no-video"><i class="fas fa-chalkboard-teacher"></i></div>
                             @endif
                         </div>
+                        @endif
+                        {{-- Inline PDF viewer --}}
+                        @if($pdfUrl)
+                        <div class="pdf-inline-wrapper" id="pdfInlineWrapper">
+                            <div class="pdf-inline-toolbar">
+                                <span class="pdf-inline-label">
+                                    <i class="fas fa-file-pdf"></i> PDF Document
+                                    @if(!$pdfExists)
+                                    <i class="fas fa-exclamation-triangle" style="color:#fbbf24;" title="File missing on disk"></i>
+                                    @endif
+                                </span>
+                                <div class="pdf-inline-btns">
+                                    <button onclick="openPdfModal('{{ $pdfUrl }}')" class="pdf-inline-btn pdf-inline-open-btn" title="Open in viewer">
+                                        <i class="fas fa-expand-arrows-alt"></i><span>Open</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <iframe src="{{ $pdfUrl }}" id="pdfInlineFrame" title="PDF Document"></iframe>
+                        </div>
+                        @endif
+
                         <div class="topic-media-actions">
                             @if($topic->attachment)
                                 <a href="{{ $topic->attachment }}" target="_blank" class="topic-btn-attachment">
@@ -198,14 +176,6 @@
                                 </a>
                             @else
                                 <span></span>
-                            @endif
-                            @if($pdfUrl)
-                                <button onclick="openPdfModal('{{ $pdfUrl }}')" class="topic-btn-pdf">
-                                    <i class="fas fa-file-pdf"></i> pdf
-                                    @if(!$pdfExists)
-                                        <i class="fas fa-exclamation-triangle" style="color:#fbbf24; font-size:0.65rem;" title="File missing on disk"></i>
-                                    @endif
-                                </button>
                             @endif
                         </div>
                     </div>
@@ -216,11 +186,6 @@
                 <div class="sidebar-column">
                     <div class="sidebar-card">
                         <h3 class="sidebar-card-title"><i class="fas fa-info-circle"></i> Topic Information</h3>
-                        
-                        <div class="info-row-sm">
-                            <span class="lbl"><i class="fas fa-hashtag"></i> Topic ID</span>
-                            <span class="val">#{{ $topic->id }}</span>
-                        </div>
                         
                         <div class="info-row-sm">
                             <span class="lbl"><i class="fas fa-user"></i> Created By</span>
@@ -278,30 +243,23 @@
                             <span class="val">{{ $topic->formatted_estimated_time }}</span>
                         </div>
                         @endif
-                    </div>
 
-                    <div class="sidebar-card">
-                        <h3 class="sidebar-card-title"><i class="fas fa-book"></i> Assigned Courses</h3>
-                        
-                        @if($courseCount > 0)
-                            <div style="margin-bottom:1rem;">
-                                @foreach($topic->courses as $course)
-                                    <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" 
-                                       class="course-tag">
-                                        {{ $course->course_code }}
-                                    </a>
-                                @endforeach
+                        <div style="border-top:1px dashed var(--border);margin-top:.75rem;padding-top:.75rem;">
+                            <div style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">
+                                <i class="fas fa-book" style="margin-right:.3rem;color:#552b20;"></i> Assigned Courses
                             </div>
-                        @else
-                            <div class="empty-state" style="padding:1rem;">
-                                <i class="fas fa-book-open"></i>
-                                <h3>No Courses Assigned</h3>
-                                <p style="margin-bottom:0.5rem;">This topic is not used in any courses yet.</p>
-                                <a href="{{ route('admin.topics.edit', $encryptedId) }}" class="btn-sm btn-sm-primary" style="text-decoration:none; display:inline-block;">
-                                    <i class="fas fa-plus"></i> Assign to Course
-                                </a>
-                            </div>
-                        @endif
+                            @if($courseCount > 0)
+                                <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                                    @foreach($topic->courses as $course)
+                                        <a href="{{ route('admin.courses.show', Crypt::encrypt($course->id)) }}" class="course-tag">
+                                            {{ $course->course_code }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div style="font-size:.8rem;color:#a0aec0;font-style:italic;">No courses assigned</div>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="sidebar-card">
@@ -317,9 +275,9 @@
                             </button>
                         @endif
                         
-                        <a href="{{ route('admin.topics.edit', $encryptedId) }}" class="quick-action-link">
+                        <button onclick="openCrudModal('{{ route('admin.topics.edit', $encryptedId) }}', 'Edit Topic')" class="quick-action-link" style="border:none;cursor:pointer;width:100%;background:transparent;">
                             <i class="fas fa-edit"></i><span>Edit Topic Details</span>
-                        </a>
+                        </button>
                         
                         <a href="{{ route('admin.courses.index') }}" class="quick-action-link">
                             <i class="fas fa-book"></i><span>Browse Courses</span>
@@ -925,6 +883,30 @@ function _extractDriveId(url) {
     
     return null;
 }
+
+// ════════════════════════════════════════════════════════════════
+// INLINE PDF FULLSCREEN
+// ════════════════════════════════════════════════════════════════
+function togglePdfInlineFullscreen() {
+    var wrapper = document.getElementById('pdfInlineWrapper');
+    var btn     = document.getElementById('pdfFsBtn');
+    if (!wrapper) return;
+    wrapper.classList.toggle('pdf-fullscreen');
+    var isFs = wrapper.classList.contains('pdf-fullscreen');
+    if (btn) btn.innerHTML = '<i class="fas fa-' + (isFs ? 'compress' : 'expand') + '"></i>';
+    document.body.style.overflow = isFs ? 'hidden' : '';
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var w = document.getElementById('pdfInlineWrapper');
+        if (w && w.classList.contains('pdf-fullscreen')) {
+            w.classList.remove('pdf-fullscreen');
+            var btn = document.getElementById('pdfFsBtn');
+            if (btn) btn.innerHTML = '<i class="fas fa-expand"></i>';
+            document.body.style.overflow = '';
+        }
+    }
+});
 
 // Setup modal dismiss
 document.addEventListener('DOMContentLoaded', function() {

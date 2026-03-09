@@ -206,7 +206,7 @@
                             <i class="fas fa-chart-bar"></i> Progress
                         </a>
                         <div class="dropdown-divider"></div>
-                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ $encId }}', '{{ addslashes($assignment->title) }}')" class="dropdown-item text-danger">
+                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ route('admin.assignments.destroy', $encId) }}', '{{ addslashes($assignment->title) }}')" class="dropdown-item text-danger">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -271,13 +271,13 @@ document.addEventListener('click', function(e) {
 window.addEventListener('scroll', function() {
     document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
 }, true);
-function confirmDeleteItem(encId, title) {
+function confirmDeleteItem(deleteUrl, title) {
     Swal.fire({
         title: 'Delete Assignment?',
         html: `<strong>"${title}"</strong> and all its submissions will be permanently deleted.`,
         icon: 'warning', showCancelButton: true,
         confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', confirmButtonText: 'Yes, Delete',
-    }).then(function (r) { if (r.isConfirmed) ajaxDelete('{{ url("admin/assignments") }}/' + encId); });
+    }).then(function (r) { if (r.isConfirmed) ajaxDelete(deleteUrl); });
 }
 </script>
 @endpush

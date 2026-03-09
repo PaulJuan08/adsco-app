@@ -1715,3 +1715,11 @@
     color: #a0aec0;
     font-style: italic;
 }
+/* ===== SIDEBAR CARD (compact right-column cards) ===== */
+.sidebar-card { background: var(--card-bg, #fff); border: 1px solid var(--gray-200, #e2e8f0); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.sidebar-card-title { font-size: 0.8rem; font-weight: 700; color: var(--gray-700, #4a5568); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+.info-row-sm { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--gray-100, #f7fafc); font-size: 0.78rem; }
+.info-row-sm:last-child { border-bottom: none; }
+.info-row-sm .lbl { color: var(--gray-500, #718096); display: flex; align-items: center; gap: 0.35rem; }
+.info-row-sm .val { font-weight: 600; color: var(--gray-700, #4a5568); text-align: right; }
+.info-row-sm .val.highlight { color: var(--primary, #552b20); }

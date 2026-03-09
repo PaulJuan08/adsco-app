@@ -19,13 +19,13 @@
 
     <div style="margin-bottom:1rem;">
         <label style="display:block;font-size:.8125rem;font-weight:600;color:#374151;margin-bottom:.4rem;">Description</label>
-        <textarea name="description" rows="2" placeholder="Brief description..."
+        <textarea name="description" data-quill rows="2" placeholder="Brief description..."
                   style="width:100%;padding:.55rem .75rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;resize:vertical;outline:none;box-sizing:border-box;">{{ old('description', $assignment->description ?? '') }}</textarea>
     </div>
 
     <div style="margin-bottom:1rem;">
         <label style="display:block;font-size:.8125rem;font-weight:600;color:#374151;margin-bottom:.4rem;">Instructions</label>
-        <textarea name="instructions" rows="3" placeholder="Step-by-step instructions for students..."
+        <textarea name="instructions" data-quill rows="3" placeholder="Step-by-step instructions for students..."
                   style="width:100%;padding:.55rem .75rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;resize:vertical;outline:none;box-sizing:border-box;">{{ old('instructions', $assignment->instructions ?? '') }}</textarea>
     </div>
 

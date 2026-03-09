@@ -27,6 +27,9 @@
     <!-- Layout CSS -->
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
 
+    <!-- Rich Text Editor -->
+    @vite(['resources/js/quill-editor.js'])
+
     @stack('styles')
 </head>
 <body>
@@ -90,6 +93,12 @@
                     @if($studentTodoPending > 0)
                         <span class="badge-count">{{ $studentTodoPending }}</span>
                     @endif
+                </a>
+
+                <!-- Discussions -->
+                <a href="{{ route('student.discussions.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.discussions.*') || request()->routeIs('student.courses.discussions*') ? 'active' : '' }}">
+                    <i class="fas fa-comments"></i>
+                    <span>Discussions</span>
                 </a>
             </nav>
 
@@ -183,6 +192,7 @@
         }
         function closeCrudModal(){document.getElementById('crudModalOverlay').classList.remove('open');document.getElementById('crudModalBox').classList.remove('open');document.body.style.overflow='';}
         function _initCrudForm(){
+            if(window.initQuillEditors)window.initQuillEditors(document.getElementById('crudModalBody'));
             var form=document.querySelector('#crudModalBody form');if(!form)return;
             form.addEventListener('submit',function(e){
                 e.preventDefault();

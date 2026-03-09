@@ -172,9 +172,9 @@
             </form>
             
             <div style="display: flex; gap: 0.5rem;">
-                <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
+                <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary">
                     <i class="fas fa-plus-circle"></i> New Quiz
-                </a>
+                </button>
                 <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                     <i class="fas fa-plus-circle"></i> New Assignment
                 </button>
@@ -324,14 +324,14 @@
             @endif
             
             <div class="todo-card-actions" onclick="event.stopPropagation()">
-                <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}" 
-                class="btn-xs btn-xs-primary">
+                <a href="{{ route('admin.todo.quiz.show', Crypt::encrypt($quiz->id)) }}"
+                class="btn-xs btn-xs-success">
                     <i class="fas fa-key"></i> Grant Access
                 </a>
-                <a href="{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
-                class="btn-xs btn-xs-outline">
+                <button onclick="openCrudModal('{{ route('admin.quizzes.edit', Crypt::encrypt($quiz->id)) }}', 'Edit Quiz')"
+                class="btn-xs btn-xs-outline" style="border:none;cursor:pointer;">
                     <i class="fas fa-edit"></i> Edit
-                </a>
+                </button>
                 <a href="{{ route('admin.todo.progress', ['type' => 'quiz', 'item_id' => $quiz->id]) }}" 
                 class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
@@ -385,7 +385,7 @@
                     <div class="todo-card-desc">
                         @if($assignment->course)
                             <span class="course-badge">
-                                <i class="fas fa-book"></i> {{ $assignment->course->course_code ?? $assignment->course->name }}
+                                <i class="fas fa-book"></i> {{ $assignment->course->course_code ?? $assignment->course->title }}
                             </span>
                         @endif
                         @if($assignment->due_date)
@@ -519,8 +519,8 @@
             @endif
             
             <div class="todo-card-actions" onclick="event.stopPropagation()">
-                <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}" 
-                class="btn-xs btn-xs-primary">
+                <a href="{{ route('admin.todo.assignment.show', Crypt::encrypt($assignment->id)) }}"
+                class="btn-xs btn-xs-success">
                     <i class="fas fa-key"></i> Grant Access
                 </a>
                 <button onclick="openCrudModal('{{ route('admin.assignments.edit', Crypt::encrypt($assignment->id)) }}', 'Edit Assignment')"
@@ -552,9 +552,9 @@
             {{ $search ? 'No results match your search criteria.' : 'Create a quiz or assignment to get started.' }}
         </p>
         <div style="display: flex; gap: 0.75rem; justify-content: center;">
-            <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
+            <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary">
                 <i class="fas fa-plus-circle"></i> New Quiz
-            </a>
+            </button>
             <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                 <i class="fas fa-plus-circle"></i> New Assignment
             </button>

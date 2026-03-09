@@ -12,8 +12,14 @@
         <!-- Header -->
         <div class="card-header">
             <div class="card-title-group">
-                <i class="fas fa-brain card-icon"></i>
-                <h1 class="card-title">{{ $quiz->title }}</h1>
+                <div class="card-icon"><i class="fas fa-brain"></i></div>
+                <div>
+                    <h1 class="card-title">{{ $quiz->title }}</h1>
+                    <span class="card-status-badge {{ $quiz->is_published ? 'published' : 'draft' }}">
+                        <i class="fas {{ $quiz->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                        {{ $quiz->is_published ? 'Published' : 'Draft' }}
+                    </span>
+                </div>
             </div>
             <div class="top-actions">
                 <a href="{{ route('teacher.quizzes.index') }}" class="top-action-btn">
@@ -39,66 +45,6 @@
             </div>
             @endif
 
-            <!-- Quiz Preview -->
-            <div class="quiz-preview">
-                <div class="quiz-preview-avatar">
-                    {{ strtoupper(substr($quiz->title, 0, 1)) }}
-                </div>
-                <div class="quiz-preview-content">
-                    <div class="quiz-preview-title">{{ $quiz->title }}</div>
-                    <div class="quiz-preview-meta">
-                        <span class="quiz-preview-badge {{ $quiz->is_published ? 'published' : 'draft' }}">
-                            <i class="fas {{ $quiz->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
-                            {{ $quiz->is_published ? 'Published' : 'Draft' }}
-                        </span>
-                        <span><i class="fas fa-question-circle"></i> {{ $quiz->questions->count() }} Questions</span>
-                        <span><i class="fas fa-clock"></i> {{ $quiz->duration ? $quiz->duration . ' min' : 'No time limit' }}</span>
-                        <span><i class="fas fa-trophy"></i> {{ $quiz->passing_score }}% to pass</span>
-                        <span><i class="fas fa-star"></i> {{ $totalPoints }} points</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">{{ $quiz->allowed_students_count ?? 0 }}</div>
-                        <div class="stat-label">Allowed Students</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-paper-plane"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">{{ $quiz->attempts_count ?? 0 }}</div>
-                        <div class="stat-label">Total Attempts</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">{{ $passCount }}</div>
-                        <div class="stat-label">Passed</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">{{ $avgScore ? round($avgScore) . '%' : 'N/A' }}</div>
-                        <div class="stat-label">Average Score</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Two Column Layout -->
             <div class="two-column-layout">
                 <!-- Left Column - Main Content -->
@@ -108,8 +54,8 @@
                         <div class="detail-section-title">
                             <i class="fas fa-align-left"></i> Description
                         </div>
-                        <div class="description-box">
-                            {{ $quiz->description ?? 'No description provided.' }}
+                        <div class="description-box rich-text">
+                            {!! $quiz->description ?? 'No description provided.' !!}
                         </div>
                     </div>
 
@@ -182,9 +128,9 @@
                             <i class="fas fa-question-circle"></i>
                             <h3>No Questions Yet</h3>
                             <p>This quiz doesn't have any questions yet.</p>
-                            <a href="{{ route('teacher.quizzes.edit', $encryptedId) }}" class="btn-sm btn-sm-primary">
+                            <button onclick="openCrudModal('{{ route('teacher.quizzes.edit', $encryptedId) }}', 'Edit Quiz')" class="btn-sm btn-sm-primary" style="border:none;cursor:pointer;">
                                 <i class="fas fa-plus"></i> Add Questions
-                            </a>
+                            </button>
                         </div>
                         @endforelse
                     </div>
@@ -239,11 +185,6 @@
                         </div>
                         
                         <div class="info-row-sm">
-                            <span class="lbl"><i class="fas fa-hashtag"></i> Quiz ID</span>
-                            <span class="val">#{{ $quiz->id }}</span>
-                        </div>
-                        
-                        <div class="info-row-sm">
                             <span class="lbl"><i class="fas fa-check-circle"></i> Status</span>
                             <span class="val" style="color: {{ $quiz->is_published ? 'var(--success)' : 'var(--warning)' }}">
                                 {{ $quiz->is_published ? 'Published' : 'Draft' }}
@@ -269,7 +210,26 @@
                             <span class="lbl"><i class="fas fa-star"></i> Total Points</span>
                             <span class="val">{{ $totalPoints }}</span>
                         </div>
-                        
+
+                        @if($quiz->course)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-book"></i> Course</span>
+                            <span class="val">{{ $quiz->course->title }}</span>
+                        </div>
+                        @endif
+
+                        @if($quiz->due_date)
+                        <div class="info-row-sm">
+                            <span class="lbl"><i class="fas fa-calendar-alt"></i> Due Date</span>
+                            <span class="val {{ $quiz->isOverdue() ? 'text-danger' : '' }}">
+                                {{ $quiz->due_date->format('M d, Y') }}
+                                @if($quiz->isOverdue())
+                                    <span style="display:block; font-size:0.7rem; color:#f56565;">Overdue</span>
+                                @endif
+                            </span>
+                        </div>
+                        @endif
+
                         <div class="info-row-sm">
                             <span class="lbl"><i class="fas fa-users"></i> Allowed Students</span>
                             <span class="val highlight">{{ $quiz->allowed_students_count ?? 0 }}</span>
@@ -325,10 +285,10 @@
                             <span>Grant Student Access</span>
                         </button>
                         
-                        <a href="{{ route('teacher.quizzes.edit', $encryptedId) }}" class="quick-action-link">
+                        <button onclick="openCrudModal('{{ route('teacher.quizzes.edit', $encryptedId) }}', 'Edit Quiz')" class="quick-action-link" style="border:none;cursor:pointer;width:100%;background:transparent;">
                             <i class="fas fa-edit"></i>
                             <span>Edit Quiz Details</span>
-                        </a>
+                        </button>
                         
                         <a href="{{ route('teacher.quizzes.results', $encryptedId) }}" class="quick-action-link">
                             <i class="fas fa-chart-bar"></i>

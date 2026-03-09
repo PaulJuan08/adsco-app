@@ -84,10 +84,10 @@ class CourseController extends Controller
                 'teachers'   => $teachers,
                 'formAction' => route('admin.courses.store'),
             ])->render();
-            return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+            return response()->json(['html' => $html]);
         }
 
-        return view('admin.courses.create', compact('teachers'));
+        return redirect()->route('admin.courses.index');
     }
 
     public function store(Request $request)
@@ -201,10 +201,10 @@ class CourseController extends Controller
                     'assignedTeacherIds' => $assignedTeacherIds,
                     'formAction'         => route('admin.courses.update', urlencode(Crypt::encrypt($course->id))),
                 ])->render();
-                return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+                return response()->json(['html' => $html]);
             }
 
-            return view('admin.courses.edit', compact('course', 'teachers', 'encryptedId', 'assignedTeacherIds'));
+            return redirect()->route('admin.courses.index');
 
         } catch (\Exception $e) {
             Log::error('Error editing course', ['encryptedId' => $encryptedId, 'error' => $e->getMessage()]);

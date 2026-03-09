@@ -44,28 +44,6 @@
                 </div>
             </div>
             
-            <!-- Statistics Grid -->
-            <div class="stats-grid-small">
-                <div class="stat-box">
-                    <div class="stat-box-value">{{ $program->students_count ?? 0 }}</div>
-                    <div class="stat-box-label">Enrolled Students</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-value">
-                        @if($program->college)
-                            {{ Str::limit($program->college->college_name, 15) }}
-                        @else
-                            N/A
-                        @endif
-                    </div>
-                    <div class="stat-box-label">College</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-value">{{ $program->created_at->format('M Y') }}</div>
-                    <div class="stat-box-label">Created</div>
-                </div>
-            </div>
-            
             <!-- Detailed Information -->
             <div class="details-grid">
                 <div class="detail-section">
@@ -107,10 +85,6 @@
                     <div class="detail-section-title">
                         <i class="fas fa-chart-bar"></i>
                         Statistics
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label">Program ID</div>
-                        <div class="detail-value">#{{ $program->id }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Created</div>

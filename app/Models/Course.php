@@ -58,6 +58,12 @@ class Course extends Model
             ->orderBy('course_topics.order');
     }
 
+    // Relationship with discussions
+    public function discussions()
+    {
+        return $this->hasMany(\App\Models\CourseDiscussion::class, 'course_id');
+    }
+
     // Relationship with enrollments
     public function enrollments()
     {

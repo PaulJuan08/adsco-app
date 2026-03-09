@@ -108,7 +108,6 @@
                                     <th class="hide-on-tablet">Teacher</th>
                                     <th>Progress</th>
                                     <th class="hide-on-tablet">Status</th>
-                                    <th class="action-col"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -206,20 +205,6 @@
                                             <span class="item-badge badge-primary"><i class="fas fa-clock"></i> In Progress</span>
                                         @endif
                                     </td>
-                                    <td class="action-col" onclick="event.stopPropagation()">
-                                        <div class="action-dropdown-wrapper">
-                                            <button class="btn-action-dots" onclick="toggleActionDropdown(this)"><i class="fas fa-ellipsis-v"></i></button>
-                                            <div class="action-dropdown-menu">
-                                                <a href="{{ route('student.courses.show', $encryptedId) }}" class="dropdown-item">
-                                                    <i class="fas fa-eye"></i> View Course
-                                                </a>
-                                                <button class="dropdown-item text-danger"
-                                                    onclick="confirmUnenroll('{{ $encryptedId }}', '{{ addslashes($course->title) }}')">
-                                                    <i class="fas fa-sign-out-alt"></i> Unenroll
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -241,89 +226,67 @@
 
         {{-- ── Sidebar ── --}}
         <div class="right-column">
-            <div class="dashboard-card">
-                <div class="card-header"><h2 class="card-title"><i class="fas fa-chart-pie"></i> Learning Overview</h2></div>
-                <div class="card-body">
-                    <div class="items-list">
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:linear-gradient(135deg,var(--primary-light),var(--primary))"><i class="fas fa-book"></i></div>
-                            <div class="item-info"><div class="item-name">Total Enrollments</div></div>
-                            <div class="stat-number">{{ $enrolledCourses->count() }}</div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:linear-gradient(135deg,var(--success-light),var(--success))"><i class="fas fa-graduation-cap"></i></div>
-                            <div class="item-info"><div class="item-name">Completed Courses</div></div>
-                            <div class="stat-number">{{ $overallStats['completed_courses'] ?? 0 }}</div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:linear-gradient(135deg,var(--warning-light),var(--warning))"><i class="fas fa-chart-line"></i></div>
-                            <div class="item-info"><div class="item-name">In Progress</div></div>
-                            <div class="stat-number">{{ $overallStats['in_progress_courses'] ?? 0 }}</div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:linear-gradient(135deg,var(--info-light),var(--info))"><i class="fas fa-star"></i></div>
-                            <div class="item-info"><div class="item-name">Average Grade</div></div>
-                            <div class="stat-number">{{ $overallStats['average_grade'] ?? 0 }}%</div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:linear-gradient(135deg,var(--primary-light),var(--primary-dark))"><i class="fas fa-percent"></i></div>
-                            <div class="item-info"><div class="item-name">Completion Rate</div></div>
-                            <div class="stat-number">
-                                @php $tt = $overallStats['total_topics'] ?? 0; $ct = $overallStats['completed_topics'] ?? 0; @endphp
-                                {{ $tt > 0 ? round(($ct / $tt) * 100) : 0 }}%
-                            </div>
-                        </div>
-                    </div>
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title"><i class="fas fa-chart-pie"></i> Learning Overview</h3>
+                @php $tt = $overallStats['total_topics'] ?? 0; $ct = $overallStats['completed_topics'] ?? 0; @endphp
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-book"></i> Enrollments</span>
+                    <span class="val">{{ $enrolledCourses->count() }}</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-graduation-cap"></i> Completed</span>
+                    <span class="val">{{ $overallStats['completed_courses'] ?? 0 }}</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-chart-line"></i> In Progress</span>
+                    <span class="val">{{ $overallStats['in_progress_courses'] ?? 0 }}</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-star"></i> Avg Grade</span>
+                    <span class="val highlight">{{ $overallStats['average_grade'] ?? 0 }}%</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-percent"></i> Completion</span>
+                    <span class="val highlight">{{ $tt > 0 ? round(($ct / $tt) * 100) : 0 }}%</span>
                 </div>
             </div>
 
-            <div class="dashboard-card">
-                <div class="card-header"><h2 class="card-title"><i class="fas fa-history"></i> Recent Activity</h2></div>
-                <div class="card-body">
-                    <div class="items-list">
-                        @forelse($recentActivities as $activity)
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:var(--gray-100);color:var(--gray-700)">
-                                @if($activity['type'] === 'grade')
-                                    <i class="fas fa-graduation-cap" style="color:var(--success)"></i>
-                                @elseif($activity['type'] === 'enrollment')
-                                    <i class="fas fa-user-plus" style="color:var(--info)"></i>
-                                @else
-                                    <i class="fas fa-book-open" style="color:var(--primary)"></i>
-                                @endif
-                            </div>
-                            <div class="item-info">
-                                <div class="item-name">{{ $activity['text'] }}</div>
-                                <div class="item-meta">{{ $activity['time'] }}</div>
-                            </div>
-                        </div>
-                        @empty
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="fas fa-info-circle"></i></div>
-                            <p class="empty-text">No recent activity</p>
-                        </div>
-                        @endforelse
-                    </div>
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title"><i class="fas fa-history"></i> Recent Activity</h3>
+                @forelse($recentActivities as $activity)
+                <div class="info-row-sm" style="align-items:flex-start;">
+                    <span class="lbl" style="display:flex;align-items:center;gap:0.3rem;">
+                        @if($activity['type'] === 'grade')
+                            <i class="fas fa-graduation-cap" style="color:var(--success)"></i>
+                        @elseif($activity['type'] === 'enrollment')
+                            <i class="fas fa-user-plus" style="color:var(--info)"></i>
+                        @else
+                            <i class="fas fa-book-open" style="color:var(--primary)"></i>
+                        @endif
+                    </span>
+                    <span class="val" style="font-size:0.75rem;">
+                        {{ $activity['text'] }}
+                        <span style="display:block;font-size:0.68rem;color:#718096;">{{ $activity['time'] }}</span>
+                    </span>
                 </div>
+                @empty
+                <p style="font-size:0.75rem;color:#a0aec0;margin:0.5rem 0;">No recent activity</p>
+                @endforelse
             </div>
 
-            <div class="dashboard-card">
-                <div class="card-header"><h2 class="card-title"><i class="fas fa-lightbulb"></i> Study Tips</h2></div>
-                <div class="card-body">
-                    <div class="items-list">
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:var(--warning-light);color:var(--warning-dark)"><i class="fas fa-clock"></i></div>
-                            <div class="item-info"><div class="item-name">Consistent Schedule</div><div class="item-meta">Study at the same time each day</div></div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:var(--warning-light);color:var(--warning-dark)"><i class="fas fa-pencil-alt"></i></div>
-                            <div class="item-info"><div class="item-name">Take Notes</div><div class="item-meta">Improves retention by 34%</div></div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-avatar" style="background:var(--warning-light);color:var(--warning-dark)"><i class="fas fa-users"></i></div>
-                            <div class="item-info"><div class="item-name">Study Groups</div><div class="item-meta">Collaborate with classmates</div></div>
-                        </div>
-                    </div>
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title"><i class="fas fa-lightbulb"></i> Study Tips</h3>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-clock"></i> Schedule</span>
+                    <span class="val" style="font-size:0.73rem;">Study at the same time each day</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-pencil-alt"></i> Notes</span>
+                    <span class="val" style="font-size:0.73rem;">Improves retention by 34%</span>
+                </div>
+                <div class="info-row-sm">
+                    <span class="lbl"><i class="fas fa-users"></i> Groups</span>
+                    <span class="val" style="font-size:0.73rem;">Collaborate with classmates</span>
                 </div>
             </div>
         </div>
@@ -332,46 +295,6 @@
 </div>
 @endsection
 
-<style>
-#unenrollModal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
-    z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;
-    visibility: hidden; opacity: 0; pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-#unenrollModal.open { visibility: visible; opacity: 1; pointer-events: all; }
-#unenrollModal > div {
-    transform: translateY(-16px) scale(0.97); opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
-}
-#unenrollModal.open > div { transform: translateY(0) scale(1); opacity: 1; }
-</style>
-
-{{-- Unenroll confirmation modal --}}
-<div id="unenrollModal">
-    <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:.75rem;">
-            <i class="fas fa-sign-out-alt" style="color:#fff;font-size:1.2rem;"></i>
-            <h3 style="margin:0;color:#fff;font-size:1rem;font-weight:700;">Unenroll from Course</h3>
-        </div>
-        <div style="padding:1.5rem;">
-            <p style="margin:0 0 .5rem;color:#374151;">Are you sure you want to unenroll from:</p>
-            <p id="unenrollCourseName" style="margin:0 0 1rem;font-weight:700;color:#111;font-size:1rem;"></p>
-            <p style="margin:0;font-size:.85rem;color:#6b7280;"><i class="fas fa-info-circle"></i> Your progress will be lost. You will need to be re-enrolled by an administrator.</p>
-        </div>
-        <div style="padding:.75rem 1.5rem 1.25rem;display:flex;justify-content:flex-end;gap:.6rem;">
-            <button onclick="closeUnenrollModal()" style="padding:.55rem 1.25rem;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#4a5568;font-size:.875rem;font-weight:600;cursor:pointer;">Cancel</button>
-            <form id="unenrollForm" method="POST" style="margin:0;">
-                @csrf
-                @method('DELETE')
-                <button type="submit" style="padding:.55rem 1.5rem;border-radius:8px;border:none;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-sign-out-alt"></i> Unenroll
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
 
 @push('scripts')
 <script>
@@ -423,19 +346,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }, true);
 });
 
-function confirmUnenroll(encryptedId, courseTitle) {
-    document.getElementById('unenrollCourseName').textContent = courseTitle;
-    document.getElementById('unenrollForm').action = '{{ url("student/courses") }}/' + encryptedId + '/unenroll';
-    document.getElementById('unenrollModal').classList.add('open');
-}
-
-function closeUnenrollModal() {
-    document.getElementById('unenrollModal').classList.remove('open');
-}
-
-document.getElementById('unenrollModal').addEventListener('click', function(e) {
-    if (e.target === this) closeUnenrollModal();
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeUnenrollModal(); });
 </script>
 @endpush

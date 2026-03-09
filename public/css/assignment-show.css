@@ -7,9 +7,9 @@
    VARIABLES & BASE SETUP
    ============================================ */
 :root {
-    --primary: #f59e0b;
-    --primary-dark: #d97706;
-    --primary-light: rgba(245, 158, 11, 0.1);
+    --primary: #552b20;
+    --primary-dark: #3d1f17;
+    --primary-light: rgba(85, 43, 32, 0.1);
     --success: #48bb78;
     --success-dark: #38a169;
     --success-light: #f0fff4;
@@ -615,7 +615,6 @@
     font-size: 0.9375rem;
     line-height: 1.6;
     color: var(--gray-800);
-    white-space: pre-line;
 }
 
 .instructions-box {
@@ -626,9 +625,20 @@
     font-size: 0.9375rem;
     line-height: 1.6;
     color: var(--gray-800);
-    white-space: pre-line;
-    font-style: italic;
 }
+
+/* Rich text display (renderQuillContent() converts to native <ul>/<ol>) */
+.rich-text { line-height: 1.7; }
+.rich-text p  { margin: 0.25rem 0; }
+.rich-text h2 { font-size: 1.125rem; font-weight: 700; margin: 0.75rem 0 0.25rem; }
+.rich-text h3 { font-size: 1rem;     font-weight: 600; margin: 0.5rem 0 0.25rem; }
+.rich-text ul { list-style-type: disc    !important; padding-left: 1.5rem !important; margin: 0.35rem 0; }
+.rich-text ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.35rem 0; }
+.rich-text li { margin: 0.15rem 0; display: list-item !important; }
+.rich-text strong { font-weight: 700; }
+.rich-text em  { font-style: italic; }
+.rich-text u   { text-decoration: underline; }
+.rich-text a   { color: #552b20; text-decoration: underline; }
 
 /* ============================================
    ATTACHMENT SECTION
@@ -2060,3 +2070,7 @@ input:checked + .toggle-slider:before {
         border: 1px solid #ccc;
     }
 }
+/* ===== STATUS BADGE IN CARD HEADER ===== */
+.card-status-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-top: 3px; }
+.card-status-badge.published { background: rgba(72,187,120,0.25); color: #d1fae5; border: 1px solid rgba(72,187,120,0.4); }
+.card-status-badge.draft     { background: rgba(237,137,54,0.25); color: #fed7aa; border: 1px solid rgba(237,137,54,0.4); }

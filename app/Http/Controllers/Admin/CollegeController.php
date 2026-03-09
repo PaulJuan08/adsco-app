@@ -37,9 +37,9 @@ class CollegeController extends Controller
                 'editing'    => false,
                 'formAction' => route('admin.colleges.store'),
             ])->render();
-            return response()->json(['html' => $html, 'css' => asset('css/colleges-form.css')]);
+            return response()->json(['html' => $html]);
         }
-        return view('admin.colleges.create');
+        return redirect()->route('admin.colleges.index');
     }
 
     public function store(Request $request)
@@ -134,10 +134,10 @@ class CollegeController extends Controller
                     'college'    => $college,
                     'formAction' => route('admin.colleges.update', urlencode(Crypt::encrypt($college->id))),
                 ])->render();
-                return response()->json(['html' => $html, 'css' => asset('css/colleges-form.css')]);
+                return response()->json(['html' => $html]);
             }
 
-            return view('admin.colleges.edit', compact('college'));
+            return redirect()->route('admin.colleges.index');
         } catch (\Exception $e) {
             Log::error('Error editing college', ['error' => $e->getMessage()]);
             if ($request->ajax()) {

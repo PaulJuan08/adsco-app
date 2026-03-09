@@ -502,53 +502,53 @@
                 
                 <div class="card-body">
                     <div class="quick-actions-grid">
-                        <a href="{{ route('admin.topics.create') }}" class="action-card action-primary">
+                        <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'New Topic')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-book"></i>
                             </div>
                             <div class="action-title">Create Topic</div>
                             <div class="action-subtitle">Add new learning material</div>
-                        </a>
-                        
-                        <a href="{{ route('admin.quizzes.create') }}" class="action-card action-warning">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="action-card action-warning" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-question-circle"></i>
                             </div>
                             <div class="action-title">Create Quiz</div>
                             <div class="action-subtitle">Add new quiz/test</div>
-                        </a>
-                        
-                        <a href="{{ route('admin.assignments.create') }}" class="action-card action-info">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="action-card action-info" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-tasks"></i>
                             </div>
                             <div class="action-title">Create Assignment</div>
                             <div class="action-subtitle">Add new assignment</div>
-                        </a>
-                        
-                        <a href="{{ route('admin.courses.create') }}" class="action-card action-primary">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('admin.courses.create') }}', 'New Course')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-book-medical"></i>
                             </div>
                             <div class="action-title">Create Course</div>
                             <div class="action-subtitle">Setup new academic course</div>
-                        </a>
-                        
-                        <a href="{{ route('admin.users.create') }}" class="action-card action-success">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('admin.users.create') }}', 'New User')" class="action-card action-success" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-user-plus"></i>
                             </div>
                             <div class="action-title">Add User</div>
                             <div class="action-subtitle">Register staff or student</div>
-                        </a>
-                        
-                        <a href="{{ route('admin.colleges.create') }}" class="action-card action-info">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('admin.colleges.create') }}', 'New College')" class="action-card action-info" style="border:none;cursor:pointer;width:100%;text-align:left;">
                             <div class="action-icon">
                                 <i class="fas fa-university"></i>
                             </div>
                             <div class="action-title">Add College</div>
                             <div class="action-subtitle">Create new college</div>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>

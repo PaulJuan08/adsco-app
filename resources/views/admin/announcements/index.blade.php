@@ -394,7 +394,7 @@
                 </div>
                 <div class="form-group">
                     <label>Content <span style="color:#ef4444">*</span></label>
-                    <textarea name="content" placeholder="Write your announcement here..." required></textarea>
+                    <textarea name="content" data-quill placeholder="Write your announcement here..." required></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -440,7 +440,7 @@
                 </div>
                 <div class="form-group">
                     <label>Content <span style="color:#ef4444">*</span></label>
-                    <textarea name="content" id="editContent" required></textarea>
+                    <textarea name="content" id="editContent" data-quill required></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -528,7 +528,7 @@
         const base = "{{ url('admin/announcements') }}";
         document.getElementById('editForm').action = base + '/' + id;
         document.getElementById('editTitle').value   = title;
-        document.getElementById('editContent').value = content;
+        window.setQuillContent('editContent', content);
         document.getElementById('editType').value    = type;
         document.getElementById('editEndDate').value = endDate;
         document.getElementById('editPublish').checked = isPublished;

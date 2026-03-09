@@ -136,6 +136,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('/courses/{encryptedId}/remove-topic', [AdminCourseController::class, 'removeTopic'])->name('courses.remove-topic');
 
         // ============ DISCUSSION ============
+        Route::get('/discussions', [DiscussionController::class, 'index'])->name('discussions.index');
         Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
         Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
         Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
@@ -241,6 +242,9 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             
             // Quiz Access Modal (AJAX) - NEW ROUTE
             Route::get('/quiz/{encryptedId}/access-modal', [AdminTodoController::class, 'quizAccessModal'])->name('quiz.access.modal');
+
+            // Quiz Attempt Answers (AJAX)
+            Route::get('/quiz-attempt/{attemptId}/answers', [AdminTodoController::class, 'getAttemptAnswers'])->name('quiz.attempt.answers');
         });
 
         // ============ ANNOUNCEMENTS ============
@@ -288,6 +292,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::post('courses/{encryptedId}/remove-topic', [TeacherCourseController::class, 'removeTopic'])->name('courses.remove-topic');
 
         // ============ DISCUSSION ============
+        Route::get('/discussions', [DiscussionController::class, 'index'])->name('discussions.index');
         Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
         Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
         Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
@@ -368,6 +373,9 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             
             // ===== AJAX HELPERS =====
             Route::get('/colleges/{collegeId}/programs', [TeacherTodoController::class, 'getProgramsByCollege'])->name('colleges.programs');
+
+            // Quiz Attempt Answers (AJAX)
+            Route::get('/quiz-attempt/{attemptId}/answers', [TeacherTodoController::class, 'getAttemptAnswers'])->name('quiz.attempt.answers');
         });
 
         // ============ STUDENT VIEWING ============
@@ -397,10 +405,11 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
         Route::get('/courses/{encryptedId}/grades', [StudentCourseController::class, 'grades'])->name('courses.grades');
 
         // ============ DISCUSSION ============
+        Route::get('/discussions', [DiscussionController::class, 'index'])->name('discussions.index');
         Route::get('/courses/{encryptedId}/discussions', [DiscussionController::class, 'show'])->name('courses.discussions');
         Route::post('/courses/{encryptedId}/discussions', [DiscussionController::class, 'store'])->name('courses.discussions.store');
         Route::delete('/courses/{encryptedId}/discussions/{discussionId}', [DiscussionController::class, 'destroy'])->name('courses.discussions.destroy');
-        
+
         // Topics
         Route::get('/topics', [StudentTopicController::class, 'index'])->name('topics.index');
         Route::get('/topics/{encryptedId}', [StudentTopicController::class, 'show'])->name('topics.show');

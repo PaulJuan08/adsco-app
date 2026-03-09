@@ -67,7 +67,7 @@ class TopicController extends Controller
             ])->render();
             return response()->json(['html' => $html]);
         }
-        return view('admin.topics.create');
+        return redirect()->route('admin.topics.index');
     }
 
     public function store(Request $request)
@@ -177,7 +177,7 @@ class TopicController extends Controller
                 return response()->json(['html' => $html]);
             }
 
-            return view('admin.topics.edit', compact('topic'));
+            return redirect()->route('admin.topics.index');
 
         } catch (\Exception $e) {
             \Log::error('Error editing topic', [

@@ -120,9 +120,9 @@ class CourseController extends Controller
                 'editing'    => false,
                 'formAction' => route('teacher.courses.store'),
             ])->render();
-            return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+            return response()->json(['html' => $html]);
         }
-        return view('teacher.courses.create');
+        return redirect()->route('teacher.courses.index');
     }
 
     public function store(Request $request)
@@ -220,10 +220,10 @@ class CourseController extends Controller
                     'course'     => $course,
                     'formAction' => route('teacher.courses.update', Crypt::encrypt($course->id)),
                 ])->render();
-                return response()->json(['html' => $html, 'css' => asset('css/courses-form.css')]);
+                return response()->json(['html' => $html]);
             }
 
-            return view('teacher.courses.edit', compact('course', 'encryptedId'));
+            return redirect()->route('teacher.courses.index');
 
         } catch (\Exception $e) {
             Log::error('Error accessing course for edit', [

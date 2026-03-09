@@ -12,8 +12,13 @@
         <!-- Header -->
         <div class="card-header">
             <div class="card-title-group">
-                <i class="fas fa-pencil-alt card-icon"></i>
-                <h2 class="card-title">{{ $quiz->title }}</h2>
+                <div class="card-icon"><i class="fas fa-brain"></i></div>
+                <div>
+                    <h1 class="card-title">{{ $quiz->title }}</h1>
+                    <span class="card-status-badge published">
+                        <i class="fas fa-play-circle"></i> Taking Quiz
+                    </span>
+                </div>
             </div>
             <div class="top-actions">
                 <a href="{{ route('student.todo.index') }}" class="top-action-btn">
@@ -21,27 +26,8 @@
                 </a>
             </div>
         </div>
-        
-        <div class="card-body">
-            <!-- Quiz Info Bar -->
-            <div class="quiz-preview">
-                <div class="quiz-preview-avatar">
-                    {{ strtoupper(substr($quiz->title, 0, 1)) }}
-                </div>
-                <div class="quiz-preview-content">
-                    <div class="quiz-preview-title">{{ $quiz->title }}</div>
-                    <div class="quiz-preview-meta">
-                        <span><i class="fas fa-question-circle"></i> {{ $quiz->questions->count() }} Questions</span>
-                        <span><i class="fas fa-trophy"></i> Passing: {{ $quiz->passing_score }}%</span>
-                        <span><i class="fas fa-infinity"></i> Unlimited attempts</span>
-                    </div>
-                </div>
-                <div class="quiz-preview-badge published">
-                    <i class="fas fa-play-circle"></i>
-                    Taking Quiz
-                </div>
-            </div>
 
+        <div class="card-body">
             <!-- Quiz Form -->
             <form action="{{ route('student.todo.quiz.submit', $encryptedId) }}" method="POST" id="quiz-form">
                 @csrf

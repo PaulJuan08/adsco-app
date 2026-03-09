@@ -126,9 +126,9 @@
                     <div class="empty-icon"><i class="fas fa-graduation-cap"></i></div>
                     <h3 class="empty-title">No programs yet</h3>
                     <p class="empty-text">Start by adding the first academic program.</p>
-                    <a href="{{ route('admin.programs.create') }}" class="btn btn-primary">
+                    <button onclick="openCrudModal('{{ route('admin.programs.create') }}', 'New Program')" class="btn btn-primary">
                         <i class="fas fa-plus-circle"></i> Create Your First Program
-                    </a>
+                    </button>
                     <div class="empty-hint">
                         <i class="fas fa-lightbulb"></i> Programs are degree offerings under each college
                     </div>

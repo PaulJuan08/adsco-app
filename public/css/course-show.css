@@ -1687,3 +1687,36 @@ input:checked + .toggle-slider:before {
     color: white;
     border-color: #48bb78;
 }
+/*----------------------------------------
+  CARD STATUS BADGE
+----------------------------------------*/
+.card-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 3px;
+}
+.card-status-badge.published {
+    background: rgba(72,187,120,0.25);
+    color: #d1fae5;
+    border: 1px solid rgba(72,187,120,0.4);
+}
+.card-status-badge.draft {
+    background: rgba(237,137,54,0.25);
+    color: #fed7aa;
+    border: 1px solid rgba(237,137,54,0.4);
+}
+.card-status-badge.active {
+    background: rgba(72,187,120,0.25);
+    color: #d1fae5;
+    border: 1px solid rgba(72,187,120,0.4);
+}
+.card-status-badge.inactive {
+    background: rgba(245,101,101,0.25);
+    color: #fecaca;
+    border: 1px solid rgba(245,101,101,0.4);
+}

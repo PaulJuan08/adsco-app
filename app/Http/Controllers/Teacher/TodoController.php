@@ -1067,4 +1067,15 @@ class TodoController extends Controller
             ->get(['id', 'program_name']);
         return response()->json($programs);
     }
+
+    /**
+     * Get quiz attempt answers for modal display
+     */
+    public function getAttemptAnswers(int $attemptId)
+    {
+        $attempt = QuizAttempt::findOrFail($attemptId);
+        $answers = $attempt->answers ?? [];
+
+        return response()->json(['answers' => $answers]);
+    }
 }

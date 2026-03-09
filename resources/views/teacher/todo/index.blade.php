@@ -172,9 +172,9 @@
             </form>
             
             <div style="display: flex; gap: 0.5rem;">
-                <a href="{{ route('teacher.quizzes.create') }}" class="btn-xs btn-xs-primary">
+                <button onclick="openCrudModal('{{ route('teacher.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary" style="border:none;cursor:pointer;">
                     <i class="fas fa-plus-circle"></i> New Quiz
-                </a>
+                </button>
                 <button onclick="openCrudModal('{{ route('teacher.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                     <i class="fas fa-plus-circle"></i> New Assignment
                 </button>
@@ -328,10 +328,10 @@
                 class="btn-xs btn-xs-primary">
                     <i class="fas fa-key"></i> Grant Access
                 </a>
-                <a href="{{ route('teacher.quizzes.edit', Crypt::encrypt($quiz->id)) }}" 
-                class="btn-xs btn-xs-outline">
+                <button onclick="openCrudModal('{{ route('teacher.quizzes.edit', Crypt::encrypt($quiz->id)) }}', 'Edit Quiz')"
+                class="btn-xs btn-xs-outline" style="border:none;cursor:pointer;">
                     <i class="fas fa-edit"></i> Edit
-                </a>
+                </button>
                 <a href="{{ route('teacher.todo.progress', ['type' => 'quiz', 'item_id' => $quiz->id]) }}" 
                 class="btn-xs btn-xs-outline">
                     <i class="fas fa-chart-bar"></i> Progress
@@ -385,7 +385,7 @@
                     <div class="todo-card-desc">
                         @if($assignment->course)
                             <span class="course-badge">
-                                <i class="fas fa-book"></i> {{ $assignment->course->course_code ?? $assignment->course->name }}
+                                <i class="fas fa-book"></i> {{ $assignment->course->course_code ?? $assignment->course->title }}
                             </span>
                         @endif
                         @if($assignment->due_date)
@@ -552,9 +552,9 @@
             {{ $search ? 'No results match your search criteria.' : 'Create a quiz or assignment to get started.' }}
         </p>
         <div style="display: flex; gap: 0.75rem; justify-content: center;">
-            <a href="{{ route('teacher.quizzes.create') }}" class="btn-xs btn-xs-primary">
+            <button onclick="openCrudModal('{{ route('teacher.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary" style="border:none;cursor:pointer;">
                 <i class="fas fa-plus-circle"></i> New Quiz
-            </a>
+            </button>
             <button onclick="openCrudModal('{{ route('teacher.assignments.create') }}', 'New Assignment')" class="btn-xs btn-xs-success">
                 <i class="fas fa-plus-circle"></i> New Assignment
             </button>

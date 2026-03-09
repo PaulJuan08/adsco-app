@@ -75,10 +75,10 @@ class ProgramController extends Controller
                 'colleges'   => $colleges,
                 'formAction' => route('admin.programs.store'),
             ])->render();
-            return response()->json(['html' => $html, 'css' => asset('css/programs-form.css')]);
+            return response()->json(['html' => $html]);
         }
 
-        return view('admin.programs.create', compact('colleges'));
+        return redirect()->route('admin.programs.index');
     }
 
     /**
@@ -162,10 +162,10 @@ class ProgramController extends Controller
                     'colleges'   => $colleges,
                     'formAction' => route('admin.programs.update', urlencode(Crypt::encrypt($program->id))),
                 ])->render();
-                return response()->json(['html' => $html, 'css' => asset('css/programs-form.css')]);
+                return response()->json(['html' => $html]);
             }
 
-            return view('admin.programs.edit', compact('program', 'colleges'));
+            return redirect()->route('admin.programs.index');
         } catch (\Exception $e) {
             Log::error('Error editing program', ['error' => $e->getMessage()]);
             if ($request->ajax()) {

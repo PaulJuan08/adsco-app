@@ -65,7 +65,7 @@ class AssignmentController extends Controller
             return response()->json(['html' => $html]);
         }
 
-        return view('teacher.assignments.create');
+        return redirect()->route('teacher.assignments.index');
     }
 
     public function store(Request $request)
@@ -92,7 +92,7 @@ class AssignmentController extends Controller
         Assignment::create($validated);
 
         if ($request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Assignment created successfully.', 'redirect' => route('teacher.todo.index', ['type' => 'assignment'])]);
+            return response()->json(['message' => 'Assignment created successfully.', 'redirect' => route('teacher.assignments.index')]);
         }
 
         return redirect()->route('teacher.assignments.index')
@@ -128,7 +128,7 @@ class AssignmentController extends Controller
             return response()->json(['html' => $html]);
         }
 
-        return view('teacher.assignments.edit', compact('assignment', 'encryptedId'));
+        return redirect()->route('teacher.assignments.index');
     }
 
     public function update(Request $request, $encryptedId)

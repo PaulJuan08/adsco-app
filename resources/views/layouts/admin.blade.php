@@ -26,7 +26,10 @@
     
     <!-- Layout CSS (includes sidebar, dropdown, badge, footer styles) -->
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
-    
+
+    <!-- Rich Text Editor -->
+    @vite(['resources/js/quill-editor.js'])
+
     @stack('styles')
 </head>
 <body>
@@ -125,6 +128,12 @@
                     <span>Enrollments</span>
                 </a>
 
+                <!-- Discussions -->
+                <a href="{{ route('admin.discussions.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.discussions.*') || request()->routeIs('admin.courses.discussions*') ? 'active' : '' }}">
+                    <i class="fas fa-comments"></i>
+                    <span>Discussions</span>
+                </a>
+
                 <!-- Announcements -->
                 <a href="{{ route('admin.announcements.index') }}" class="sidebar-nav-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}">
                     <i class="fas fa-bullhorn"></i>
@@ -203,7 +212,7 @@
     <style>
         #crudModalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(3px);z-index:9000;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;}
         #crudModalOverlay.open{visibility:visible;opacity:1;pointer-events:all;}
-        #crudModalBox{position:fixed;top:50%;left:50%;z-index:9001;width:calc(100% - 2rem);max-width:680px;max-height:90vh;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(85,43,32,.28);overflow:hidden;display:flex;flex-direction:column;visibility:hidden;opacity:0;pointer-events:none;transform:translate(-50%,calc(-50% - 20px)) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,visibility .25s ease;}
+        #crudModalBox{position:fixed;top:50%;left:50%;z-index:9001;width:calc(100% - 2rem);max-width:860px;max-height:90vh;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(85,43,32,.28);overflow:hidden;display:flex;flex-direction:column;visibility:hidden;opacity:0;pointer-events:none;transform:translate(-50%,calc(-50% - 20px)) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,visibility .25s ease;}
         #crudModalBox.open{visibility:visible;opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1);}
     </style>
     <div id="crudModalOverlay" onclick="closeCrudModal()"></div>
@@ -218,7 +227,7 @@
     <script>
         var _crudLoadedCss = {};
         function openCrudModal(url, title, maxWidth) {
-            document.getElementById('crudModalBox').style.maxWidth = maxWidth || '680px';
+            document.getElementById('crudModalBox').style.maxWidth = maxWidth || '860px';
             document.getElementById('crudModalTitle').textContent = title;
             document.getElementById('crudModalBody').innerHTML = '<div style="text-align:center;padding:2rem;color:#552b20;font-size:2rem;"><i class="fas fa-spinner fa-spin"></i></div>';
             document.getElementById('crudModalOverlay').classList.add('open');
@@ -245,6 +254,7 @@
             document.body.style.overflow = '';
         }
         function _initCrudForm() {
+            if (window.initQuillEditors) window.initQuillEditors(document.getElementById('crudModalBody'));
             var form = document.querySelector('#crudModalBody form[method="POST"], #crudModalBody form[method="post"]');
             if (!form || form.dataset.noCrud) return;
             form.addEventListener('submit', function(e) {

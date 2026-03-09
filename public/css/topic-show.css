@@ -991,6 +991,10 @@
 /* Size variants */
 .modal-box--pdf {
     background: #1a1a1a;
+    width: 60vw;
+    max-width: 60vw;
+    height: 85vh;
+    max-height: 85vh;
 }
 
 .modal-box--video,
@@ -1554,6 +1558,102 @@
     color: #b45309;
 }
 
+/* ── Google Drive fallback bar ── */
+.drive-fallback-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: -2px;
+    margin-bottom: 12px;
+}
+.drive-fallback-bar i { color: #4285f4; }
+.drive-fallback-bar a {
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: auto;
+}
+.drive-fallback-bar a:hover { text-decoration: underline; }
+
+/* ── Inline PDF viewer ── */
+.pdf-inline-wrapper {
+    width: 100%;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 12px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+.pdf-inline-wrapper iframe {
+    width: 100%;
+    height: 700px;
+    border: none;
+    display: block;
+}
+.pdf-inline-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.75rem;
+    background: #1e293b;
+    gap: 0.5rem;
+}
+.pdf-inline-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.pdf-inline-btns {
+    display: flex;
+    gap: 0.3rem;
+}
+.pdf-inline-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.pdf-inline-btn:hover { background: rgba(255,255,255,0.28); }
+.pdf-inline-open-btn {
+    width: auto;
+    padding: 0 10px;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+/* Fullscreen state */
+.pdf-inline-wrapper.pdf-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    width: 100vw !important;
+}
+.pdf-inline-wrapper.pdf-fullscreen iframe {
+    height: calc(100vh - 40px);
+}
+
 /* ── YouTube hover-to-play preview ── */
 .yt-preview {
     position: relative;
@@ -1660,3 +1760,36 @@
 
 .direct-preview.playing .yt-thumb    { opacity: 1 !important; }
 .direct-preview.playing .yt-play-overlay { opacity: 0; }
+/*----------------------------------------
+  CARD STATUS BADGE
+----------------------------------------*/
+.card-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 3px;
+}
+.card-status-badge.published {
+    background: rgba(72,187,120,0.25);
+    color: #d1fae5;
+    border: 1px solid rgba(72,187,120,0.4);
+}
+.card-status-badge.draft {
+    background: rgba(237,137,54,0.25);
+    color: #fed7aa;
+    border: 1px solid rgba(237,137,54,0.4);
+}
+.card-status-badge.active {
+    background: rgba(72,187,120,0.25);
+    color: #d1fae5;
+    border: 1px solid rgba(72,187,120,0.4);
+}
+.card-status-badge.inactive {
+    background: rgba(245,101,101,0.25);
+    color: #fecaca;
+    border: 1px solid rgba(245,101,101,0.4);
+}

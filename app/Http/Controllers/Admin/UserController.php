@@ -156,7 +156,7 @@ class UserController extends Controller
             ];
         });
 
-        return view('admin.users.create', compact('roleOptions', 'stats', 'suggestions', 'colleges'));
+        return redirect()->route('admin.users.index');
     }
     
     public function store(Request $request)
@@ -397,7 +397,7 @@ class UserController extends Controller
                 ];
             });
 
-            return view('admin.users.edit', compact('user', 'encryptedId', 'roleOptions', 'stats', 'suggestions', 'colleges'));
+            return redirect()->route('admin.users.index');
 
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
             abort(404, 'Invalid user ID');

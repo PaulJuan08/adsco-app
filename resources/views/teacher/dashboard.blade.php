@@ -237,21 +237,21 @@
                 
                 <div class="card-body">
                     <div class="quick-actions-grid">
-                        <a href="{{ route('teacher.topics.create') }}" class="action-card action-primary">
+                        <button onclick="openCrudModal('{{ route('teacher.topics.create') }}', 'New Topic')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;background:transparent;">
                             <div class="action-icon">
                                 <i class="fas fa-book"></i>
                             </div>
                             <div class="action-title">Create Topic</div>
                             <div class="action-subtitle">Add learning material</div>
-                        </a>
-                        
-                        <a href="{{ route('teacher.quizzes.create') }}" class="action-card action-warning">
+                        </button>
+
+                        <button onclick="openCrudModal('{{ route('teacher.quizzes.create') }}', 'New Quiz')" class="action-card action-warning" style="border:none;cursor:pointer;width:100%;background:transparent;">
                             <div class="action-icon">
                                 <i class="fas fa-question-circle"></i>
                             </div>
                             <div class="action-title">Create Quiz</div>
                             <div class="action-subtitle">Add new quiz/test</div>
-                        </a>
+                        </button>
                         
                         @if(Route::has('teacher.grades.index'))
                         <a href="{{ route('teacher.grades.index') }}" class="action-card action-success">

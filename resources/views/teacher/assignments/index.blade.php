@@ -199,7 +199,7 @@
                             <i class="fas fa-chart-bar"></i> Progress
                         </a>
                         <div class="dropdown-divider"></div>
-                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ $encId }}', '{{ addslashes($assignment->title) }}')" class="dropdown-item text-danger">
+                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ route('teacher.assignments.destroy', $encId) }}', '{{ addslashes($assignment->title) }}')" class="dropdown-item text-danger">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -263,8 +263,8 @@ document.addEventListener('click', function(e) {
 window.addEventListener('scroll', function() {
     document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
 }, true);
-function confirmDeleteItem(encId, title) {
-    var doDelete = function () { ajaxDelete('{{ url("teacher/assignments") }}/' + encId); };
+function confirmDeleteItem(deleteUrl, title) {
+    var doDelete = function () { ajaxDelete(deleteUrl); };
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             title: 'Delete Assignment?',

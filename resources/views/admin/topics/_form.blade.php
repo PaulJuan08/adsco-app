@@ -19,7 +19,7 @@
 
     <div style="margin-bottom:1rem;">
         <label style="display:block;font-size:.8125rem;font-weight:600;color:#374151;margin-bottom:.4rem;">Description</label>
-        <textarea name="description" rows="2" placeholder="Topic description..."
+        <textarea name="description" data-quill rows="2" placeholder="Topic description..."
                   style="width:100%;padding:.55rem .75rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;resize:vertical;outline:none;box-sizing:border-box;">{{ old('description', $topic->description ?? '') }}</textarea>
     </div>
 

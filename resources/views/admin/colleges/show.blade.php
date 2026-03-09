@@ -43,22 +43,6 @@
                 </div>
             </div>
             
-            <!-- Statistics Grid -->
-            <div class="stats-grid-small">
-                <div class="stat-box">
-                    <div class="stat-box-value">{{ $college->students_count ?? 0 }}</div>
-                    <div class="stat-box-label">Total Students</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-value">{{ $programs->count() }}</div>
-                    <div class="stat-box-label">Programs</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-value">{{ $college->created_at->format('M Y') }}</div>
-                    <div class="stat-box-label">Established</div>
-                </div>
-            </div>
-            
             <!-- Detailed Information -->
             <div class="details-grid">
                 <div class="detail-section">
@@ -94,10 +78,6 @@
                     <div class="detail-section-title">
                         <i class="fas fa-chart-bar"></i>
                         Statistics
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-label">College ID</div>
-                        <div class="detail-value">#{{ $college->id }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Created</div>

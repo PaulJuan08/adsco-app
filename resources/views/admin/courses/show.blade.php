@@ -20,7 +20,13 @@
         <div class="card-header">
             <div class="card-title-group">
                 <div class="card-icon"><i class="fas fa-book"></i></div>
-                <h1 class="card-title">{{ $course->title }}</h1>
+                <div>
+                    <h1 class="card-title">{{ $course->title }}</h1>
+                    <span class="card-status-badge {{ $course->is_published ? 'published' : 'draft' }}">
+                        <i class="fas {{ $course->is_published ? 'fa-check-circle' : 'fa-clock' }}"></i>
+                        {{ $course->is_published ? 'Published' : 'Draft' }}
+                    </span>
+                </div>
             </div>
             <div class="top-actions">
                 <a href="{{ route('admin.courses.discussions', $encryptedId) }}" class="top-action-btn">
@@ -40,27 +46,6 @@
             <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ session('error') }}</div>
             @endif
 
-            <div class="course-preview">
-                <div class="course-preview-avatar"><i class="fas fa-book"></i></div>
-                <div class="course-preview-content">
-                    <h2 class="course-preview-title">{{ $course->title }}</h2>
-                    <div class="course-preview-meta">
-                        <span class="course-preview-badge {{ $course->is_published ? 'published' : 'draft' }}">
-                            <i class="fas {{ $course->is_published ? 'fa-check-circle' : 'fa-pen' }}"></i>
-                            {{ $course->is_published ? 'Published' : 'Draft' }}
-                        </span>
-                        <span><i class="fas fa-code"></i> {{ $course->course_code }}</span>
-                        <span><i class="fas fa-star"></i> {{ $course->credits ?? 3 }} Credits</span>
-                        @if($course->teacher)
-                            <span><i class="fas fa-chalkboard-teacher"></i> {{ $course->teacher->f_name }} {{ $course->teacher->l_name }}</span>
-                        @endif
-                        @if($course->start_date)
-                            <span><i class="fas fa-calendar-alt"></i> Starts: {{ $course->start_date->format('M d, Y') }}</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
             @php
                 $enrolledCount   = $course->students_count ?? 0;
                 $topicsCount     = $course->topics_count ?? 0;
@@ -68,38 +53,12 @@
                 $maxStudents     = $course->max_students ?? 'Unlimited';
             @endphp
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-value">{{ $enrolledCount }}</div>
-                    <div class="stat-label">Enrolled Students</div>
-                    @if(is_numeric($maxStudents))
-                        <div class="stat-sub">Max: {{ $maxStudents }}</div>
-                    @endif
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-list"></i></div>
-                    <div class="stat-value">{{ $topicsCount }}</div>
-                    <div class="stat-label">Total Topics</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value">{{ $publishedTopics }}</div>
-                    <div class="stat-label">Published Topics</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
-                    <div class="stat-value">{{ $course->created_at->format('M d') }}</div>
-                    <div class="stat-label">Created</div>
-                </div>
-            </div>
-
             <div class="two-column-layout">
                 <div class="form-column">
 
                     <div class="detail-section">
                         <h3 class="detail-section-title"><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="description-box">{{ $course->description ?? 'No description provided.' }}</div>
+                        <div class="description-box rich-text">{!! $course->description ?? 'No description provided.' !!}</div>
                     </div>
 
                     <div class="detail-section">
@@ -171,7 +130,7 @@
                                         </div>
                                     </div>
                                     <div class="topic-content">
-                                        <div class="topic-description">{{ $topic->description ?? 'No description provided.' }}</div>
+                                        <div class="topic-description rich-text">{!! $topic->description ?? 'No description provided.' !!}</div>
                                     </div>
                                 </div>
                                 @endforeach
@@ -354,9 +313,9 @@
                         <button onclick="openAddTopicModal()" class="quick-action-link">
                             <i class="fas fa-plus-circle"></i><span>Add Topics</span>
                         </button>
-                        <a href="{{ route('admin.courses.edit', $encryptedId) }}" class="quick-action-link">
+                        <button onclick="openCrudModal('{{ route('admin.courses.edit', $encryptedId) }}', 'Edit Course')" class="quick-action-link" style="border:none;cursor:pointer;width:100%;background:transparent;">
                             <i class="fas fa-edit"></i><span>Edit Course Details</span>
-                        </a>
+                        </button>
                         <a href="{{ route('admin.courses.index') }}" class="quick-action-link">
                             <i class="fas fa-list"></i><span>All Courses</span>
                         </a>
@@ -684,8 +643,8 @@ function renderAvailableTopics(topics) {
         container.innerHTML = `
             <div class="empty-state"><i class="fas fa-folder-open"></i><h3>No Topics Available</h3>
             <p>All topics are already added to this course.</p>
-            <a href="{{ route('admin.topics.create') }}" class="btn-sm btn-sm-primary" style="margin-top:1rem;">
-                <i class="fas fa-plus"></i> Create New Topic</a></div>`;
+            <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'New Topic')" class="btn-sm btn-sm-primary" style="margin-top:1rem;border:none;cursor:pointer;">
+                <i class="fas fa-plus"></i> Create New Topic</button></div>`;
         return;
     }
     container.innerHTML = topics.map(topic => {

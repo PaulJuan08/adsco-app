@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('.sidebar').classList.toggle('collapsed');
         });
     }
-    
+
     // Auto-dismiss alerts
     setTimeout(() => {
         const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');

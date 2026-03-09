@@ -125,9 +125,9 @@
                 <i class="fas fa-book-open"></i>
                 <h3>No Courses Available</h3>
                 <p>Create a course first to manage enrollments.</p>
-                <a href="{{ route('admin.courses.create') }}" class="btn btn-primary">
+                <button onclick="openCrudModal('{{ route('admin.courses.create') }}', 'New Course')" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Create Course
-                </a>
+                </button>
             </div>
             @endforelse
         </div>

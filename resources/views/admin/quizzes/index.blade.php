@@ -75,9 +75,9 @@
             @endif
         </form>
         <div style="display:flex;gap:.5rem;align-items:center;">
-            <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary">
+            <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary">
                 <i class="fas fa-plus-circle"></i> New Quiz
-            </a>
+            </button>
             <a href="{{ route('admin.todo.progress', ['type' => 'quiz']) }}" class="btn-xs btn-xs-outline">
                 <i class="fas fa-chart-bar"></i> Progress
             </a>
@@ -194,7 +194,7 @@
                             <i class="fas fa-chart-bar"></i> Progress
                         </a>
                         <div class="dropdown-divider"></div>
-                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ $encId }}', '{{ addslashes($quiz->title) }}')" class="dropdown-item text-danger">
+                        <button onclick="event.stopPropagation(); closeAllDropdowns(); confirmDeleteItem('{{ route('admin.quizzes.destroy', $encId) }}', '{{ addslashes($quiz->title) }}')" class="dropdown-item text-danger">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -209,7 +209,7 @@
         <p class="empty-title">No quizzes found</p>
         <p class="empty-text">{{ $search ? 'No results match your search.' : 'Create your first quiz to get started.' }}</p>
         <div style="display:flex;gap:.75rem;justify-content:center;">
-            <a href="{{ route('admin.quizzes.create') }}" class="btn-xs btn-xs-primary"><i class="fas fa-plus-circle"></i> New Quiz</a>
+            <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="btn-xs btn-xs-primary"><i class="fas fa-plus-circle"></i> New Quiz</button>
             @if($search)
             <a href="{{ route('admin.quizzes.index') }}" class="btn-xs btn-xs-outline"><i class="fas fa-times"></i> Clear Search</a>
             @endif
@@ -257,13 +257,13 @@ document.addEventListener('click', function(e) {
 window.addEventListener('scroll', function() {
     document.querySelectorAll('.action-dropdown-menu.open').forEach(function(d) { d.classList.remove('open'); });
 }, true);
-function confirmDeleteItem(encId, title) {
+function confirmDeleteItem(deleteUrl, title) {
     Swal.fire({
         title: 'Delete Quiz?',
         html: `<strong>"${title}"</strong> and all its attempts will be permanently deleted.`,
         icon: 'warning', showCancelButton: true,
         confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', confirmButtonText: 'Yes, Delete',
-    }).then(function (r) { if (r.isConfirmed) ajaxDelete('{{ url("admin/quizzes") }}/' + encId); });
+    }).then(function (r) { if (r.isConfirmed) ajaxDelete(deleteUrl); });
 }
 </script>
 @endpush

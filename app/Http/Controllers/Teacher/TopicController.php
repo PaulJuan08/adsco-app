@@ -92,7 +92,7 @@ class TopicController extends Controller
             ])->render();
             return response()->json(['html' => $html]);
         }
-        return view('teacher.topics.create');
+        return redirect()->route('teacher.topics.index');
     }
 
     public function store(Request $request)
@@ -210,7 +210,7 @@ class TopicController extends Controller
                 return response()->json(['html' => $html]);
             }
 
-            return view('teacher.topics.edit', compact('topic'));
+            return redirect()->route('teacher.topics.index');
 
         } catch (\Exception $e) {
             Log::error('Teacher error editing topic', [

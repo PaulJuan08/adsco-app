@@ -245,13 +245,18 @@ class TodoController extends Controller
             'attachment' => 'nullable|file|mimes:pdf,doc,docx,txt,png,jpg,jpeg|max:10240',
         ]);
 
-        $attachmentPath = null;
+        $assignment = Assignment::findOrFail($assignmentId);
+        $isLate = $assignment->due_date && now()->isAfter($assignment->due_date);
+
+        $existing = AssignmentSubmission::where('assignment_id', $assignmentId)
+            ->where('student_id', $studentId)
+            ->latest()
+            ->first();
+
+        $attachmentPath = $existing?->attachment_path;
         if ($request->hasFile('attachment')) {
             $attachmentPath = $request->file('attachment')->store('assignments', 'public');
         }
-
-        $assignment = Assignment::findOrFail($assignmentId);
-        $isLate = $assignment->due_date && now()->isAfter($assignment->due_date);
 
         AssignmentSubmission::updateOrCreate(
             ['assignment_id' => $assignmentId, 'student_id' => $studentId],

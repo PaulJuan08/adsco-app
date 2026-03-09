@@ -391,7 +391,7 @@
                         <div style="flex: 1;">
                             <div class="assignment-title">{{ $assignment->title }}</div>
                             <div class="assignment-course">
-                                <i class="fas fa-book"></i> {{ $assignment->course->course_name ?? 'No Course' }}
+                                <i class="fas fa-book"></i> {{ $assignment->course->title ?? 'No Course' }}
                             </div>
                         </div>
                         <span class="status-badge {{ $statusClass }}">

@@ -325,11 +325,11 @@
                 </span>
                 @endif
                 <span class="meta-badge">
-                    <i class="fas fa-book"></i> {{ $assignment->course->course_name ?? 'No Course' }}
+                    <i class="fas fa-book"></i> {{ $assignment->course->title ?? 'No Course' }}
                 </span>
                 @if($assignment->topic)
                 <span class="meta-badge">
-                    <i class="fas fa-tag"></i> {{ $assignment->topic->name }}
+                    <i class="fas fa-tag"></i> {{ $assignment->topic->title }}
                 </span>
                 @endif
             </div>
@@ -353,8 +353,8 @@
                     <h3 class="detail-section-title">
                         <i class="fas fa-align-left"></i> Description
                     </h3>
-                    <div class="description-box">
-                        {{ $assignment->description ?? 'No description provided.' }}
+                    <div class="description-box rich-text">
+                        {!! $assignment->description ?? 'No description provided.' !!}
                     </div>
                 </div>
 
@@ -364,8 +364,8 @@
                     <h3 class="detail-section-title">
                         <i class="fas fa-list-ol"></i> Instructions
                     </h3>
-                    <div class="instructions-box">
-                        {!! nl2br(e($assignment->instructions)) !!}
+                    <div class="instructions-box rich-text">
+                        {!! $assignment->instructions !!}
                     </div>
                 </div>
                 @endif

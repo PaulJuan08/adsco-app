@@ -333,7 +333,7 @@
                 </div>
                 <div class="form-group">
                     <label>Content <span style="color:#ef4444">*</span></label>
-                    <textarea name="content" id="editContent" required placeholder="Write the legal content here..."></textarea>
+                    <textarea name="content" id="editContent" data-quill="full" required placeholder="Write the legal content here..."></textarea>
                 </div>
                 <div class="form-check">
                     <input type="checkbox" name="is_published" id="editPublish" value="1">
@@ -384,7 +384,7 @@
         const base = "{{ url('admin/legals') }}";
         document.getElementById('editForm').action = base + '/' + id;
         document.getElementById('editTitle').value   = title;
-        document.getElementById('editContent').value = content;
+        window.setQuillContent('editContent', content);
         document.getElementById('editPublish').checked = isPublished;
         document.getElementById('editModal').classList.add('open');
     }
