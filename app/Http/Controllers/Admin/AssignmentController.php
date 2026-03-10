@@ -9,6 +9,8 @@ use App\Models\AssignmentSubmission;
 use App\Models\Topic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AssignmentController extends Controller
 {
@@ -24,7 +26,7 @@ class AssignmentController extends Controller
                   ->orWhere('description', 'like', "%{$search}%");
             }))
             ->latest()
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         $totalAssignments = Assignment::count();
         $publishedCount   = Assignment::where('is_published', 1)->count();
@@ -142,6 +144,17 @@ class AssignmentController extends Controller
     {
         $id = Crypt::decrypt($encryptedId);
         $assignment = Assignment::findOrFail($id);
+
+        // Clean up submission attachment files
+        foreach ($assignment->submissions as $submission) {
+            if ($submission->attachment_path && Storage::disk('public')->exists($submission->attachment_path)) {
+                Storage::disk('public')->delete($submission->attachment_path);
+            }
+        }
+        // Explicitly remove access/submission records before delete
+        DB::table('assignment_student_access')->where('assignment_id', $id)->delete();
+        $assignment->submissions()->delete();
+
         $assignment->delete();
 
         if (request()->ajax()) {

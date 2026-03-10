@@ -35,7 +35,7 @@
     @endif
 
     {{-- Stats --}}
-    <div class="stats-grid-compact">
+    <div class="stats-grid stats-grid-compact">
         <div class="stat-card stat-card-success">
             <div class="stat-header">
                 <div><div class="stat-label">Total Assignments</div><div class="stat-number">{{ number_format($totalAssignments) }}</div></div>

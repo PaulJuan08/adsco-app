@@ -5,11 +5,7 @@
 @push('styles')
 <style>
     /* Additional styles specific to audit logs page */
-    .icon-total { background: #e0e7ff; color: var(--primary); }
-    .icon-today { background: #dcfce7; color: var(--success); }
-    .icon-users { background: #fce7f3; color: #db2777; }
-    .icon-system { background: #fef3c7; color: var(--warning); }
-    
+
     /* Activity Timeline */
     .activity-timeline {
         position: relative;
@@ -141,72 +137,56 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="stats-grid">
+<div class="stats-grid stats-grid-compact">
     @php
         $totalLogs = $logs->total();
         $todayLogs = \App\Models\AuditLog::whereDate('created_at', today())->count();
         $userLogs = \App\Models\AuditLog::whereNotNull('user_id')->count();
         $systemLogs = \App\Models\AuditLog::whereNull('user_id')->count();
     @endphp
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-primary">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $totalLogs }}</div>
                 <div class="stat-label">Total Logs</div>
+                <div class="stat-number">{{ $totalLogs }}</div>
             </div>
-            <div class="stat-icon icon-total">
-                <i class="fas fa-history"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-history"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-database" style="margin-right: 4px;"></i> All time records
-        </div>
+        <div class="stat-info"><i class="fas fa-database"></i> All time records</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-warning">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $todayLogs }}</div>
                 <div class="stat-label">Today</div>
+                <div class="stat-number">{{ $todayLogs }}</div>
             </div>
-            <div class="stat-icon icon-today">
-                <i class="fas fa-calendar-day"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-clock" style="margin-right: 4px;"></i> Last 24 hours
-        </div>
+        <div class="stat-info"><i class="fas fa-clock"></i> Last 24 hours</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-success">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $userLogs }}</div>
                 <div class="stat-label">User Actions</div>
+                <div class="stat-number">{{ $userLogs }}</div>
             </div>
-            <div class="stat-icon icon-users">
-                <i class="fas fa-user-cog"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-user-cog"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-users" style="margin-right: 4px;"></i> By users
-        </div>
+        <div class="stat-info"><i class="fas fa-users"></i> By users</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-info">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $systemLogs }}</div>
                 <div class="stat-label">System Events</div>
+                <div class="stat-number">{{ $systemLogs }}</div>
             </div>
-            <div class="stat-icon icon-system">
-                <i class="fas fa-server"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-server"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-cog" style="margin-right: 4px;"></i> Automated
-        </div>
+        <div class="stat-info"><i class="fas fa-cog"></i> Automated</div>
     </div>
 </div>
 

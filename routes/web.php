@@ -230,6 +230,7 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             
             // Progress Tracking (Unified)
             Route::get('/progress', [AdminTodoController::class, 'progress'])->name('progress');
+            Route::get('/progress/export', [AdminTodoController::class, 'exportProgress'])->name('progress.export');
             
             // Submissions
             Route::post('/submission/{submissionId}/grade', [AdminTodoController::class, 'gradeSubmission'])->name('submission.grade');
@@ -261,6 +262,13 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
             Route::get('/', [AdminLegalPageController::class, 'index'])->name('index');
             Route::put('/{legalPage}', [AdminLegalPageController::class, 'update'])->name('update');
             Route::patch('/{legalPage}/toggle-publish', [AdminLegalPageController::class, 'togglePublish'])->name('toggle-publish');
+        });
+
+        // ============ ANALYTICS ============
+        Route::prefix('analytics')->name('analytics.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('index');
+            Route::get('/students/{encryptedId}', [\App\Http\Controllers\Admin\AnalyticsController::class, 'student'])->name('student');
+            Route::get('/teachers/{encryptedId}', [\App\Http\Controllers\Admin\AnalyticsController::class, 'teacher'])->name('teacher');
         });
     });
     
@@ -384,8 +392,14 @@ Route::middleware(['auth', 'check.approval'])->group(function () {
 
         // ============ AJAX HELPERS (OUTSIDE TODO) ============
         Route::get('/colleges/{collegeId}/programs', [TeacherCourseController::class, 'getProgramsByCollege'])->name('colleges.programs');
+
+        // ============ ANALYTICS ============
+        Route::prefix('analytics')->name('analytics.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Teacher\AnalyticsController::class, 'index'])->name('index');
+            Route::get('/students/{encryptedId}', [\App\Http\Controllers\Teacher\AnalyticsController::class, 'student'])->name('student');
+        });
     });
-    
+
     // ==================== STUDENT ROUTES ====================
     Route::prefix('student')->name('student.')->middleware(['role:student'])->group(function () {
         // Dashboard

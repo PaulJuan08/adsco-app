@@ -1,0 +1,43 @@
+/* ─── CRUD Modal overlay & box ───────────────────────────────────────────── */
+#crudModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.52);
+    backdrop-filter: blur(3px);
+    z-index: 9000;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, visibility .25s ease;
+}
+#crudModalOverlay.open {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+}
+#crudModalBox {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 9001;
+    width: calc(100% - 2rem);
+    max-width: 860px;
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(85,43,32,.28);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, calc(-50% - 20px)) scale(.97);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .25s ease, visibility .25s ease;
+}
+#crudModalBox.open {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+}

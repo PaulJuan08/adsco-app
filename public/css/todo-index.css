@@ -181,13 +181,8 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--gray-200);
     box-shadow: var(--shadow-sm);
-    transition: all var(--transition-smooth);
 }
 
-.stats-grid-compact .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
 
 .stats-grid-compact .stat-header {
     margin-bottom: 0.75rem;

@@ -805,6 +805,85 @@ class TodoController extends Controller
     }
 
     /**
+     * Export progress as CSV (mirrors Teacher\TodoController::exportProgress)
+     */
+    public function exportProgress(Request $request)
+    {
+        $type       = $request->get('type', 'quiz');
+        $collegeId  = $request->get('college_id');
+        $programId  = $request->get('program_id');
+        $year       = $request->get('year');
+        $searchName = $request->get('search_name');
+        $itemId     = $request->get('item_id');
+
+        $filename = 'admin_progress_' . $type . '_' . now()->format('Y-m-d_His') . '.csv';
+
+        $applyUserFilters = function ($q) use ($collegeId, $programId, $year, $searchName) {
+            $q->where('role', 4);
+            if ($collegeId)  $q->where('college_id', $collegeId);
+            if ($programId)  $q->where('program_id', $programId);
+            if ($year)       $q->where('college_year', $year);
+            if ($searchName) {
+                $q->where(function ($sq) use ($searchName) {
+                    $sq->where('f_name', 'like', "%{$searchName}%")
+                       ->orWhere('l_name', 'like', "%{$searchName}%");
+                });
+            }
+        };
+
+        $callback = function () use ($type, $itemId, $applyUserFilters) {
+            $handle = fopen('php://output', 'w');
+
+            if ($type === 'quiz') {
+                fputcsv($handle, ['Student Name', 'Student ID', 'College', 'Program', 'Year', 'Quiz Title', 'Score', 'Percentage', 'Passed', 'Completed At']);
+                $query = QuizAttempt::with(['user.college', 'user.program', 'quiz'])
+                    ->whereHas('user', $applyUserFilters);
+                if ($itemId) $query->where('quiz_id', $itemId);
+                foreach ($query->latest('completed_at')->get() as $a) {
+                    fputcsv($handle, [
+                        $a->user->f_name . ' ' . $a->user->l_name,
+                        $a->user->student_id ?? 'N/A',
+                        $a->user->college->college_name ?? 'N/A',
+                        $a->user->program->program_name ?? 'N/A',
+                        $a->user->college_year ?? 'N/A',
+                        $a->quiz->title ?? 'N/A',
+                        $a->score ?? 'N/A',
+                        $a->percentage ? round($a->percentage) . '%' : 'N/A',
+                        $a->passed ? 'Yes' : 'No',
+                        $a->completed_at?->format('Y-m-d H:i:s') ?? 'N/A',
+                    ]);
+                }
+            } else {
+                fputcsv($handle, ['Student Name', 'Student ID', 'College', 'Program', 'Year', 'Assignment Title', 'Score', 'Status', 'Submitted At', 'Graded At']);
+                $query = AssignmentSubmission::with(['student.college', 'student.program', 'assignment'])
+                    ->whereHas('student', $applyUserFilters);
+                if ($itemId) $query->where('assignment_id', $itemId);
+                foreach ($query->latest('submitted_at')->get() as $s) {
+                    fputcsv($handle, [
+                        $s->student->f_name . ' ' . $s->student->l_name,
+                        $s->student->student_id ?? 'N/A',
+                        $s->student->college->college_name ?? 'N/A',
+                        $s->student->program->program_name ?? 'N/A',
+                        $s->student->college_year ?? 'N/A',
+                        $s->assignment->title ?? 'N/A',
+                        $s->score ?? 'Not graded',
+                        $s->status ?? 'N/A',
+                        $s->submitted_at?->format('Y-m-d H:i:s') ?? 'N/A',
+                        $s->graded_at?->format('Y-m-d H:i:s') ?? 'N/A',
+                    ]);
+                }
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
      * Clear todo-related caches
      */
     public function clearCache()

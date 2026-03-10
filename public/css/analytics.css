@@ -1,0 +1,554 @@
+/* ============================================
+   ANALYTICS - Shared styles for all roles
+   ============================================ */
+
+:root {
+    --primary:       #552b20;
+    --primary-dark:  #3d1f17;
+    --primary-light: rgba(85,43,32,0.10);
+    --gold:          #ddb238;
+    --orange:        #d3541b;
+    --teal:          #2a8a72;
+    --success:       #48bb78;
+    --danger:        #f56565;
+    --warning:       #ed8936;
+    --gray-100:      #f7fafc;
+    --gray-200:      #edf2f7;
+    --gray-300:      #e2e8f0;
+    --gray-400:      #cbd5e0;
+    --gray-500:      #a0aec0;
+    --gray-600:      #718096;
+    --gray-700:      #4a5568;
+    --gray-800:      #2d3748;
+    --gray-900:      #1a202c;
+    --radius:        8px;
+    --radius-lg:     12px;
+    --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md:     0 4px 12px rgba(0,0,0,0.10);
+}
+
+/* ── Page wrapper ─────────────────────────── */
+.analytics-page {
+    padding: 1.5rem;
+    max-width: 1400px;
+}
+
+/* ── Page header ──────────────────────────── */
+.analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.analytics-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.analytics-header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+.analytics-header-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.2;
+}
+.analytics-header-sub {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin-top: 0.15rem;
+}
+.analytics-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ── Tab navigation ──────────────────────── */
+.analytics-tabs {
+    display: flex;
+    gap: 0.375rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--gray-200);
+    padding-bottom: 0;
+    flex-wrap: wrap;
+}
+.analytics-tab {
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius) var(--radius) 0 0;
+    color: var(--gray-600);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 2px solid transparent;
+    border-bottom: none;
+    transition: all 0.2s;
+    position: relative;
+    bottom: -2px;
+}
+.analytics-tab:hover:not(.active) {
+    background: var(--gray-100);
+    color: var(--gray-800);
+    text-decoration: none;
+}
+.analytics-tab.active {
+    background: white;
+    color: var(--primary);
+    border-color: var(--gray-200);
+    border-bottom-color: white;
+    font-weight: 600;
+}
+/* Students tab — teal */
+.analytics-tab.tab-students { color: #2a8a72; }
+.analytics-tab.tab-students:hover:not(.active) { background: rgba(42,138,114,0.08); color: #1e6b57; }
+.analytics-tab.tab-students.active { color: #1e6b57; border-color: rgba(42,138,114,0.3); border-bottom-color: white; }
+/* Teachers tab — gold */
+.analytics-tab.tab-teachers { color: #b8860b; }
+.analytics-tab.tab-teachers:hover:not(.active) { background: rgba(221,178,56,0.1); color: #8a6508; }
+.analytics-tab.tab-teachers.active { color: #8a6508; border-color: rgba(221,178,56,0.4); border-bottom-color: white; }
+
+/* Print button inside tabs row */
+.analytics-tabs { align-items: center; }
+.btn-analytics-print {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    margin-bottom: 2px;
+    transition: background 0.2s;
+}
+.btn-analytics-print:hover { background: var(--primary-dark); color: white; text-decoration: none; }
+
+/* ── Stats grid (analytics pages use standard stats-grid stats-grid-compact) ── */
+
+
+/* Additional stat-card color variants for analytics pages */
+.stat-card-orange::before {
+    background: linear-gradient(135deg, #d3541b, #b84513);
+}
+
+.stat-card-orange .stat-icon {
+    background: linear-gradient(135deg, rgba(211,84,27,0.15), rgba(211,84,27,0.07));
+    color: #d3541b;
+}
+
+.stat-card-danger::before {
+    background: linear-gradient(135deg, #f56565, #c53030);
+}
+
+.stat-card-danger .stat-icon {
+    background: linear-gradient(135deg, rgba(245,101,101,0.15), rgba(245,101,101,0.07));
+    color: #c53030;
+}
+
+/* Override icon bg when analytics.css redefines --primary-light as rgba */
+.stat-card-primary .stat-icon {
+    background: linear-gradient(135deg, rgba(85,43,32,0.12), rgba(85,43,32,0.05));
+    color: #552b20;
+}
+
+/* Ensure stat-card text is clearly visible on analytics pages.
+   dashboard.css uses a gradient + -webkit-text-fill-color:transparent which
+   can render faintly when CSS variables are overridden by this file. */
+.stats-grid .stat-number {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #111827;
+    color: #111827;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+}
+.stats-grid .stat-label {
+    color: #4b5563;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Charts grid ──────────────────────────── */
+.analytics-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+.chart-card-a {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+}
+.chart-card-a.chart-full { grid-column: 1 / -1; }
+.chart-card-a.chart-wide { grid-column: 1 / -1; }
+.chart-card-a-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+}
+.chart-card-a-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.chart-card-a-title i { color: var(--primary); }
+.chart-container {
+    position: relative;
+    flex: 1;
+    min-height: 160px;
+    max-height: 260px;
+}
+
+/* ── Doughnut group (multiple doughnuts in one card) ── */
+.doughnut-group {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+.doughnut-item {
+    flex: 1;
+    min-width: 180px;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.doughnut-item-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+.doughnut-container {
+    position: relative;
+    width: 100%;
+    height: 210px;
+}
+
+/* ── Bar group (multiple bar charts stacked in one card) ── */
+.bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.bar-section-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Action buttons ──────────────────────── */
+.btn-analytics {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-analytics:hover { text-decoration: none; transform: translateY(-1px); }
+.btn-analytics-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+.btn-analytics-secondary:hover { background: var(--gray-200); color: var(--gray-900); }
+.btn-analytics-success { background: #38a169; color: white; }
+.btn-analytics-success:hover { background: #2f855a; color: white; box-shadow: 0 4px 10px rgba(56,161,105,0.3); }
+.btn-analytics-primary { background: var(--primary); color: white; }
+.btn-analytics-primary:hover { background: var(--primary-dark); color: white; box-shadow: 0 4px 10px rgba(85,43,32,0.25); }
+.btn-analytics-back { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+.btn-analytics-back:hover { background: var(--gray-200); color: var(--gray-900); }
+.btn-analytics-print:hover { background: var(--primary-dark); color: white; box-shadow: 0 4px 10px rgba(85,43,32,0.25); }
+
+/* ── Profile header (student/teacher detail) ── */
+.profile-header-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+.profile-header-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    flex-shrink: 0;
+    border: 3px solid var(--primary-light);
+}
+.profile-header-avatar img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.profile-header-info { flex: 1; }
+.profile-header-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+.profile-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+}
+.profile-meta-item {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.profile-meta-item i { color: var(--gray-400); }
+
+/* ── Filter bar (inside analytics) ──────── */
+.analytics-filter-bar {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+.analytics-filter-bar .filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.analytics-filter-bar .filter-label { font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.04em; }
+.analytics-filter-bar select,
+.analytics-filter-bar input[type="text"] {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    background: white;
+    min-width: 150px;
+}
+.analytics-filter-bar select:focus,
+.analytics-filter-bar input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* ── Table ───────────────────────────────── */
+.analytics-table-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+.analytics-table-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.analytics-table-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.analytics-table-title i { color: var(--primary); }
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+.analytics-table th {
+    background: var(--gray-100);
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+}
+.analytics-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-100);
+    color: #111827;
+    vertical-align: middle;
+}
+.analytics-table tbody tr:last-child td { border-bottom: none; }
+.analytics-table tbody tr:hover td { background: var(--gray-100); }
+.analytics-table .td-name { font-weight: 600; color: #111827; }
+.analytics-table .td-muted { color: #374151; font-size: 0.8rem; }
+
+/* ── Badges / pills ──────────────────────── */
+.badge-a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.badge-pass    { background: rgba(72,187,120,0.15);  color: #276749; }
+.badge-fail    { background: rgba(245,101,101,0.15); color: #c53030; }
+.badge-graded  { background: rgba(42,138,114,0.12);  color: var(--teal); }
+.badge-pending { background: rgba(237,137,54,0.15);  color: #c05621; }
+.badge-submitted { background: rgba(66,153,225,0.15); color: #2b6cb0; }
+.badge-late    { background: rgba(245,101,101,0.12); color: #c53030; }
+
+/* ── Progress bar ────────────────────────── */
+.progress-bar-wrap {
+    background: var(--gray-200);
+    border-radius: 999px;
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--orange));
+    transition: width 0.4s ease;
+}
+.progress-bar-fill.fill-good   { background: linear-gradient(90deg, var(--teal), #48bb78); }
+.progress-bar-fill.fill-medium { background: linear-gradient(90deg, #d69e2e, #ed8936); }
+.progress-bar-fill.fill-low    { background: linear-gradient(90deg, var(--primary), #c53030); }
+
+/* ── No data state ───────────────────────── */
+.analytics-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--gray-500);
+}
+.analytics-empty i { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; display: block; }
+.analytics-empty p { font-size: 0.95rem; }
+
+/* ── Course progress cards (student) ─────── */
+.course-progress-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+.course-progress-item {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+.course-progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.course-progress-name { font-weight: 600; color: var(--gray-800); font-size: 0.9rem; }
+.course-progress-pct { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
+.course-progress-meta { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--gray-500); margin-top: 0.35rem; }
+
+/* ── Print styles ────────────────────────── */
+@media print {
+    .no-print,
+    .sidebar,
+    .sidebar-toggle-btn,
+    .sidebar-overlay,
+    .analytics-tabs,
+    .analytics-filter-bar,
+    .analytics-header-actions,
+    .progress-action-bar,
+    .pagination-wrapper,
+    nav,
+    header { display: none !important; }
+
+    .content-wrapper,
+    .main-content { margin: 0 !important; padding: 0 !important; }
+
+    .analytics-charts-grid { grid-template-columns: 1fr 1fr !important; }
+    .chart-card-a { min-height: auto !important; break-inside: avoid; }
+    canvas { max-height: 180px !important; }
+
+    body, html { background: white !important; }
+    .stat-card-a { border: 1px solid #ccc !important; box-shadow: none !important; }
+    .chart-card-a { border: 1px solid #ccc !important; box-shadow: none !important; }
+
+    @page { margin: 1.5cm; }
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 900px) {
+    .analytics-charts-grid { grid-template-columns: 1fr; }
+    .chart-card-a.chart-full,
+    .chart-card-a.chart-wide { grid-column: auto; }
+}
+@media (max-width: 600px) {
+    .analytics-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .analytics-header { flex-direction: column; align-items: flex-start; }
+    .analytics-filter-bar { flex-direction: column; }
+    .analytics-filter-bar select,
+    .analytics-filter-bar input { min-width: 100%; }
+}

@@ -4,6 +4,7 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/progress.css') }}">
+<link rel="stylesheet" href="{{ asset('css/analytics.css') }}">
 @endpush
 
 @section('content')
@@ -24,6 +25,17 @@
     @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
     @endif
+
+    {{-- Action Bar --}}
+    <div class="no-print" style="display:flex;justify-content:flex-end;gap:.6rem;margin-bottom:.75rem;">
+        <a href="{{ route('teacher.todo.progress.export', request()->query()) }}"
+           class="btn-analytics btn-analytics-success">
+            <i class="fas fa-download"></i> Export CSV
+        </a>
+        <button onclick="window.print()" class="btn-analytics btn-analytics-secondary">
+            <i class="fas fa-print"></i> Print
+        </button>
+    </div>
 
     {{-- Tabs --}}
     <div class="progress-tabs">

@@ -37,8 +37,8 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card stat-card-primary">
+    <div class="stats-grid stats-grid-compact">
+        <a href="{{ route('student.courses.index') }}" class="stat-card stat-card-primary clickable-card">
             <div class="stat-header">
                 <div>
                     <div class="stat-label">Enrolled Courses</div>
@@ -48,11 +48,11 @@
                     <i class="fas fa-book"></i>
                 </div>
             </div>
-            <a href="{{ route('student.courses.index') }}" class="stat-link">
+            <div class="stat-link">
                 View courses <i class="fas fa-arrow-right"></i>
-            </a>
-        </div>
-        
+            </div>
+        </a>
+
         <div class="stat-card stat-card-success">
             <div class="stat-header">
                 <div>
@@ -63,9 +63,9 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
             </div>
-            <span class="stat-link" style="cursor: default;">
+            <div class="stat-info">
                 <i class="fas fa-graduation-cap"></i> {{ $stats['completed_courses'] ?? 0 }}/{{ $stats['total_courses'] ?? 0 }} courses
-            </span>
+            </div>
         </div>
 
         <div class="stat-card stat-card-info">
@@ -78,9 +78,9 @@
                     <i class="fas fa-chart-pie"></i>
                 </div>
             </div>
-            <span class="stat-link" style="cursor: default;">
+            <div class="stat-info">
                 <i class="fas fa-list-check"></i> {{ $stats['completed_topics'] ?? 0 }}/{{ $stats['total_topics'] ?? 0 }} topics
-            </span>
+            </div>
         </div>
     </div>
 

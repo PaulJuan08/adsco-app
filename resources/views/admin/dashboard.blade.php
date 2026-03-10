@@ -502,7 +502,7 @@
                 
                 <div class="card-body">
                     <div class="quick-actions-grid">
-                        <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'New Topic')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.topics.create') }}', 'New Topic')" class="action-card action-primary">
                             <div class="action-icon">
                                 <i class="fas fa-book"></i>
                             </div>
@@ -510,7 +510,7 @@
                             <div class="action-subtitle">Add new learning material</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="action-card action-warning" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.quizzes.create') }}', 'New Quiz')" class="action-card action-warning">
                             <div class="action-icon">
                                 <i class="fas fa-question-circle"></i>
                             </div>
@@ -518,7 +518,7 @@
                             <div class="action-subtitle">Add new quiz/test</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="action-card action-info" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.assignments.create') }}', 'New Assignment')" class="action-card action-info">
                             <div class="action-icon">
                                 <i class="fas fa-tasks"></i>
                             </div>
@@ -526,7 +526,7 @@
                             <div class="action-subtitle">Add new assignment</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('admin.courses.create') }}', 'New Course')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.courses.create') }}', 'New Course')" class="action-card action-primary">
                             <div class="action-icon">
                                 <i class="fas fa-book-medical"></i>
                             </div>
@@ -534,7 +534,7 @@
                             <div class="action-subtitle">Setup new academic course</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('admin.users.create') }}', 'New User')" class="action-card action-success" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.users.create') }}', 'New User')" class="action-card action-success">
                             <div class="action-icon">
                                 <i class="fas fa-user-plus"></i>
                             </div>
@@ -542,7 +542,7 @@
                             <div class="action-subtitle">Register staff or student</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('admin.colleges.create') }}', 'New College')" class="action-card action-info" style="border:none;cursor:pointer;width:100%;text-align:left;">
+                        <button onclick="openCrudModal('{{ route('admin.colleges.create') }}', 'New College')" class="action-card action-info">
                             <div class="action-icon">
                                 <i class="fas fa-university"></i>
                             </div>
@@ -767,19 +767,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.transition = 'width 1s cubic-bezier(0.4, 0, 0.2, 1)';
             el.style.width = width + '%';
         }, 200 + (index * 30));
-    });
-
-    // ============================================
-    // 4. STAGGER ANIMATION FOR STAT CARDS
-    // ============================================
-    document.querySelectorAll('.stat-card').forEach(function(el, index) {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        setTimeout(function() {
-            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-        }, 100 + (index * 80));
     });
 
     // ============================================

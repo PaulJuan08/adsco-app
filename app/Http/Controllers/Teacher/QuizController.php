@@ -49,7 +49,7 @@ class QuizController extends Controller
                   ->orWhere('description', 'like', "%{$search}%");
             }))
             ->latest()
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         $totalQuizzes   = $this->teacherQuizQuery($teacherId)->count();
         $publishedCount = $this->teacherQuizQuery($teacherId)->where('is_published', 1)->count();
@@ -440,7 +440,14 @@ class QuizController extends Controller
             $id = Crypt::decrypt($encryptedId);
             $teacherId = Auth::id();
             $quiz = $this->teacherQuizQuery($teacherId)->where('id', $id)->firstOrFail();
-            
+
+            // Explicitly delete child records to avoid FK constraint errors
+            $questionIds = QuizQuestion::where('quiz_id', $id)->pluck('id');
+            QuizOption::whereIn('quiz_question_id', $questionIds)->delete();
+            QuizQuestion::where('quiz_id', $id)->delete();
+            $quiz->attempts()->delete();
+            DB::table('quiz_student_access')->where('quiz_id', $id)->delete();
+
             $quiz->delete();
             
             // 🔥 FIX: Clear ALL quiz caches

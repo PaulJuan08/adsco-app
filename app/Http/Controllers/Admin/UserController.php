@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Mail\UserApprovedMail;
 use App\Models\College;
@@ -77,8 +78,8 @@ class UserController extends Controller
             }
             
             return $query->orderBy('created_at', 'desc')->paginate(10);
-        });
-        
+        })->withQueryString();
+
         return view('admin.users.index', compact('users', 'stats', 'roleNames'));
     }
     
@@ -573,16 +574,19 @@ class UserController extends Controller
             $userCollegeId = $user->college_id;
             $userProgramId = $user->program_id;
             
-            // If student, clean up assignment submission files first
+            // If student, clean up files and access records first
             if ($userRole == 4) {
                 foreach ($user->assignmentSubmissions as $submission) {
-                    if ($submission->attachment_path && 
+                    if ($submission->attachment_path &&
                         Storage::disk('public')->exists($submission->attachment_path)) {
                         Storage::disk('public')->delete($submission->attachment_path);
                     }
                 }
+                // Explicitly remove access records (in case FK cascade isn't set)
+                DB::table('quiz_student_access')->where('student_id', $user->id)->delete();
+                DB::table('assignment_student_access')->where('student_id', $user->id)->delete();
             }
-            
+
             // Delete the user - this will trigger:
             // 1. Model events for file cleanup
             // 2. Database cascade deletes for all related records (if foreign keys are set)

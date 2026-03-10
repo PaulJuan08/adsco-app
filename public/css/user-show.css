@@ -44,10 +44,11 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: var(--font-semibold, 600);
     text-decoration: none;
-    transition: opacity 0.2s;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.btn-back:hover { opacity: 0.85; color: var(--white, #fff); }
+.btn-back:hover { background: #0f172a; color: var(--white, #fff); transform: translateY(-1px); }
 
 /* ── User Card Shell ───────────────────────── */
 .user-card {
@@ -143,9 +144,9 @@
     font-size: 0.8125rem;
     font-weight: var(--font-semibold, 600);
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
 }
-.btn-reset-password:hover { opacity: 0.88; }
+.btn-reset-password:hover { background: #ea6c0a; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
 
 .btn-edit-user {
     display: inline-flex;
@@ -331,9 +332,9 @@
     font-size: 0.875rem;
     font-weight: var(--font-semibold, 600);
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
 }
-.btn-approve:hover { opacity: 0.88; }
+.btn-approve:hover { background: #38a169; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(72,187,120,0.3); }
 
 /* ── Learning Progress Tab ─────────────────── */
 .progress-section-heading {

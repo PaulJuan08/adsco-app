@@ -154,9 +154,13 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function booted()
     {
         static::deleting(function ($user) {
-            // Delete profile photo
-            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
-                Storage::disk('public')->delete($user->profile_photo);
+            // Delete profile photo (check both disks)
+            if ($user->profile_photo) {
+                if (Storage::disk('uploads')->exists($user->profile_photo)) {
+                    Storage::disk('uploads')->delete($user->profile_photo);
+                } elseif (Storage::disk('public')->exists($user->profile_photo)) {
+                    Storage::disk('public')->delete($user->profile_photo);
+                }
             }
 
             // Only handle file cleanup for assignment submissions
@@ -224,8 +228,14 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getProfilePhotoUrlAttribute(): ?string
     {
-        if ($this->profile_photo && Storage::disk('public')->exists($this->profile_photo)) {
-            return asset('storage/' . $this->profile_photo);
+        if (!$this->profile_photo) return null;
+        // New: stored in public/uploads/ (no symlink needed)
+        if (Storage::disk('uploads')->exists($this->profile_photo)) {
+            return Storage::disk('uploads')->url($this->profile_photo);
+        }
+        // Legacy: stored in storage/app/public/ via symlink
+        if (Storage::disk('public')->exists($this->profile_photo)) {
+            return Storage::disk('public')->url($this->profile_photo);
         }
         return null;
     }

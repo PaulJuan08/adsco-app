@@ -41,7 +41,7 @@ class ProgramController extends Controller
             });
         }
 
-        $programs = $query->latest()->paginate(15);
+        $programs = $query->latest()->paginate(15)->withQueryString();
 
         $totalPrograms        = Program::count();
         $activePrograms       = Program::where('status', 1)->count();

@@ -73,7 +73,7 @@
     @endif
 
     {{-- Summary Stats --}}
-    <div class="stats-grid-compact">
+    <div class="stats-grid stats-grid-compact">
         <div class="stat-card stat-card-primary clickable-card" onclick="window.location.href='{{ route('admin.todo.index', ['type' => 'quiz']) }}'">
             <div class="stat-header">
                 <div>

@@ -28,7 +28,12 @@
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
 
     <!-- Rich Text Editor -->
-    @vite(['resources/js/quill-editor.js'])
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+    <link rel="stylesheet" href="{{ asset('css/quill-editor.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script src="{{ asset('js/quill-editor.js') }}" defer></script>
+    <!-- Modal CSS -->
+    <link rel="stylesheet" href="{{ asset('css/modal.css') }}">
 
     @stack('styles')
 </head>
@@ -100,6 +105,12 @@
                     <i class="fas fa-comments"></i>
                     <span>Discussions</span>
                 </a>
+
+                <!-- My Progress -->
+                <a href="{{ route('student.progress.index') }}" class="sidebar-nav-item {{ request()->routeIs('student.progress.*') || request()->routeIs('student.grades.*') ? 'active' : '' }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>My Progress</span>
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -154,12 +165,6 @@
     @include('components.legal-modal')
 
     {{-- ─── CRUD Modal (shared infrastructure) ─── --}}
-    <style>
-        #crudModalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.52);backdrop-filter:blur(3px);z-index:9000;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;}
-        #crudModalOverlay.open{visibility:visible;opacity:1;pointer-events:all;}
-        #crudModalBox{position:fixed;top:50%;left:50%;z-index:9001;width:calc(100% - 2rem);max-width:680px;max-height:90vh;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(85,43,32,.28);overflow:hidden;display:flex;flex-direction:column;visibility:hidden;opacity:0;pointer-events:none;transform:translate(-50%,calc(-50% - 20px)) scale(.97);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s ease,visibility .25s ease;}
-        #crudModalBox.open{visibility:visible;opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1);}
-    </style>
     <div id="crudModalOverlay" onclick="closeCrudModal()"></div>
     <div id="crudModalBox">
         <div style="background:linear-gradient(135deg,#552b20 0%,#3d1f17 100%);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">

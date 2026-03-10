@@ -30,8 +30,8 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card stat-card-primary">
+    <div class="stats-grid stats-grid-compact">
+        <a href="{{ route('teacher.courses.index') }}" class="stat-card stat-card-primary clickable-card">
             <div class="stat-header">
                 <div>
                     <div class="stat-label">My Courses</div>
@@ -41,11 +41,11 @@
                     <i class="fas fa-book"></i>
                 </div>
             </div>
-            <a href="{{ route('teacher.courses.index') }}" class="stat-link">
+            <div class="stat-link">
                 View courses <i class="fas fa-arrow-right"></i>
-            </a>
-        </div>
-        
+            </div>
+        </a>
+
         <div class="stat-card stat-card-success">
             <div class="stat-header">
                 <div>
@@ -56,24 +56,24 @@
                     <i class="fas fa-users"></i>
                 </div>
             </div>
-            <span class="stat-link" style="cursor: default;">
+            <div class="stat-info">
                 <i class="fas fa-user-graduate"></i> Across all courses
-            </span>
+            </div>
         </div>
-        
+
         <div class="stat-card stat-card-info">
             <div class="stat-header">
                 <div>
                     <div class="stat-label">Today's Date</div>
-                    <div class="stat-number" style="font-size: 1.5rem;">{{ now()->format('M d') }}</div>
+                    <div class="stat-number">{{ now()->format('M d') }}</div>
                 </div>
                 <div class="stat-icon">
                     <i class="fas fa-calendar-day"></i>
                 </div>
             </div>
-            <span class="stat-link" style="cursor: default;">
+            <div class="stat-info">
                 <i class="fas fa-clock"></i> {{ now()->format('l') }}
-            </span>
+            </div>
         </div>
     </div>
 
@@ -237,7 +237,7 @@
                 
                 <div class="card-body">
                     <div class="quick-actions-grid">
-                        <button onclick="openCrudModal('{{ route('teacher.topics.create') }}', 'New Topic')" class="action-card action-primary" style="border:none;cursor:pointer;width:100%;background:transparent;">
+                        <button onclick="openCrudModal('{{ route('teacher.topics.create') }}', 'New Topic')" class="action-card action-primary">
                             <div class="action-icon">
                                 <i class="fas fa-book"></i>
                             </div>
@@ -245,7 +245,7 @@
                             <div class="action-subtitle">Add learning material</div>
                         </button>
 
-                        <button onclick="openCrudModal('{{ route('teacher.quizzes.create') }}', 'New Quiz')" class="action-card action-warning" style="border:none;cursor:pointer;width:100%;background:transparent;">
+                        <button onclick="openCrudModal('{{ route('teacher.quizzes.create') }}', 'New Quiz')" class="action-card action-warning">
                             <div class="action-icon">
                                 <i class="fas fa-question-circle"></i>
                             </div>

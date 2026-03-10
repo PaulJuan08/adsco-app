@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\DB;
+use App\Models\Quiz;
+use App\Models\Assignment;
 
 class Course extends Model
 {
@@ -68,6 +70,18 @@ class Course extends Model
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class, 'course_id');
+    }
+
+    // Relationship with quizzes
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class, 'course_id');
+    }
+
+    // Relationship with assignments
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class, 'course_id');
     }
 
     // Relationship with students

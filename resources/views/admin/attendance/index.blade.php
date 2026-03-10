@@ -7,10 +7,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     /* Additional styles specific to attendance page */
-    .icon-present { background: #dcfce7; color: var(--success); }
-    .icon-absent { background: #fee2e2; color: var(--danger); }
-    .icon-late { background: #fef3c7; color: var(--warning); }
-    .icon-total { background: #e0e7ff; color: var(--primary); }
     
     .date-filter {
         background: white;
@@ -62,65 +58,49 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="stats-grid">
-    <div class="stat-card">
+<div class="stats-grid stats-grid-compact">
+    <div class="stat-card stat-card-success">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $presentCount }}</div>
                 <div class="stat-label">Present</div>
+                <div class="stat-number">{{ $presentCount }}</div>
             </div>
-            <div class="stat-icon icon-present">
-                <i class="fas fa-user-check"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-check-circle" style="margin-right: 4px;"></i> On time
-        </div>
+        <div class="stat-info"><i class="fas fa-check-circle"></i> On time</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-danger">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $absentCount }}</div>
                 <div class="stat-label">Absent</div>
+                <div class="stat-number">{{ $absentCount }}</div>
             </div>
-            <div class="stat-icon icon-absent">
-                <i class="fas fa-user-times"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-user-times"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-times-circle" style="margin-right: 4px;"></i> Not present
-        </div>
+        <div class="stat-info"><i class="fas fa-times-circle"></i> Not present</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-warning">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $lateCount }}</div>
                 <div class="stat-label">Late</div>
+                <div class="stat-number">{{ $lateCount }}</div>
             </div>
-            <div class="stat-icon icon-late">
-                <i class="fas fa-clock"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-hourglass-half" style="margin-right: 4px;"></i> Arrived late
-        </div>
+        <div class="stat-info"><i class="fas fa-hourglass-half"></i> Arrived late</div>
     </div>
-    
-    <div class="stat-card">
+
+    <div class="stat-card stat-card-primary">
         <div class="stat-header">
             <div>
-                <div class="stat-number">{{ $totalUsers }}</div>
                 <div class="stat-label">Total Users</div>
+                <div class="stat-number">{{ $totalUsers }}</div>
             </div>
-            <div class="stat-icon icon-total">
-                <i class="fas fa-users"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
         </div>
-        <div style="color: var(--secondary); font-size: 0.75rem;">
-            <i class="fas fa-user-friends" style="margin-right: 4px;"></i> All registered
-        </div>
+        <div class="stat-info"><i class="fas fa-user-friends"></i> All registered</div>
     </div>
 </div>
 

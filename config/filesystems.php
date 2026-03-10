@@ -35,6 +35,16 @@ return [
             'report' => false,
         ],
 
+        // Profile photos and uploads — stored directly in public/uploads/
+        // No storage:link required; always accessible on any server
+        'uploads' => [
+            'driver' => 'local',
+            'root' => public_path('uploads'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/uploads',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         // 🔥 NEW DISK - Simple PDF storage in public folder
         'pdf_disk' => [
             'driver' => 'local',

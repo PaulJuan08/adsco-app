@@ -82,12 +82,16 @@ class ProfileController extends Controller
 
         // Handle profile photo
         if ($request->hasFile('profile_photo')) {
-            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
-                Storage::disk('public')->delete($user->profile_photo);
+            if ($user->profile_photo) {
+                Storage::disk('uploads')->exists($user->profile_photo)
+                    ? Storage::disk('uploads')->delete($user->profile_photo)
+                    : Storage::disk('public')->delete($user->profile_photo);
             }
-            $user->profile_photo = $request->file('profile_photo')->store('profile-photos', 'public');
+            $user->profile_photo = $request->file('profile_photo')->store('profile-photos', 'uploads');
         } elseif ($request->boolean('remove_photo') && $user->profile_photo) {
-            Storage::disk('public')->delete($user->profile_photo);
+            Storage::disk('uploads')->exists($user->profile_photo)
+                ? Storage::disk('uploads')->delete($user->profile_photo)
+                : Storage::disk('public')->delete($user->profile_photo);
             $user->profile_photo = null;
         }
 

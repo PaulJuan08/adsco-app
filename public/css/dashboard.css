@@ -317,7 +317,8 @@ body {
     opacity: 0.8;
 }
 
-.stats-grid-compact .stat-link {
+.stats-grid-compact .stat-link,
+.stats-grid-compact .stat-info {
     padding: 0.5rem;
     font-size: var(--font-size-xs);
 }
@@ -328,7 +329,6 @@ body {
     padding: var(--space-6);
     box-shadow: var(--shadow);
     border: 1px solid var(--gray-200);
-    transition: all var(--transition-base);
     position: relative;
     overflow: hidden;
 }
@@ -340,18 +340,6 @@ body {
     left: 0;
     width: 100%;
     height: 4px;
-    transition: height var(--transition-base);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--gray-200);
-}
-
-.stat-card:hover::before {
-    height: 100%;
-    opacity: 0.05;
 }
 
 /* Stat Card Variants */
@@ -359,28 +347,25 @@ body {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
-.stat-card-primary:hover {
-    box-shadow: var(--shadow-primary);
-}
-
 .stat-card-success::before {
     background: linear-gradient(135deg, var(--success), var(--success-dark));
-}
-
-.stat-card-success:hover {
-    box-shadow: var(--shadow-success);
 }
 
 .stat-card-warning::before {
     background: linear-gradient(135deg, var(--warning), var(--warning-dark));
 }
 
-.stat-card-warning:hover {
-    box-shadow: var(--shadow-warning);
-}
-
 .stat-card-info::before {
     background: linear-gradient(135deg, var(--info), var(--info-dark));
+}
+
+.stat-card-danger::before {
+    background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+}
+
+.stat-card-danger .stat-icon {
+    background: linear-gradient(135deg, var(--danger-light), var(--danger-lighter));
+    color: var(--danger);
 }
 
 .stat-header {
@@ -388,6 +373,8 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: var(--space-4);
+    position: relative;
+    z-index: 1;
 }
 
 .stat-number {
@@ -418,12 +405,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-2xl);
-    transition: transform var(--transition-base);
     box-shadow: var(--shadow-sm);
-}
-
-.stat-card:hover .stat-icon {
-    transform: scale(1.1) rotate(5deg);
 }
 
 .stat-card-primary .stat-icon {
@@ -456,6 +438,8 @@ body {
     text-decoration: none;
     transition: all var(--transition-fast);
     padding: var(--space-2) 0;
+    position: relative;
+    z-index: 1;
 }
 
 .stat-link:hover {
@@ -469,6 +453,20 @@ body {
 
 .stat-link:hover i {
     transform: translateX(4px);
+}
+
+/* Non-clickable stat footer — same look as stat-link but no hover effect */
+.stat-info {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-medium);
+    padding: var(--space-2) 0;
+    cursor: default;
+    position: relative;
+    z-index: 1;
 }
 
 /* Clickable Cards */
@@ -809,6 +807,14 @@ body {
     border: 2px solid;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+    /* reset <button> default styles */
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: inherit;
+    font-size: inherit;
 }
 
 .action-card::before {
